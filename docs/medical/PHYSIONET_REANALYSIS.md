@@ -198,3 +198,14 @@ paths, execution logs and SHA256 of output files. It never alters the original
 publication tables, changes checkpoints, or overwrites an existing audit folder.
 A PARTIAL_OR_FAILED status is expected when private local source tensors are
 not mounted; **it is not scientific validation**.
+
+### Using the public PhysioNet release ZIP
+
+The release ZIP has a nested `artifacts/TABLES/` directory. If it is
+extracted into `/path/release_extract`, pass
+`--artifacts-dir /path/release_extract/artifacts`, **not** the outer
+extraction directory. The suite will then use the published pairwise episode
+parquets for its two-way CI analysis. Outputs should remain outside the
+frozen extraction tree, for example `--out-dir artifacts/physionet_reanalysis_01`.
+The per-run concept and contribution tensors are not in that release ZIP,
+so their audits will correctly show `NOT_AVAILABLE`.
