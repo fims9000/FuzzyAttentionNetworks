@@ -164,9 +164,20 @@ class DualProcessConceptFAN(nn.Module):
 
     def forward(
         self,values:torch.Tensor,observed_mask:torch.Tensor,
+        *, process_mask:torch.Tensor|None=None,
     )->DualProcessOutput:
+        # process_mask is the ORIGINAL clinician observation schedule.
+        # During self-supervised artificial thinning, the physiological
+        # view may see fewer cells; those simulated omissions must NOT be
+        # presented as real clinical measurement decisions.
+        if process_mask is None:
+            process_mask=observed_mask
+        if process_mask.shape!=observed_mask.shape:
+            raise ValueError("Observation-process and physiological masks must align")
+        if (observed_mask>process_mask).any():
+            raise ValueError("Physical input cannot add observations beyond original clinical process")
         physical=self.physical(values,observed_mask)
-        observations,contributions,_,_=self.process(observed_mask)
+        observations,contributions,_,_=self.process(process_mask)
         logit=physical.logits+contributions.sum(dim=-1)
         return DualProcessOutput(
             physical=physical,
