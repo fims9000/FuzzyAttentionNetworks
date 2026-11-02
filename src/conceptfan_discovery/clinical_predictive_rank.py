@@ -175,6 +175,26 @@ def main() -> None:
         strict_report={"selection":strict}
         if strict["all_subsamples_joints_adequate"]:
             retained=strict["selected_indices"]
+            # Crucial comparability safeguard: the earlier full-sample
+            # estimate used a different availability-selected channel set.
+            # Re-estimate the full rank on the EXACT channel subset used by
+            # both halves before comparing their dimensions.
+            try:
+                full_strict=fit_lagged_predictive_rank(
+                    xx[:,:,retained],mm[:,:,retained],
+                    seed=int(rank_cfg["seed"])+hour_bin*109+13,
+                    **rank_args,
+                )
+                strict_report["full_train_identical_channel_subset"]={
+                    "status":"RANK_ESTIMATED",
+                    "rank":int(full_strict.rank),
+                    "bootstrap_interval":list(full_strict.patient_bootstrap_interval),
+                    "channels":strict["selected_channels"],
+                }
+            except ValueError as exc:
+                strict_report["full_train_identical_channel_subset"]={
+                    "status":"NOT_IDENTIFIABLE","reason":str(exc),"rank":None,
+                }
             halves_with_common_support=[]
             for i,idx in enumerate(half_indices):
                 try:
