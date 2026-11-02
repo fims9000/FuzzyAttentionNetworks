@@ -58,7 +58,7 @@ def observation_process_operator_bank(mask:torch.Tensor)->torch.Tensor:
 class ObservationProcessConceptHead(nn.Module):
     def __init__(self,n_channels:int,n_concepts:int=3):
         super().__init__()
-        if n_channels<2 or not 1<=n_concepts<=8:
+        if n_channels<2 or not 1<=n_concepts<=16:
             raise ValueError("Invalid observable sensor or mask concept capacity")
         self.n_channels=int(n_channels)
         self.n_concepts=int(n_concepts)
