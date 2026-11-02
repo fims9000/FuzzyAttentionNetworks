@@ -31,6 +31,14 @@ from .model import DiscoveryOutput
 class UnknownNeutralSpectralConceptFAN(SpectralConceptFAN):
     """A genuinely distinct training-time architecture, not post-hoc saliency."""
 
+    def concept_formula(self)->str:
+        return (
+            "gate * (0.5 + measurement_reliability * "
+            "(sigmoid((signed_measured_operator_sum - learned_threshold)"
+            " / learned_width) - 0.5)); zero support means UNKNOWN, "
+            "not a medical negative or normal finding"
+        )
+
     def _concepts(
         self, values:torch.Tensor, mask:torch.Tensor, gate:torch.Tensor,
     ) -> tuple[torch.Tensor,torch.Tensor,torch.Tensor,torch.Tensor]:
