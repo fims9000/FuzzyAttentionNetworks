@@ -1,0 +1,22 @@
+protocol:
+  name: pd-conceptfan-v7-real-icu-separate-physiology-vs-care-process
+  status: exploratory_automatic_concepts_not_clinical_ontology
+  old_strict_rank_gate: ABSTAIN_CLINICAL_K_UNSTABLE
+  no_test_calibration_or_new_clinical_significance: true
+  no_human_concept_labels: true
+  forbid_measurement_mask_as_unlabeled_physio_abnormality: true
+reference_config:
+  path: configs/medical/pd_clinical_unknown_neutral_v6.yaml
+  freeze_same_train_validation_pilot_and_hyperparameters: true
+dual_head:
+  n_observation_process_concepts: 3
+  signed_mask_coefficient_l1: 0.03
+  mask_definition_redundancy: 0.01
+  real_mask_for_process_even_if_physiology_artificially_thinned: true
+evaluation:
+  freeze_same_outer_validation_as_v6: true
+  original_care_process_mask_kept_on_artificial_thinning: true
+  scenarios: [original, mcar_thin, time_channel_mar]
+  clinical_identity_unverified: true
+  no_patient_level_data_release: true
+  no_pvalues: true
