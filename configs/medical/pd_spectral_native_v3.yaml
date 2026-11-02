@@ -11,6 +11,9 @@ data:
   n_channels: 8
   input_steps: 36
   horizon: 6
+architecture:
+  n_candidate_slots: 10
+  min_concept_width: 0.08
 spectral:
   lags: [1, 2, 3]
   permutations: 120
