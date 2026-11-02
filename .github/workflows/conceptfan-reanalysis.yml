@@ -66,13 +66,28 @@ jobs:
             cp -r "$RUNNER_TEMP/conceptfan_reanalysis" ./conceptfan_reanalysis_results
           fi
           exit "$status"
-      - name: Run Med-CircuitBench v2/v3 scientific regression tests
+      - name: Run Med-CircuitBench V2/V3 artifact-independent regression tests
         env:
           PYTHONPATH: src:.
           OPENBLAS_NUM_THREADS: "1"
           OMP_NUM_THREADS: "1"
         run: |
-          python -m pytest tests/medical/v3 tests/medical/v2_2 tests/medical/v2 -q
+          set -euo pipefail
+          python -m pytest tests/medical/v3 tests/medical/v2_2 tests/medical/v2 \
+            --ignore=tests/medical/v3/test_v3_delivery_outputs.py -q \
+            | tee conceptfan_reanalysis_results/medcircuitbench_unit_tests.txt
+      - name: Report archived V3 delivery-test prerequisite explicitly
+        env:
+          PYTHONPATH: src:.
+        run: |
+          set -euo pipefail
+          if [ -f artifacts/medical/v3_real/results/program_status.json ]; then
+            python -m pytest tests/medical/v3/test_v3_delivery_outputs.py -q
+            printf '{"status":"PASS","reason":"V3 release artifacts available; delivery tests passed"}\n' > conceptfan_reanalysis_results/v3_delivery_tests_status.json
+          else
+            echo "::notice::13 V3 delivery artifact checks are NOT_AVAILABLE: artifacts/medical/v3_real is gitignored and not in public release"
+            printf '{"status":"NOT_AVAILABLE","reason":"V3 validation release artifacts/medical/v3_real absent from checkout","test_module":"tests/medical/v3/test_v3_delivery_outputs.py","tests_count":13}\n' > conceptfan_reanalysis_results/v3_delivery_tests_status.json
+          fi
       - name: Upload evidence without patient-level data
         if: always()
         uses: actions/upload-artifact@v4
