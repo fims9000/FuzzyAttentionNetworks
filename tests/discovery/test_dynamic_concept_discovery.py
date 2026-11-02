@@ -175,3 +175,36 @@ def test_stability_does_not_credit_constant_explanation_as_patient_specific():
     assert result["paired_spearman"]>0.999
     assert abs(result["excess_over_unmatched_episode_null_spearman"])<1e-10
     assert result["definition_cosine_normalized"]>.999
+
+
+def test_native_slot_selection_preserves_exact_logit_and_zeroes_pruned_concept():
+    m=PredictiveDynamicsConceptFAN(n_slots=5,forecast_horizon=3)
+    m.eval()
+    x,mask=_inputs()
+    chosen=torch.tensor([1.,0.,1.,0.,1.])
+    with torch.no_grad():
+        out=m(x,mask,selected_slots=chosen)
+    assert out.decomposition_error()<1e-6
+    torch.testing.assert_close(out.gates[[1,3]],torch.tensor([0.,0.]))
+    torch.testing.assert_close(out.contributions[:,[1,3]],torch.zeros(7,2))
+    assert torch.isfinite(out.future_prediction).all()
+
+
+def test_slot_count_selection_uses_disjoint_validation_halves_only():
+    from conceptfan_discovery.selection import (
+        select_concept_cardinality, split_validation_for_cardinality,
+    )
+    data=make_synthetic_discovery_data(generator_seed=741,split_seed=211,n_episodes=120)
+    selection,audit=split_validation_for_cardinality(data.validation,random_seed=17)
+    assert not set(selection.episode_ids)&set(audit.episode_ids)
+    m=PredictiveDynamicsConceptFAN(n_slots=5,forecast_horizon=6)
+    result=select_concept_cardinality(
+        m,selection,audit,mode="task_only",
+        auprc_tolerance=1.0,nll_tolerance=100.,future_rmse_tolerance=100.,
+    )
+    assert result.selected_mask.shape==(5,)
+    assert 1<=int(result.selected_mask.sum())<=5
+    assert result.audit_metrics["selection_not_used_for_audit"]
+    assert len(result.path)>=1
+    with pytest.raises(ValueError):
+        select_concept_cardinality(m,selection,selection,mode="full")
