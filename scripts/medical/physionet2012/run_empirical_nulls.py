@@ -16,26 +16,41 @@ from conceptfan_realdata.stability_nulls import agreement_nulls
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--runs-root", required=True, type=Path)
+    p.add_argument("--runs-root", type=Path)
+    p.add_argument("--npz", type=Path, help="Optional [models,episodes,concepts] tensor for Med-CircuitBench")
     p.add_argument("--out", required=True, type=Path)
     p.add_argument("--arm", default="ConceptFAN-NoAlpha")
     p.add_argument("--permutations", type=int, default=1000)
     p.add_argument("--seed", type=int, default=20260717)
     args = p.parse_args()
-    runs = _run_dirs(args.runs_root, args.arm)
-    if len(runs) != 30:
-        p.error(f"Expected 30 complete runs for {args.arm}, found {len(runs)}")
-    ids, first = _contribution_matrix(runs[0])
-    vectors = [first]
-    for run in runs[1:]:
-        other_ids, values = _contribution_matrix(run)
-        if not np.array_equal(ids, other_ids):
-            raise ValueError(f"Different held-out patients or order in {run}")
-        vectors.append(values)
-    result = agreement_nulls(np.stack(vectors), args.permutations, args.seed)
-    result["model_arm"] = args.arm
-    result["frozen_record_id_count"] = len(ids)
-    result["run_ids"] = [r.name for r in runs]
+    if (args.runs_root is None) == (args.npz is None):
+        p.error("Specify exactly one of --runs-root and --npz")
+    if args.npz is not None:
+        if not args.npz.is_file():
+            p.error(f"Frozen tensor not found: {args.npz}")
+        with np.load(args.npz, allow_pickle=False) as arrays:
+            if "contributions" not in arrays:
+                p.error("NPZ requires contributions [models,episodes,concepts]")
+            vectors = arrays["contributions"]
+            if "episode_ids" in arrays and len(arrays["episode_ids"]) != vectors.shape[1]:
+                p.error("Episode-id count mismatch")
+        result = agreement_nulls(vectors, args.permutations, args.seed)
+        result["source_npz"] = str(args.npz)
+    else:
+        runs = _run_dirs(args.runs_root, args.arm)
+        if len(runs) != 30:
+            p.error(f"Expected 30 complete runs for {args.arm}, found {len(runs)}")
+        ids, first = _contribution_matrix(runs[0])
+        vectors = [first]
+        for run in runs[1:]:
+            other_ids, values = _contribution_matrix(run)
+            if not np.array_equal(ids, other_ids):
+                raise ValueError(f"Different held-out patients or order in {run}")
+            vectors.append(values)
+        result = agreement_nulls(np.stack(vectors), args.permutations, args.seed)
+        result["model_arm"] = args.arm
+        result["frozen_record_id_count"] = len(ids)
+        result["run_ids"] = [r.name for r in runs]
     result["status"] = "EMPIRICAL_NULL_REANALYSIS_COMPLETE"
     args.out.parent.mkdir(parents=True, exist_ok=True)
     if args.out.exists():
