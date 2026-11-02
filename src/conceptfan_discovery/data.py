@@ -23,7 +23,7 @@ class DiscoverySplit:
     future: np.ndarray
     future_mask: np.ndarray
     y: np.ndarray
-    oracle_states: np.ndarray
+    oracle_states: np.ndarray | None
     episode_ids: np.ndarray
 
     def loader(self, batch_size: int, shuffle: bool, seed: int) -> DataLoader:
