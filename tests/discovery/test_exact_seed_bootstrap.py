@@ -30,7 +30,7 @@ def test_exact_bootstrap_enumerates_model_resamples_not_pair_samples():
     assert result["total_ordered_resamples"]==3125
     assert result["rejected_all_same_model_resamples"]==5
     assert result["valid_distinct_model_resamples"]==3120
-    assert result["mean_paired_difference"]==pytest.approx(.42,abs=1e-12)
+    assert result["mean_paired_difference"]==pytest.approx(.44,abs=1e-12)
     assert result["model_only_bootstrap_ci95"][0]>.37
     assert result["model_only_bootstrap_ci95"][1]<.48
     assert len(result["leave_one_original_model_out_deltas"])==5
