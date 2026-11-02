@@ -111,16 +111,18 @@ def build_episode_stability(runs_root: Path, output_path: Path) -> tuple[pd.Data
                     )
     finally:
         if writer is not None:
-            writer.def _hierarchical_ci(
+            writer.close()
+    return pd.DataFrame(pair_summaries), counts
+
+
+def _hierarchical_ci(
     values: np.ndarray,
     pair_keys: list[tuple[str, str]],
     repetitions: int,
     rng: np.random.Generator,
 ) -> tuple[float, float]:
-    """Bootstrap trained models (not overlapping pairs), then held-out patients."""
+    """Bootstrap original trained models, then the shared held-out patient set."""
     return model_pair_bootstrap_ci(values, pair_keys, repetitions, rng)
-
-estimates, 0.025)), float(np.quantile(estimates, 0.975))
 
 
 def aggregate_stability(episode_path: Path, pair_summary: pd.DataFrame, repetitions: int = 1000) -> pd.DataFrame:
