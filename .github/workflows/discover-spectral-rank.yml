@@ -1,0 +1,69 @@
+name: Estimate train-only predictive rank without concept labels
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/lagged_rank.py'
+      - 'src/conceptfan_discovery/spectral_rank_experiment.py'
+      - 'configs/medical/pd_lagged_predictive_rank_v3.yaml'
+      - 'tests/discovery/test_lagged_predictive_rank.py'
+      - '.github/workflows/discover-spectral-rank.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-predictive-rank:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install exact project and CPU test dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Contract checks for label-free temporal rank and negative controls
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery tests/discovery
+          python -m pytest tests/discovery/test_lagged_predictive_rank.py -q
+      - name: Independent 3-5-7 state dimension falsification
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.spectral_rank_experiment \
+            --config configs/medical/pd_lagged_predictive_rank_v3.yaml \
+            --out-dir "$RUNNER_TEMP/predictive_rank" \
+            > predictive_rank.log 2>&1 || { tail -n 130 predictive_rank.log; exit 1; }
+          tail -n 45 predictive_rank.log
+          mkdir -p published_rank
+          cp "$RUNNER_TEMP/predictive_rank/"*.csv published_rank/
+          cp "$RUNNER_TEMP/predictive_rank/"*.json published_rank/
+          cp predictive_rank.log published_rank/
+      - name: Upload aggregate spectral statistics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spectral-predictive-rank-v3-${{ github.run_number }}
+          path: |
+            published_rank/
+            predictive_rank.log
+          retention-days: 21
+          if-no-files-found: warn
