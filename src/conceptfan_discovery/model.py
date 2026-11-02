@@ -137,10 +137,19 @@ class PredictiveDynamicsConceptFAN(nn.Module):
             trajectory.append(self.future_decoder(state))
         return torch.stack(trajectory, dim=1)
 
-    def forward(self, values: torch.Tensor, mask: torch.Tensor, *, hard_gates: bool = False) -> DiscoveryOutput:
+    def forward(
+        self, values: torch.Tensor, mask: torch.Tensor, *,
+        hard_gates: bool = False, selected_slots: torch.Tensor | None = None,
+    ) -> DiscoveryOutput:
         if values.ndim != 3 or values.shape[-1] != self.n_channels:
             raise ValueError("Expected standardized clinical observations [B,T,channels]")
         gate = self.gates(hard=hard_gates)
+        if selected_slots is not None:
+            if selected_slots.shape != gate.shape:
+                raise ValueError("selected_slots must have exactly one value per concept slot")
+            if torch.any((selected_slots < 0) | (selected_slots > 1)):
+                raise ValueError("selected_slots must be in [0,1]")
+            gate = gate * selected_slots.to(device=gate.device, dtype=gate.dtype)
         concepts, raw, reliability, feature_weights = self._concepts(values, mask, gate)
         summaries = concepts[:, -min(6, concepts.shape[1]):].mean(dim=1)
         contribution = (summaries - 0.5 * gate.view(1, -1)) * self.decision_weights()
