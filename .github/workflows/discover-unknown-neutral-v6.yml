@@ -1,0 +1,72 @@
+name: V6 native concepts neutral for unknown measurements
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/unknown_neutral_v6.py'
+      - 'src/conceptfan_discovery/unknown_neutral_experiment_v6.py'
+      - 'configs/medical/pd_unknown_neutral_v6.yaml'
+      - 'tests/discovery/test_unknown_neutral_v6.py'
+      - '.github/workflows/discover-unknown-neutral-v6.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  train-native-observation-neutral-concepts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU research dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify zero-measurement neutral semantics, exact additivity and twin-view gradients
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest \
+            tests/discovery/test_unknown_neutral_v6.py \
+            tests/discovery/test_spectral_native_v3.py \
+            tests/discovery/test_observation_invariance_v5.py -q
+      - name: Train 36 models and measure prediction and concept stability under observation shifts
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.unknown_neutral_experiment_v6 \
+            --config configs/medical/pd_unknown_neutral_v6.yaml \
+            --out-dir "$RUNNER_TEMP/unknown_neutral_v6" \
+            > neutral_training.log 2>&1 || { tail -n 150 neutral_training.log; exit 1; }
+          tail -n 65 neutral_training.log
+          mkdir -p published_neutral
+          cp "$RUNNER_TEMP/unknown_neutral_v6/"*.csv published_neutral/
+          cp "$RUNNER_TEMP/unknown_neutral_v6/"*.json published_neutral/
+          cp neutral_training.log published_neutral/
+      - name: Publish reproducible aggregate model and observation-stress evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unknown-neutral-v6-${{ github.run_number }}
+          path: |
+            published_neutral/
+            neutral_training.log
+          retention-days: 21
+          if-no-files-found: warn
