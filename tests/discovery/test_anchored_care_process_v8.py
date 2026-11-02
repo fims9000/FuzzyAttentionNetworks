@@ -85,3 +85,14 @@ def test_wrong_source_dictionary_and_nonbinary_labels_fail():
     )
     with pytest.raises(ValueError):
         fit_train_only_care_task_prior(model,m,np.zeros_like(y))
+
+
+def test_nine_data_discovered_policy_slots_are_not_artificially_truncated_to_eight():
+    from conceptfan_discovery.observation_process_concepts_v7 import ObservationProcessConceptHead
+    head=ObservationProcessConceptHead(n_channels=12,n_concepts=9)
+    mask=torch.ones((4,36,12))
+    concept,contrib,_,weights=head(mask)
+    assert concept.shape==(4,9)
+    assert contrib.shape==(4,9)
+    assert weights.shape==(9,2*4*12)
+    assert len(head.passports(tuple(f"test_sensor_{j}" for j in range(12))))==9
