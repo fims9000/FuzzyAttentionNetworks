@@ -111,3 +111,24 @@ def test_pairwise_agreement_uses_shared_patient_order_and_all_concepts():
     assert agreement(a,a)["sign_agreement"]==1.
     with pytest.raises(ValueError):
         agreement(a,a[:1])
+
+
+def test_concept_intervention_changes_only_its_own_term():
+    d=synthetic()
+    anchor=fit_semantic_anchor(d["train"][2],d["train"][1])
+    model=AnchoredConceptFAN(config(),8,anchor)
+    model.eval()
+    with torch.no_grad():
+        original=model(torch.from_numpy(d["validation"][0][:4]))
+        baseline=original.contributions.clone()
+        trajectory=original.concept_trajectories
+        new_value=torch.full_like(trajectory[:,:,2],.9)
+        updated_logit,updated_contrib=model.intervene_on_concept(trajectory,2,new_value)
+    unaffected=[0,1,3,4]
+    torch.testing.assert_close(updated_contrib[:,unaffected],baseline[:,unaffected])
+    torch.testing.assert_close(updated_logit-original.logit,
+                               updated_contrib[:,2]-baseline[:,2],atol=1e-5,rtol=1e-5)
+    with pytest.raises(ValueError):
+        model.intervene_on_concept(trajectory,9,new_value)
+    with pytest.raises(ValueError):
+        model.intervene_on_concept(trajectory,2,new_value[:1])
