@@ -85,12 +85,23 @@ def test_common_hourly_measurement_policy_shift_is_not_a_patient_latent_factor()
     n,t,d=260,30,6
     trend=np.linspace(-2,2,t)[None,:,None]
     channel_scale=np.arange(1,d+1)[None,None,:]*.12
-    x=rng.normal(scale=.15,size=(n,t,d))+trend*channel_scale
+    noise=rng.normal(scale=.15,size=(n,t,d))
+    x=noise+trend*channel_scale
     m=np.ones_like(x)
     out=fit_time_stratified_rank(
         x,m,permutations=55,min_pairs_per_hour=12,min_time_strata=3,seed=31,
     )
-    assert out.rank==0
+    same_patients_without_common_trend=fit_time_stratified_rank(
+        noise,m,permutations=55,min_pairs_per_hour=12,min_time_strata=3,seed=31,
+    )
+    # A single 5%-level permutation test can produce a false discovery even
+    # under pure white noise. The exact, falsifiable property is that a
+    # deterministic common time-policy drift cannot ALTER the spectrum.
+    assert out.rank==same_patients_without_common_trend.rank
+    np.testing.assert_allclose(
+        out.singular_values,same_patients_without_common_trend.singular_values,
+        atol=1e-13,rtol=1e-10,
+    )
 
 
 def test_rank_abstains_when_matched_hourly_observations_are_missing():
