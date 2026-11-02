@@ -153,3 +153,26 @@ PYTHONPATH=src:. python -m conceptfan_discovery.clinical_dual_process_experiment
 The accepted original PIERE analysis and its historical model
 checkpoints remain unchanged. The V7 work is in an unmerged
 research draft PR.
+
+## Cardinality and identifiability disclaimer
+
+**Neither the eight measured-evidence slots nor the three care-process
+slots are a confirmed number of genuine physiological/healthcare mechanisms.**
+The eight physiological slots came from train-only spectral rank,
+*explicitly capped at eight*, despite the failed previous independent
+clinical dimension-invariance gate. The three care-process slots are
+a **manual architectural capacity hyperparameter**, not data-derived
+latent-source cardinality. Each slot's signed operator, training-time
+threshold, width, direct coefficient and per-case contribution are
+automatically fit, but the number of sampling families is NOT selected
+without the researcher.
+
+Consequently V7 solves an interpretability **source-accounting problem**
+and improves exploratory mortality prediction; it does not yet solve
+the original broader problem of discovering the unique ontologically
+correct number and identities of all clinical concepts. The next
+scientifically defensible experiment requires a patient-disjoint
+train-only procedure for care-process slot count and genuinely
+independent observation environments/clinical truth. Tuning the
+existing historical validation to favor three slots would be
+selection leakage, not a solution.
