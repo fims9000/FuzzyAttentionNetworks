@@ -194,7 +194,7 @@ def test_slot_count_selection_uses_disjoint_validation_halves_only():
     from conceptfan_discovery.selection import (
         select_concept_cardinality, split_validation_for_cardinality,
     )
-    data=make_synthetic_discovery_data(generator_seed=741,split_seed=211,n_episodes=120)
+    data=make_synthetic_discovery_data(generator_seed=741,split_seed=211,n_episodes=240)
     selection,audit=split_validation_for_cardinality(data.validation,random_seed=17)
     assert not set(selection.episode_ids)&set(audit.episode_ids)
     m=PredictiveDynamicsConceptFAN(n_slots=5,forecast_horizon=6)
