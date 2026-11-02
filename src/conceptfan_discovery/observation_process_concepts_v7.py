@@ -176,6 +176,27 @@ class DualProcessConceptFAN(nn.Module):
             probabilities=torch.sigmoid(logit),
         )
 
+    def intervene_on_observation_concept(
+        self,out:DualProcessOutput,concept_id:int,override:torch.Tensor,
+    )->torch.Tensor:
+        if not 0<=concept_id<self.process.n_concepts:
+            raise ValueError("Unknown observation-process concept index")
+        if override.shape!=out.observation_concepts[:,concept_id].shape:
+            raise ValueError("Override must give one interpretable score per patient")
+        if torch.any((override<0)|(override>1)):
+            raise ValueError("Concept score must remain in [0,1]")
+        old=out.observation_contributions[:,concept_id]
+        new=(override-.5)*self.process.direct_weights()[concept_id]
+        return out.logits-old+new
+
+    def intervene_on_physical_concept(
+        self,out:DualProcessOutput,concept_id:int,override:torch.Tensor,
+    )->torch.Tensor:
+        physical_logit,_=self.physical.intervene(
+            out.physical,concept_id,override
+        )
+        return physical_logit+out.observation_contributions.sum(dim=-1)
+
 
 def dual_training_objective(
     model:DualProcessConceptFAN,
