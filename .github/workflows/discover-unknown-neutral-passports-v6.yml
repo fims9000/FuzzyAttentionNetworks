@@ -1,0 +1,80 @@
+name: V6 concept passports with frozen exact-reproduction audit
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/unknown_neutral_passports_v6.py'
+      - 'src/conceptfan_discovery/unknown_neutral_v6.py'
+      - 'src/conceptfan_discovery/evaluation.py'
+      - '.github/workflows/discover-unknown-neutral-passports-v6.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  reproduce-exact-native-concept-formulas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU model runtime
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify that unobserved concept cannot enter logit as negative evidence
+        run: |
+          set -euo pipefail
+          python -m pytest \
+            tests/discovery/test_unknown_neutral_v6.py \
+            tests/discovery/test_spectral_native_v3.py -q
+      - name: Download frozen reference WITHOUT using a previous neural checkpoint
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/frozen_v6"
+          gh run download 41506778924 \
+            --name unknown-neutral-v6-1 \
+            --dir "$RUNNER_TEMP/frozen_v6"
+          test -s "$RUNNER_TEMP/frozen_v6/published_neutral/unknown_neutral_v6_per_run.csv"
+      - name: Reproduce 9 fully native concept models and export correct formulas
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.unknown_neutral_passports_v6 \
+            --config configs/medical/pd_unknown_neutral_v6.yaml \
+            --frozen-v6-runs "$RUNNER_TEMP/frozen_v6/published_neutral/unknown_neutral_v6_per_run.csv" \
+            --out-dir "$RUNNER_TEMP/verified_passports" \
+            > passport_execution.log 2>&1 || { tail -n 120 passport_execution.log; exit 1; }
+          cat passport_execution.log
+          mkdir -p published_concept_passports
+          cp "$RUNNER_TEMP/verified_passports/"*.json published_concept_passports/
+          cp "$RUNNER_TEMP/verified_passports/"*.csv published_concept_passports/
+          cp passport_execution.log published_concept_passports/
+      - name: Publish aggregate concept definitions, signed task effects, and no patient records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-concept-passports-v6-${{ github.run_number }}
+          path: |
+            published_concept_passports/
+            passport_execution.log
+          retention-days: 21
+          if-no-files-found: warn
