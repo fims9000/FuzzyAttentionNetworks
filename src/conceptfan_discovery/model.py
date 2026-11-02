@@ -79,10 +79,16 @@ class PredictiveDynamicsConceptFAN(nn.Module):
     def __init__(
         self, n_slots: int = 12, n_channels: int = len(CHANNELS),
         forecast_horizon: int = 6, min_width: float = 0.08,
+        channels: tuple[str, ...] | None = None,
     ):
         super().__init__()
         if n_slots < 2 or n_channels < 2 or forecast_horizon < 1 or min_width <= 0:
             raise ValueError("Invalid concept capacity, observed channels or horizon")
+        if channels is None:
+            channels = CHANNELS[:n_channels]
+        if len(channels) != n_channels or len(set(channels)) != len(channels):
+            raise ValueError("Unique observable channel names must match n_channels")
+        self.channels = tuple(channels)
         self.n_slots = int(n_slots)
         self.n_channels = int(n_channels)
         self.horizon = int(forecast_horizon)
@@ -115,7 +121,7 @@ class PredictiveDynamicsConceptFAN(nn.Module):
     def _concepts(
         self, values: torch.Tensor, mask: torch.Tensor, gate: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        operators = causal_operator_bank(values, mask, channels=CHANNELS[:self.n_channels])
+        operators = causal_operator_bank(values, mask, channels=self.channels)
         weights = self.feature_weights()
         reliability = operators.availability @ weights.T
         signal = (operators.values @ weights.T) / reliability.clamp_min(0.2)
