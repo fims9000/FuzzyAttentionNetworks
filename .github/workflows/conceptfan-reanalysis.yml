@@ -1,0 +1,66 @@
+name: ConceptFAN frozen evidence reanalysis
+
+on:
+  push:
+    branches:
+      - fix/physionet-evidence-bootstrap-20261102
+    paths:
+      - 'src/conceptfan_realdata/**'
+      - 'scripts/medical/physionet2012/**'
+      - 'tests/physionet2012/**'
+      - '.github/workflows/conceptfan-reanalysis.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-reanalysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install frozen analysis dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Download published and SHA-registered frozen PhysioNet results
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/frozen"
+          gh release download physionet2012-last-run-a3a8cf8 --pattern 'PHYSIONET2012_CONCEPTFAN_LAST_RUN_e60d9a3.zip*' --dir "$RUNNER_TEMP/frozen"
+          cd "$RUNNER_TEMP/frozen"
+          sha256sum -c PHYSIONET2012_CONCEPTFAN_LAST_RUN_e60d9a3.zip.sha256
+          mkdir -p extraction
+          unzip -q PHYSIONET2012_CONCEPTFAN_LAST_RUN_e60d9a3.zip -d extraction
+          test -s extraction/artifacts/TABLES/episode_pairwise_stability.parquet
+          test -s extraction/artifacts/TABLES/stability_pair_summary.parquet
+      - name: Run real-data two-level bootstrap and full PhysioNet test suite
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          PYTHONPATH: src:.
+        run: |
+          set -euo pipefail
+          python scripts/medical/physionet2012/run_reanalysis_suite.py \
+            --artifacts-dir "$RUNNER_TEMP/frozen/extraction/artifacts" \
+            --out-dir "$RUNNER_TEMP/conceptfan_reanalysis" \
+            --two-way-bootstrap 2000 \
+            --tests
+          cp -r "$RUNNER_TEMP/conceptfan_reanalysis" ./conceptfan_reanalysis_results
+      - name: Upload evidence without patient-level data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-reanalysis-summary-${{ github.run_number }}
+          path: conceptfan_reanalysis_results/
+          retention-days: 14
+          if-no-files-found: warn
