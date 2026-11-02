@@ -215,9 +215,9 @@ def concept_passports(
 ) -> list[dict]:
     """Reversible descriptions of precisely which observations form a slot."""
     names = tuple(
-        f"{CHANNELS[j]}|{OPERATORS[i]}|{sign}"
+        f"{model.channels[j]}|{OPERATORS[i]}|{sign}"
         for sign in ("positive", "negative")
-        for i in range(len(OPERATORS)) for j in range(len(CHANNELS))
+        for i in range(len(OPERATORS)) for j in range(len(model.channels))
     )
     passports = []
     interval_min_len = 2
@@ -248,12 +248,12 @@ def concept_passports(
         # dominant level operator admits such an approximate translation.
         raw_threshold = None
         j = int(top_indices[0])
-        if e.weights[k, j] > .85 and (j % (len(CHANNELS) * len(OPERATORS))) < len(CHANNELS):
-            channel = j % len(CHANNELS)
-            direction = 1.0 if j < len(CHANNELS) * len(OPERATORS) else -1.0
+        if e.weights[k, j] > .85 and (j % (len(model.channels) * len(OPERATORS))) < len(model.channels):
+            channel = j % len(model.channels)
+            direction = 1.0 if j < len(model.channels) * len(OPERATORS) else -1.0
             if abs(e.boundary[k]) < .98:
                 raw_threshold = {
-                    "channel": CHANNELS[channel],
+                    "channel": model.channels[channel],
                     "approximate_value_in_original_units": float(
                         medians[channel] + scales[channel] * 2.0 *
                         np.arctanh(direction * e.boundary[k])),
