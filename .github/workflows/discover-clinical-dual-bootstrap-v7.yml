@@ -1,0 +1,74 @@
+name: Exact paired model-bootstrap for real ICU V7 vs frozen V6
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/clinical_dual_process_bootstrap_v7.py'
+      - '.github/workflows/discover-clinical-dual-bootstrap-v7.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit-three-original-model-units:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependency-light model bootstrap
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Verify exact independent model bootstrap contracts
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest tests/discovery/test_exact_seed_bootstrap.py -q
+      - name: Download pinned successful real-clinical studies
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/v6" "$RUNNER_TEMP/v7"
+          gh run download 41507973119 --name physionet-unknown-neutral-v6-1 --dir "$RUNNER_TEMP/v6"
+          gh run download 41508831155 --name physionet-separate-care-process-concepts-v7-1 --dir "$RUNNER_TEMP/v7"
+          test -s "$RUNNER_TEMP/v6/published_clinical_neutral/clinical_v6_observation_stress.csv"
+          test -s "$RUNNER_TEMP/v7/published_dual/dual_process_v7_per_policy.csv"
+      - name: Audit cross-study paired AUPRC differences using all 27 possible source-seed draws
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.clinical_dual_process_bootstrap_v7 \
+            --frozen-v6 "$RUNNER_TEMP/v6" --frozen-v7 "$RUNNER_TEMP/v7" \
+            --out-dir "$RUNNER_TEMP/dual_bootstrap" > exact_v7.log 2>&1 \
+            || { tail -n 130 exact_v7.log; exit 1; }
+          mkdir -p published_dual_bootstrap
+          cp "$RUNNER_TEMP/dual_bootstrap/"*.csv published_dual_bootstrap/
+          cp "$RUNNER_TEMP/dual_bootstrap/"*.json published_dual_bootstrap/
+          cp exact_v7.log published_dual_bootstrap/
+          tail -n 22 exact_v7.log
+      - name: Archive patient-private, model-only V6-vs-V7 uncertainty
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: physionet-v7-vs-v6-exact-bootstrap-${{ github.run_number }}
+          path: |
+            published_dual_bootstrap/
+            exact_v7.log
+          retention-days: 21
+          if-no-files-found: warn
