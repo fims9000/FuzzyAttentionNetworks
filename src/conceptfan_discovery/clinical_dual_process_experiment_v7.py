@@ -26,7 +26,10 @@ from sklearn.metrics import average_precision_score,roc_auc_score
 
 from .clinical_unknown_neutral_experiment_v6 import subset_discovery_split
 from .data import DiscoveryData
-from .evaluation import concept_passports,evaluate_discovery
+from .evaluation import (
+    concept_passports,evaluate_discovery,compare_independent_discoveries,
+)
+from .dual_process_stability_v7 import collect_observation_process_evidence
 from .lagged_rank import fit_lagged_predictive_rank
 from .model_v2 import masked_observation_view,v2_loss
 from .observation_process_concepts_v7 import (
@@ -256,6 +259,8 @@ def main()->None:
     torch.set_num_threads(int(ref["training"]["cpu_threads"]))
     args.out_dir.mkdir(parents=True,exist_ok=False)
     rows=[]
+    phys_by_seed={}
+    sampling_by_seed={}
     for seed in ref["training"]["initialization_seeds"]:
         seed=int(seed)
         model,training=fit_dual(data,basis,seed,ref,cfg)
@@ -263,6 +268,13 @@ def main()->None:
         clean=evaluate_dual(
             model,outer,scenario="original",
             perturbation_seed=int(ref["evaluation"]["measurement_mask_seed"])
+        )
+        # Patient-level trajectories remain in-memory. The aggregate
+        # across-retraining comparisons align native definitions and use
+        # empirical patient-frequency nulls, not raw uncorrected agreement.
+        phys_by_seed[seed]=evaluate_discovery(model.physical,outer)
+        sampling_by_seed[seed]=collect_observation_process_evidence(
+            model,outer.mask,outer.y
         )
         for i,scenario in enumerate(cfg["evaluation"]["scenarios"]):
             result=evaluate_dual(
@@ -319,6 +331,29 @@ def main()->None:
               "process-only",round(clean["auprc_observation_process_only"],4),
               flush=True,
         )
+    # Three trained models produce three OVERLAPPING comparison pairs.
+    # These comparisons are descriptive and NEVER independently bootstrapped
+    # as though they were independent patients or models.
+    comparisons=[]
+    original_seeds=sorted(phys_by_seed)
+    for i,a in enumerate(original_seeds):
+        for b in original_seeds[i+1:]:
+            for group,source in (
+                ("physiological_measured_evidence",phys_by_seed),
+                ("care_sampling_process_only",sampling_by_seed),
+            ):
+                paired=compare_independent_discoveries(source[a],source[b])
+                comparisons.append({
+                    "concept_family":group,
+                    "init_seed_a":a,"init_seed_b":b,
+                    "same_original_outer_validation_patients":True,
+                    "test_not_evaluated":True,
+                    **paired,
+                })
+    pair_df=pd.DataFrame(comparisons)
+    pair_df.to_csv(
+        args.out_dir/"dual_process_v7_between_seeds.csv",index=False
+    )
     data_frame=pd.DataFrame(rows)
     data_frame.to_csv(args.out_dir/"dual_process_v7_per_policy.csv",index=False)
     aggregate=[]
@@ -363,6 +398,25 @@ def main()->None:
         "no_clinical_semantic_validation":True,
         "no_patient_level_predictions_saved":True,
         "results":aggregate,
+        "independent_retraining_concept_family_diagnostics":[
+            {
+                "concept_family":str(family),
+                "three_overlapping_pairs":len(frame),
+                "mean_case_specific_spearman_excess":(
+                    float(frame["excess_over_unmatched_episode_null_spearman"].dropna().mean())
+                    if frame["excess_over_unmatched_episode_null_spearman"].notna().any()
+                    else None
+                ),
+                "mean_case_specific_sign_excess":(
+                    float(frame["case_specific_excess_sign_agreement"].dropna().mean())
+                    if frame["case_specific_excess_sign_agreement"].notna().any()
+                    else None
+                ),
+                "mean_operator_definition_similarity":float(frame["definition_cosine_normalized"].mean()),
+                "not_independent_pairwise_trials":True,
+            }
+            for family,frame in pair_df.groupby("concept_family")
+        ],
         "remaining_limitations":[
             "only one ICU challenge source and three independently initialized models",
             "case-dependent measurement intensity can reflect unmeasured severity or clinician decisions",
