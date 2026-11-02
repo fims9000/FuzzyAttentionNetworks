@@ -140,3 +140,25 @@ def test_every_care_process_concept_has_signed_sourced_operator_passport():
     assert all(x["directly_used_in_training_task_logit"] for x in passport)
     assert all(x["clinical_diagnosis_identity_verified"] is False for x in passport)
     assert all(isinstance(x["signed_direct_logit_coefficient"],float) for x in passport)
+
+
+def test_original_care_schedule_is_not_artificial_training_dropout():
+    model=_model()
+    model.eval()
+    rng=torch.Generator().manual_seed(41)
+    x=torch.randn(6,16,8)
+    original=(torch.rand((6,16,8),generator=rng)>.25).float()
+    artificial,physical_mask,_=masked_observation_view(
+        x*original,original,fraction=.40,
+        generator=torch.Generator().manual_seed(42),
+    )
+    with torch.no_grad():
+        before=model(x*original,original,process_mask=original)
+        after=model(artificial,physical_mask,process_mask=original)
+    torch.testing.assert_close(
+        before.observation_contributions,after.observation_contributions,
+        atol=0,rtol=0,
+    )
+    assert torch.any(before.physical.contributions!=after.physical.contributions)
+    with pytest.raises(ValueError):
+        model(artificial,original,process_mask=physical_mask)
