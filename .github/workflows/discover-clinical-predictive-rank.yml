@@ -1,0 +1,79 @@
+name: Audit clinical observable predictive rank without five proxy labels
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/clinical_predictive_rank.py'
+      - 'configs/medical/pd_clinical_predictive_rank_v3.yaml'
+      - '.github/workflows/discover-clinical-predictive-rank.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  train-only-clinical-rank-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install reproducible CPU dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Retrieve official PhysioNet 2012 Set A; no test prediction
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/physionet"
+          curl -fsSL --retry 3 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o "$RUNNER_TEMP/physionet/set-a.zip"
+          curl -fsSL --retry 3 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o "$RUNNER_TEMP/physionet/Outcomes-a.txt"
+          unzip -tq "$RUNNER_TEMP/physionet/set-a.zip" | tail -n 2
+      - name: Verify rank estimator mathematical controls
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest tests/discovery/test_lagged_predictive_rank.py -q
+      - name: Compare whole TRAIN vs two disjoint TRAIN halves
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.clinical_predictive_rank \
+            --config configs/medical/pd_clinical_predictive_rank_v3.yaml \
+            --raw-zip "$RUNNER_TEMP/physionet/set-a.zip" \
+            --outcomes "$RUNNER_TEMP/physionet/Outcomes-a.txt" \
+            --out "$RUNNER_TEMP/clinical_predictive_rank.json" \
+            > clinical_rank.log 2>&1 || { tail -n 140 clinical_rank.log; exit 1; }
+          tail -n 75 clinical_rank.log
+          mkdir -p published_clinical_rank
+          cp "$RUNNER_TEMP/clinical_predictive_rank.json" published_clinical_rank/
+          cp clinical_rank.log published_clinical_rank/
+      - name: Archive only aggregate measurement statistics, no patient records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clinical-predictive-rank-${{ github.run_number }}
+          path: |
+            published_clinical_rank/
+            clinical_rank.log
+          retention-days: 21
+          if-no-files-found: warn
