@@ -138,14 +138,14 @@ def evaluate_validation(model, validation: tuple[np.ndarray, np.ndarray, np.ndar
     }
 
 
-def train_one(method: str, initial_seed: int, config: dict, anchor, data: dict) -> dict:
+def train_one(method: str, initial_seed: int, config: dict, anchor, data: dict, *, order_seed: int | None = None) -> dict:
     freeze_seed(initial_seed)
     x, y, c = data["train"]
     cfg = config["training"]
     model = make_model(method, config, anchor, x.shape[-1])
     optimizer = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad],
                                   lr=float(cfg["learning_rate"]),weight_decay=float(cfg["weight_decay"]))
-    generator = torch.Generator().manual_seed(int(cfg["data_order_seed"]))
+    generator = torch.Generator().manual_seed(int(cfg["data_order_seed"] if order_seed is None else order_seed))
     ds = TensorDataset(torch.from_numpy(x), torch.from_numpy(y), torch.from_numpy(c))
     loader = DataLoader(ds,batch_size=int(cfg["batch_size"]),shuffle=True,generator=generator)
     pos_weight = torch.tensor([(len(y)-float(y.sum()))/max(float(y.sum()),1.)])
