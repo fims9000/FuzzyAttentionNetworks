@@ -182,7 +182,10 @@ def oracle_correspondence(e: DiscoveryEvidence, oracle_states: np.ndarray) -> di
     active = np.flatnonzero((e.gates >= .5) &
                            (e.trajectories.var(axis=(0, 1)) > .0005))
     if not len(active):
-        return {"oracle_mean_abs_corr": 0.0, "oracle_matched": 0, "oracle_truth_used_for_training": False}
+        return {"oracle_mean_abs_corr": 0.0, "oracle_matched": 0,
+                "oracle_factor_coverage": 0.0,
+                "oracle_coverage_adjusted_abs_corr": 0.0,
+                "oracle_truth_used_for_training": False}
     truths = np.asarray(oracle_states)
     if truths.shape[:2] != e.trajectories.shape[:2]:
         raise ValueError("Oracle must match validation patients and historic time steps")
@@ -196,6 +199,9 @@ def oracle_correspondence(e: DiscoveryEvidence, oracle_states: np.ndarray) -> di
     rows, cols = linear_sum_assignment(-np.abs(cor))
     result = {"oracle_mean_abs_corr": float(np.abs(cor[rows, cols]).mean()),
               "oracle_matched": int(len(rows)),
+              "oracle_factor_coverage": float(len(rows) / truths.shape[-1]),
+              "oracle_coverage_adjusted_abs_corr":
+                  float(np.abs(cor[rows, cols]).sum() / truths.shape[-1]),
               "oracle_abs_per_planted_state": [
                   {"planted_state": int(j), "discovered_slot": int(active[k]),
                    "abs_corr": float(abs(cor[k, j]))}
