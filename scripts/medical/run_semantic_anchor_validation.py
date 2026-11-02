@@ -19,7 +19,7 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 import yaml
-from scipy.stats import spearmanr
+from scipy.stats import rankdata
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader, TensorDataset
@@ -175,13 +175,15 @@ def train_one(method: str, initial_seed: int, config: dict, anchor, data: dict, 
 def agreement(a: np.ndarray, b: np.ndarray) -> dict:
     if a.shape != b.shape:
         raise ValueError("Paired models must evaluate same patients and concepts")
-    rank = []
-    for x,y in zip(a,b):
-        if np.std(x)<1e-10 or np.std(y)<1e-10:
-            rank.append(0.)
-        else:
-            value=float(spearmanr(x,y).statistic)
-            rank.append(value if np.isfinite(value) else 0.)
+    # Exact 5-dimensional Spearman correlation with average tied ranks.
+    # Vectorized across patients to keep the 435-pair replication affordable.
+    ra=rankdata(a,axis=1).astype(np.float64)
+    rb=rankdata(b,axis=1).astype(np.float64)
+    ra-=ra.mean(axis=1,keepdims=True)
+    rb-=rb.mean(axis=1,keepdims=True)
+    numer=(ra*rb).sum(axis=1)
+    denom=np.sqrt((ra*ra).sum(axis=1)*(rb*rb).sum(axis=1))
+    rank=np.divide(numer,denom,out=np.zeros_like(numer),where=denom>1e-12)
     abs_a=np.abs(a)
     abs_b=np.abs(b)
     top_a=np.argmax(abs_a,axis=1)
