@@ -96,3 +96,66 @@ Repository source and scientific manuscript remain separate deliverables.
 The manuscript must also describe the different fuzzy-evidence
 parameterizations in synthetic (multi-membership) and PhysioNet (single
 monotone-sigmoid) protocols. Full clinical validation is not claimed.
+
+## 6. Verified model-only reanalysis from checked-in post-hoc CSV
+
+The post-hoc pairwise CSV is public and contains all 435 model pairs for
+ConceptFAN, Integrated Gradients and GradientSHAP for each representation.
+The source table was independently parsed and its 0.00346858 / 0.78033745 /
+0.84568889 primary signed Spearman averages were confirmed. A 3,000-replicate
+model-resampling pilot (held-out 600 patients **fixed**) produced approximate
+95% ranges: ConceptFAN [-0.0499, 0.0820], IG [0.7676, 0.7942], and
+GradientSHAP [0.8382, 0.8539]. These are not patient-bootstrap intervals
+and should not replace the two-level clinical uncertainty report.
+
+Reproduce the comparable Python analysis from the checked-in CSV:
+
+```bash
+PYTHONPATH=src:. .venv/bin/python scripts/medical/physionet2012/recompute_posthoc_model_only_ci.py \
+  --out artifacts/physionet2012_last_run/reanalysis/posthoc_model_only_ci.csv \
+  --repetitions 3000
+```
+
+The point estimates agree with the registered post-hoc article table; the CI
+bounds are Monte Carlo approximations and will vary slightly with the PRNG.
+
+## 7. Empirical agreement nulls with observed frequency preservation
+
+For five concepts, 0.20 (Top-1) and 0.50 (sign agreement) are only simplified
+idealized chance levels. To avoid inappropriate baselines the new audit
+reports both model-specific marginal-frequency expectations and an empirical
+null obtained by permuting patient correspondence independently within every
+frozen model. The procedure preserves each trained model's empirical Top-1
+frequencies and sign frequencies by concept, while disrupting cross-model
+episode matching. This tests episode alignment under a controlled permutation,
+not the entire notion of explanation identifiability.
+
+```bash
+PYTHONPATH=src:. .venv/bin/python scripts/medical/physionet2012/run_empirical_nulls.py \
+  --runs-root artifacts/physionet2012_last_run/runs \
+  --out artifacts/physionet2012_last_run/reanalysis/empirical_nulls_fan.json \
+  --permutations 1000
+```
+
+The audit fails if frozen `contributions_test.parquet` files are missing.
+Do not substitute pairwise-average summaries, from which frequency-preserving
+nulls cannot be reconstructed.
+
+## 8. Full 30-model conditional residual comparison
+
+The single-run script above is a local smoke audit, not the confirmatory
+multi-model result. The supplementary frozen-grid pipeline now runs all 30
+model-specific residual probes and compares their predictions to an identical
+proxy-only baseline; it uses a paired two-way bootstrap with shared patient
+resampling across all sampled models.
+
+```bash
+PYTHONPATH=src:. .venv/bin/python scripts/medical/physionet2012/run_conditional_residual_grid.py \
+  --artifacts-dir artifacts/physionet2012_last_run \
+  --out-dir artifacts/physionet2012_last_run/reanalysis/conditional_grid_30 \
+  --bootstrap 2000
+```
+
+Outputs are `per_run_deltas.csv` and `summary.json`. They remain exploratory
+post-hoc analyses, not preregistered proof of causal leakage. The runner
+requires existing 30 model-level frozen `concepts_{split}.parquet` exports.
