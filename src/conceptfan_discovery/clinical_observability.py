@@ -89,3 +89,58 @@ def support_selected_channels(
         ),
         "warning":"Selection is based on availability only; informative missingness remains confounding",
     }
+
+
+def support_selected_channels_across_subsamples(
+    masks:tuple[np.ndarray,...],
+    names:list[str],
+    *,
+    lags:tuple[int,...]=(1,2,3),
+    min_pairs:int=20,
+)->dict:
+    """Select channels with joint temporal support in EVERY stated subset.
+
+    Mask-only selection cannot guarantee independent rank inference because
+    the rank audit subsets also influenced feasibility. It does, however,
+    prevent false numerical covariance estimates for unsupported sensor
+    pairs. No patient labels or observed values enter this feature filter.
+    """
+    if len(masks)<2 or min_pairs<1:
+        raise ValueError("Need at least two fixed training subsamples")
+    pair_counts=[]
+    for mask in masks:
+        m=np.asarray(mask,dtype=np.float64)
+        if m.ndim!=3 or m.shape[-1]!=len(names):
+            raise ValueError("Every mask must use identical ordered channels")
+        pair_counts.append(joint_pair_counts(m,lags))
+    conservative=np.minimum.reduce(pair_counts)
+    per_channel=np.stack([np.diag(a) for a in conservative])
+    diagonal_min=per_channel.min(axis=0)
+    candidates=[
+        int(j) for j in np.argsort(-diagonal_min,kind="stable")
+        if diagonal_min[j]>=min_pairs
+    ]
+    chosen=[]
+    for j in candidates:
+        if all(
+            np.all(conservative[:,j,i]>=min_pairs)
+            and np.all(conservative[:,i,j]>=min_pairs)
+            for i in chosen
+        ):
+            chosen.append(j)
+    return {
+        "selection_mode":"observable_sensors_supported_in_each_disjoint_train_subsample",
+        "subsamples":len(masks),
+        "selected_indices":chosen,
+        "selected_channels":[str(names[j]) for j in chosen],
+        "excluded_channels":[str(v) for j,v in enumerate(names) if j not in chosen],
+        "selected_n":len(chosen),
+        "min_joint_temporal_pairs_in_each_subsample":int(min_pairs),
+        "minimum_pair_count_across_subsamples":
+            float(conservative[:,chosen,:][:,:,chosen].min()) if chosen else 0.,
+        "all_subsamples_joints_adequate":bool(
+            len(chosen)>=2 and
+            np.all(conservative[:,chosen,:][:,:,chosen]>=min_pairs)
+        ),
+        "interpretation":"measurement feasibility only; no clinical ontology or causal assertion",
+    }
