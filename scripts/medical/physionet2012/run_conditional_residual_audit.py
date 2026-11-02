@@ -31,7 +31,7 @@ def main() -> None:
         ids, residuals, positions = _residual_summary(a.run_dir, split, data)
         if not np.array_equal(ids, data.record_ids[positions]):
             raise ValueError(f"Residual record alignment failed: {split}")
-        if set(positions.tolist()) != set(data.indices(split).tolist()):
+        if not np.array_equal(np.sort(positions), data.indices(split)):
             raise ValueError(f"Split patient IDs mismatched: {split}")
         concepts = proxy_summary(data.concepts[positions], data.concept_mask[positions])
         matrices[split] = (concepts, np.concatenate([concepts, residuals], axis=1))
