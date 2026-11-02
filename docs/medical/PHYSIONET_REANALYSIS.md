@@ -27,8 +27,8 @@ PYTHONPATH=src:. .venv/bin/python scripts/medical/physionet2012/recompute_stabil
 ```
 
 Required inputs:
-- `artifacts/physionet2012_last_run/tables/episode_pairwise_stability.parquet`
-- `artifacts/physionet2012_last_run/tables/stability_pair_summary.parquet`
+- `artifacts/physionet2012_last_run/TABLES/episode_pairwise_stability.parquet`
+- `artifacts/physionet2012_last_run/TABLES/stability_pair_summary.parquet`
 
 The script deliberately fails instead of reconstructing phantom observations
 from an aggregated CSV. The released article tables are not overwritten.
@@ -89,8 +89,10 @@ metrics listed elsewhere in the article.
 
 Unit tests for the bootstrap and conditional probes use synthetic arrays and
 do not require patient data. The reanalysis scripts require the historical
-private/local frozen artifacts. Until those are supplied and the scripts are
-executed, **no corrected confidence limits or residual gains are claimed**.
+private/local frozen artifacts. Until the per-episode artifacts are supplied and those scripts are executed,
+**no corrected two-level confidence limits or conditional residual gains are claimed**.
+A separate fixed-cohort model-only interval can be calculated from the public
+pairwise CSV (Section 6).
 
 Repository source and scientific manuscript remain separate deliverables.
 The manuscript must also describe the different fuzzy-evidence
@@ -159,3 +161,21 @@ PYTHONPATH=src:. .venv/bin/python scripts/medical/physionet2012/run_conditional_
 Outputs are `per_run_deltas.csv` and `summary.json`. They remain exploratory
 post-hoc analyses, not preregistered proof of causal leakage. The runner
 requires existing 30 model-level frozen `concepts_{split}.parquet` exports.
+
+## 9. Archive availability and limitations
+
+The public PhysioNet release asset `PHYSIONET2012_CONCEPTFAN_LAST_RUN_e60d9a3.zip`
+contains `artifacts/TABLES/episode_pairwise_stability.parquet` and
+`artifacts/TABLES/stability_pair_summary.parquet`, so the two-level interval
+reanalysis can be run after extracting that public archive. It deliberately
+excludes patient raw ZIPs, checkpoint `.pt` files and `.npz` prepared data.
+It also does not include per-run `concepts_{split}.parquet` or
+`contributions_test.parquet` files, which are required for the empirical null
+and conditional residual analyses. Do **not** claim that extracting the
+public release alone provides these missing private/local outputs.
+
+The confirmed archive digest from the release metadata is
+`17faed9c89d553c3dd971dca92ee078dfb76543ec820e7c674ce128ea240b6f7`.
+Verify the downloaded archive against its matching GitHub `.sha256` asset
+before running the read-only reanalysis. Never commit raw patient data or
+intermediate per-patient predictions.
