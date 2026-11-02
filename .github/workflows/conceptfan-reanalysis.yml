@@ -29,6 +29,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
           python -m pip install -e .
+      - name: Compile and import the amended analysis code
+        run: |
+          python -m compileall -q src/conceptfan_realdata scripts/medical/physionet2012 tests/physionet2012
+          PYTHONPATH=src:. python -c 'from conceptfan_realdata.stability import aggregate_stability; print("stability import OK")'
       - name: Download published and SHA-registered frozen PhysioNet results
         env:
           GH_TOKEN: ${{ github.token }}
@@ -49,13 +53,18 @@ jobs:
           MKL_NUM_THREADS: "1"
           PYTHONPATH: src:.
         run: |
-          set -euo pipefail
+          set +e
           python scripts/medical/physionet2012/run_reanalysis_suite.py \
             --artifacts-dir "$RUNNER_TEMP/frozen/extraction/artifacts" \
             --out-dir "$RUNNER_TEMP/conceptfan_reanalysis" \
             --two-way-bootstrap 2000 \
             --tests
-          cp -r "$RUNNER_TEMP/conceptfan_reanalysis" ./conceptfan_reanalysis_results
+          status=$?
+          set -e
+          if [ -d "$RUNNER_TEMP/conceptfan_reanalysis" ]; then
+            cp -r "$RUNNER_TEMP/conceptfan_reanalysis" ./conceptfan_reanalysis_results
+          fi
+          exit "$status"
       - name: Upload evidence without patient-level data
         if: always()
         uses: actions/upload-artifact@v4
