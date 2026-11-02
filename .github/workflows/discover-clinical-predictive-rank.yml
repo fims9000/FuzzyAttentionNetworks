@@ -6,6 +6,8 @@ on:
       - experiment/predictive-dynamics-concept-discovery-v1
     paths:
       - 'src/conceptfan_discovery/clinical_predictive_rank.py'
+      - 'src/conceptfan_discovery/clinical_observability.py'
+      - 'tests/discovery/test_clinical_observability.py'
       - 'configs/medical/pd_clinical_predictive_rank_v3.yaml'
       - '.github/workflows/discover-clinical-predictive-rank.yml'
   workflow_dispatch:
@@ -53,7 +55,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m compileall -q src/conceptfan_discovery
-          python -m pytest tests/discovery/test_lagged_predictive_rank.py -q
+          python -m pytest tests/discovery/test_lagged_predictive_rank.py tests/discovery/test_clinical_observability.py -q
       - name: Compare whole TRAIN vs two disjoint TRAIN halves
         run: |
           set -euo pipefail
