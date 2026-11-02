@@ -8,6 +8,8 @@ on:
       - 'src/conceptfan_discovery/observation_process_concepts_v7.py'
       - 'src/conceptfan_discovery/clinical_dual_process_experiment_v7.py'
       - 'tests/discovery/test_observation_process_concepts_v7.py'
+      - 'tests/discovery/test_dual_process_stability_v7.py'
+      - 'src/conceptfan_discovery/dual_process_stability_v7.py'
       - 'configs/medical/pd_clinical_dual_process_v7.yaml'
       - '.github/workflows/discover-clinical-dual-process-v7.yml'
   workflow_dispatch:
@@ -46,6 +48,7 @@ jobs:
           python -m compileall -q src/conceptfan_discovery
           python -m pytest \
             tests/discovery/test_observation_process_concepts_v7.py \
+            tests/discovery/test_dual_process_stability_v7.py \
             tests/discovery/test_unknown_neutral_v6.py \
             tests/discovery/test_pilot_temporal_sensors_v5.py -q
       - name: Download official PhysioNet train/validation source without inspecting test
