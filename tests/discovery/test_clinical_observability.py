@@ -70,12 +70,12 @@ def test_null_expected_pair_support_matches_monte_carlo_mean():
 
 
 def test_null_support_guard_rejects_patient_aligned_but_unshuffleable_sources():
-    # Each channel has sufficient within-patient lag pairs (same 40
+    # Each channel has sufficient within-patient lag pairs (same 10
     # patients), yet independently permuted future patients have very
     # few expected pairs. Do not pretend patient-shuffled null is valid.
     mask=np.zeros((200,15,2))
-    mask[:40,:,0]=1.
-    mask[:40,:,1]=1.
+    mask[:10,:,0]=1.
+    mask[:10,:,1]=1.
     observed=joint_pair_counts(mask,(1,2,3))
     assert observed.min()>=20
     predicted=expected_null_joint_pair_counts(mask,(1,2,3))
