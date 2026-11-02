@@ -16,6 +16,7 @@ import numpy as np
 import yaml
 
 from .lagged_rank import fit_lagged_predictive_rank
+from .clinical_observability import aggregate_hours, joint_pair_counts, support_selected_channels
 from .physionet import prepare_physionet_discovery
 
 
@@ -54,6 +55,7 @@ def main() -> None:
         )
     x=data.train.x
     m=data.train.mask
+    names=data.receipt["channel_names"]
     rank_cfg=cfg["rank"]
     rank_args={
         "lags":tuple(int(v) for v in rank_cfg["lags"]),
@@ -61,76 +63,142 @@ def main() -> None:
         "patient_bootstraps":int(rank_cfg["patient_bootstraps"]),
         "alpha":float(rank_cfg["alpha"]),
     }
-    full=fit_lagged_predictive_rank(
-        x,m,seed=int(rank_cfg["seed"]),**rank_args
-    )
-    n=len(x)
-    rng=np.random.default_rng(int(rank_cfg["subsample_seed"]))
-    shuffled=rng.permutation(n)
-    sub=[]
-    for part,idx in enumerate((shuffled[:n//2],shuffled[n//2:])):
-        sub.append(fit_lagged_predictive_rank(
-            x[idx],m[idx],seed=int(rank_cfg["seed"])+part+11,**rank_args
-        ))
-    full_rank=full.rank
-    names=data.receipt["channel_names"]
-    axis=[]
-    for concept in range(full_rank):
-        u=full.left_observable_loadings[:,concept]
-        positions=np.argsort(-np.abs(u))[:min(5,len(u))]
-        axis.append({
-            "rank_index":int(concept),
-            "observed_signed_channel_loadings":[
-                {"channel":names[j],"signed_loading":float(u[j])}
-                for j in positions
-            ],
-            "observable_basis_only":True,
-            "clinical_concept_label_assigned":False,
-        })
+
+    # Report this sensor/measurement drift independently of any rank outcome.
     mid=m.shape[1]//2
     coverage_early=m[:,:mid].mean(axis=(0,1))
     coverage_late=m[:,mid:].mean(axis=(0,1))
-    mean_early=(x[:,:mid]*m[:,:mid]).sum((0,1)) / np.maximum(m[:,:mid].sum((0,1)),1.)
-    mean_late=(x[:,mid:]*m[:,mid:]).sum((0,1)) / np.maximum(m[:,mid:].sum((0,1)),1.)
-    rms=np.sqrt((x*x*m).sum((0,1)) / np.maximum(m.sum((0,1)),1.))
+    mean_early=(x[:,:mid]*m[:,:mid]).sum((0,1))/np.maximum(m[:,:mid].sum((0,1)),1.)
+    mean_late=(x[:,mid:]*m[:,mid:]).sum((0,1))/np.maximum(m[:,mid:].sum((0,1)),1.)
+    rms=np.sqrt((x*x*m).sum((0,1))/np.maximum(m.sum((0,1)),1.))
     standardized_mean_drift=(mean_late-mean_early)/np.maximum(rms,.05)
-    clinically_unvalidated={
-        "status":"CLINICAL_TRAIN_OBSERVABLE_RANK_DIAGNOSTIC",
+    drift={
+        "fraction_channels_with_abs_standardized_mean_drift_above_0_25":
+            float((np.abs(standardized_mean_drift)>.25).mean()),
+        "max_abs_standardized_mean_drift":float(np.max(np.abs(standardized_mean_drift))),
+        "max_abs_observation_coverage_change":
+            float(np.max(np.abs(coverage_late-coverage_early))),
+    }
+
+    n=len(x)
+    shuffled=np.random.default_rng(int(rank_cfg["subsample_seed"])).permutation(n)
+    half_indices=[shuffled[:n//2],shuffled[n//2:]]
+    scales={}
+    for hour_bin in (1,4,6):
+        xx,mm=aggregate_hours(x,m,hour_bin)
+        selection=support_selected_channels(
+            mm,names,lags=rank_args["lags"],min_pairs=20,
+        )
+        record={
+            "hour_bin":hour_bin,
+            "hours_per_aggregated_observation":hour_bin,
+            "n_time_bins":xx.shape[1],
+            "train_only_measurement_support":selection,
+            "validity_scope":"selected observable clinical signals only",
+            "no_medical_ontology_claim":True,
+        }
+        keep=selection["selected_indices"]
+        if len(keep)<2:
+            record["status"]="NOT_IDENTIFIABLE_FROM_PAIRWISE_COVERAGE"
+            record["diagnostic"]="Fewer than two channels have jointly observed time pairs"
+            scales[str(hour_bin)]=record
+            continue
+        xs=xx[:,:,keep]
+        ms=mm[:,:,keep]
+        try:
+            all_train=fit_lagged_predictive_rank(
+                xs,ms,seed=int(rank_cfg["seed"])+hour_bin,**rank_args
+            )
+        except ValueError as exc:
+            record["status"]="NOT_IDENTIFIABLE_FROM_MEASUREMENT_COVERAGE"
+            record["diagnostic"]=str(exc)
+            scales[str(hour_bin)]=record
+            continue
+        record["full_train"]=all_train.to_json()
+        record["status"]="TRAIN_OBSERVABLE_RANK_ESTIMATED_NOT_CLINICALLY_VALIDATED"
+        record["signed_observable_component_definitions"]=[]
+        for concept in range(all_train.rank):
+            loading=all_train.left_observable_loadings[:,concept]
+            largest=np.argsort(-np.abs(loading))[:min(5,len(loading))]
+            record["signed_observable_component_definitions"].append({
+                "component":int(concept),
+                "measurable_channel_coefficients":[
+                    {"channel":selection["selected_channels"][j],
+                     "signed_loading":float(loading[j])}
+                    for j in largest
+                ],
+                "expert_clinical_name_provided":False,
+            })
+        halves=[]
+        for i,idx in enumerate(half_indices):
+            half_mask=ms[idx]
+            joint=joint_pair_counts(half_mask,rank_args["lags"])
+            if np.any(joint<20):
+                halves.append({
+                    "status":"NOT_IDENTIFIABLE_FROM_HALF_SAMPLE_COVERAGE",
+                    "min_half_sample_joint_pairs":float(joint.min()),
+                    "rank":None,
+                })
+                continue
+            try:
+                half=fit_lagged_predictive_rank(
+                    xs[idx],half_mask,
+                    seed=int(rank_cfg["seed"])+hour_bin*100+i+11,
+                    **rank_args,
+                )
+            except ValueError as exc:
+                halves.append({"status":"NOT_IDENTIFIABLE","reason":str(exc),"rank":None})
+                continue
+            halves.append({"status":"RANK_ESTIMATED",
+                           "rank":int(half.rank),"estimated":half.to_json()})
+        record["disjoint_train_halves"]=halves
+        if len(halves)==2 and all(v["status"]=="RANK_ESTIMATED" for v in halves):
+            record["half_train_subspace_overlap"]=_basis_overlap(
+                np.asarray(halves[0]["estimated"]["left_observable_loadings"]),
+                np.asarray(halves[1]["estimated"]["left_observable_loadings"]),
+                halves[0]["rank"],halves[1]["rank"],
+            )
+        else:
+            record["half_train_subspace_overlap"]={
+                "status":"UNAVAILABLE","reason":"One or both halves insufficiently observed",
+            }
+        scales[str(hour_bin)]=record
+    success=[k for k,v in scales.items() if v["status"]=="TRAIN_OBSERVABLE_RANK_ESTIMATED_NOT_CLINICALLY_VALIDATED"]
+    report={
+        "status":("MEASURABLE_OBSERVABLE_RANK_DIAGNOSTIC_COMPLETE" if success
+                  else "NO_IDENTIFIABLE_RANK_WITH_AVAILABLE_OBSERVATION_COVERAGE"),
         "official_train_data_receipt":data.receipt,
-        "full_train_rank":full.to_json(),
-        "two_independent_train_subsamples":[x.to_json() for x in sub],
-        "half_train_subspace_agreement":_basis_overlap(
-            sub[0].left_observable_loadings,
-            sub[1].left_observable_loadings,
-            sub[0].rank,sub[1].rank,
-        ),
-        "top_observable_channel_loadings_per_axis":axis,
-        "early_late_train_temporal_drift":{
-            "fraction_channels_with_abs_standardized_mean_drift_above_0_25":
-                float((np.abs(standardized_mean_drift)>.25).mean()),
-            "max_abs_standardized_mean_drift":float(np.max(np.abs(standardized_mean_drift))),
-            "max_abs_observation_coverage_change":float(
-                np.max(np.abs(coverage_late-coverage_early))
-            ),
-        },
+        "train_patient_count":len(x),
+        "initial_train_observable_channels":len(names),
+        "aggregation_sensitivity_by_hours":scales,
+        "eligible_scales":[int(v) for v in success],
+        "early_late_train_temporal_drift":drift,
         "no_individual_record_ids_or_predictions_published":True,
         "test_or_calibration_used":False,
         "clinical_concept_validity_inferred":False,
         "limitations":[
-            "Positive-lag covariance is confounded by informative missingness, treatment decisions, nonstationarity and patient mixture",
-            "Subsample rank variability signals lack of stable observable dimension; no rank result is physiological ontology",
-            "Lagged covariance masks correct only pairwise coverage, not missing-not-at-random bias",
-            "The 600 already inspected historical test cases are not a clean prospective evaluation set",
+            "A clinical frequency-based channel subset is disclosed separately for each aggregation time scale",
+            "Any observed rank may reflect patient mixture, nonstationarity, treatment or observation patterns",
+            "Masks do not correct informative or missing-not-at-random sampling",
+            "A change from 1h to 4h or 6h aggregation changes temporal resolution and estimated construct",
+            "The previously inspected historical test split is not prospectively clean",
         ],
     }
     args.out.parent.mkdir(parents=True,exist_ok=True)
-    args.out.write_text(json.dumps(clinically_unvalidated,indent=2,allow_nan=False),encoding="utf-8")
+    args.out.write_text(json.dumps(report,indent=2,allow_nan=False),encoding="utf-8")
     print(json.dumps({
-        "full_train_k":full.rank,
-        "half_train_ks":[v.rank for v in sub],
-        "half_subspace_agreement":clinically_unvalidated["half_train_subspace_agreement"],
-        "measurement_drift":clinically_unvalidated["early_late_train_temporal_drift"],
-        "clinical_validity_claim":False,
+        "clinical_concept_validity":False,
+        "observable_ranks":{
+            k:(v.get("full_train",{}).get("rank")
+               if v["status"]=="TRAIN_OBSERVABLE_RANK_ESTIMATED_NOT_CLINICALLY_VALIDATED"
+               else None)
+            for k,v in scales.items()
+        },
+        "selected_channel_counts":{
+            k:v["train_only_measurement_support"]["channels_selected"] for k,v in scales.items()
+        },
+        "support_statuses":{k:v["status"] for k,v in scales.items()},
+        "measurement_drift":drift,
     },indent=2),flush=True)
 
 
