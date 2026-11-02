@@ -40,7 +40,7 @@ def agreement_nulls(
     expected_top = float((top_freq[left] * top_freq[right]).sum(axis=1).mean())
     sign_freq = np.stack([(signs == v).mean(axis=1) for v in (-1, 0, 1)], axis=-1)
     expected_sign = float(
-        (sign_freq[left] * sign_freq[right]).sum(axis=(2, 3)).mean() / n_concepts
+        (sign_freq[left] * sign_freq[right]).sum(axis=(1, 2)).mean() / n_concepts
     )
 
     rng = np.random.default_rng(seed)
