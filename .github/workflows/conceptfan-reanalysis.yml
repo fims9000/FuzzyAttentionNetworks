@@ -66,6 +66,16 @@ jobs:
             cp -r "$RUNNER_TEMP/conceptfan_reanalysis" ./conceptfan_reanalysis_results
           fi
           exit "$status"
+      - name: Recheck crossed 10-by-3 training-seed dependence
+        env:
+          PYTHONPATH: src:.
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python scripts/medical/physionet2012/run_crossed_seed_sensitivity.py \
+            --artifacts-dir "$RUNNER_TEMP/frozen/extraction/artifacts" \
+            --out-dir "./conceptfan_reanalysis_results/seed_design_sensitivity" \
+            --repetitions 2000
       - name: Run Med-CircuitBench V2/V3 artifact-independent regression tests
         env:
           PYTHONPATH: src:.
