@@ -110,9 +110,10 @@ class AnchoredConceptFAN(AdditiveConceptModel):
         evidence = torch.sigmoid((summary - self.anchor_center) / self.anchor_width) - 0.5
         return summary, evidence
 
-    def forward(self, x: torch.Tensor, concept_mask: torch.Tensor | None = None) -> RealModelOutput:
-        latent = self.encoder(x)
-        trajectories = self.projector(latent)
+    def decision_from_concepts(
+        self, trajectories: torch.Tensor, concept_mask: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Exact additive concept-level decision; test-time interventions use this API."""
         summaries, evidence = self.anchored_evidence(trajectories)
         if concept_mask is not None:
             if concept_mask.shape != evidence.shape:
@@ -120,6 +121,31 @@ class AnchoredConceptFAN(AdditiveConceptModel):
             evidence = evidence * concept_mask.to(dtype=evidence.dtype)
         contributions = evidence * self.anchor_beta
         logit = self.anchor_bias + contributions.sum(dim=-1)
+        return summaries, evidence, contributions, logit
+
+    def intervene_on_concept(
+        self, trajectories: torch.Tensor, concept_index: int, value: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Intervene on a predicted trajectory without re-running the neural encoder.
+
+        This is a model-level what-if operation, NOT a causal intervention on
+        physiological data or a validated treatment recommendation.
+        """
+        if not 0 <= concept_index < trajectories.shape[-1]:
+            raise ValueError("Concept index outside model concept space")
+        if value.shape != trajectories[..., concept_index].shape:
+            raise ValueError("Override must match [batch,steps] trajectory")
+        modified = trajectories.clone()
+        modified[..., concept_index] = value
+        _, _, contributions, logit = self.decision_from_concepts(modified)
+        return logit, contributions
+
+    def forward(self, x: torch.Tensor, concept_mask: torch.Tensor | None = None) -> RealModelOutput:
+        latent = self.encoder(x)
+        trajectories = self.projector(latent)
+        summaries, evidence, contributions, logit = self.decision_from_concepts(
+            trajectories, concept_mask
+        )
         return RealModelOutput(
             logit=logit,
             probability=torch.sigmoid(logit),
