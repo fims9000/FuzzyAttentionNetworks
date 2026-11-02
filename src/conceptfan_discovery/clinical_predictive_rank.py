@@ -16,7 +16,10 @@ import numpy as np
 import yaml
 
 from .lagged_rank import fit_lagged_predictive_rank
-from .clinical_observability import aggregate_hours, joint_pair_counts, support_selected_channels
+from .clinical_observability import (
+    aggregate_hours, joint_pair_counts, support_selected_channels,
+    support_selected_channels_across_subsamples,
+)
 from .physionet import prepare_physionet_discovery
 
 
@@ -162,6 +165,44 @@ def main() -> None:
             record["half_train_subspace_overlap"]={
                 "status":"UNAVAILABLE","reason":"One or both halves insufficiently observed",
             }
+        # Additional strict sensitivity: select OBSERVABLE CHANNELS shared
+        # by both train halves before computing either spectral basis. The
+        # masks influence feasibility, not K by reference to outcomes.
+        strict=support_selected_channels_across_subsamples(
+            (mm[half_indices[0]],mm[half_indices[1]]),
+            names,lags=rank_args["lags"],min_pairs=20,
+        )
+        strict_report={"selection":strict}
+        if strict["all_subsamples_joints_adequate"]:
+            retained=strict["selected_indices"]
+            halves_with_common_support=[]
+            for i,idx in enumerate(half_indices):
+                try:
+                    rr=fit_lagged_predictive_rank(
+                        xx[idx][:,:,retained],mm[idx][:,:,retained],
+                        seed=int(rank_cfg["seed"])+hour_bin*101+i+503,
+                        **rank_args,
+                    )
+                    halves_with_common_support.append({
+                        "status":"RANK_ESTIMATED","rank":rr.rank,
+                        "left_predictive_basis":rr.left_observable_loadings.tolist(),
+                        "bootstrap_interval":list(rr.patient_bootstrap_interval),
+                    })
+                except ValueError as exc:
+                    halves_with_common_support.append({
+                        "status":"NOT_IDENTIFIABLE","reason":str(exc),"rank":None,
+                    })
+            strict_report["half_sample_results"]=halves_with_common_support
+            if all(v["status"]=="RANK_ESTIMATED" for v in halves_with_common_support):
+                ha,hb=halves_with_common_support
+                strict_report["half_sample_subspace_overlap"]=_basis_overlap(
+                    np.asarray(ha["left_predictive_basis"]),
+                    np.asarray(hb["left_predictive_basis"]),
+                    ha["rank"],hb["rank"],
+                )
+        else:
+            strict_report["status"]="INSUFFICIENT_SENSORS_WITH_JOINT_TEMPORAL_SUPPORT"
+        record["separate_train_subsample_robustness_analysis"]=strict_report
         scales[str(hour_bin)]=record
     success=[k for k,v in scales.items() if v["status"]=="TRAIN_OBSERVABLE_RANK_ESTIMATED_NOT_CLINICALLY_VALIDATED"]
     report={
