@@ -1,0 +1,75 @@
+name: V6 exact dependent-model uncertainty from frozen evidence
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/unknown_neutral_bootstrap_v6.py'
+      - '.github/workflows/discover-unknown-neutral-bootstrap-v6.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  resample-original-model-seeds-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install audit dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Check exact model-only resampling math
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest tests/discovery/test_exact_seed_bootstrap.py -q
+      - name: Retrieve pinned successful 36-model study WITHOUT refitting any model
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/neutral_frozen"
+          gh run download 41506778924 \
+            --name unknown-neutral-v6-1 \
+            --dir "$RUNNER_TEMP/neutral_frozen"
+          test -s "$RUNNER_TEMP/neutral_frozen/published_neutral/unknown_neutral_v6_per_run.csv"
+          test -s "$RUNNER_TEMP/neutral_frozen/published_neutral/unknown_neutral_v6_between_seeds.csv"
+      - name: Enumerate all 4 to the fourth source-model bootstrap draws
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.unknown_neutral_bootstrap_v6 \
+            --source-dir "$RUNNER_TEMP/neutral_frozen" \
+            --out-dir "$RUNNER_TEMP/neutral_bootstrap" \
+            > neutral_bootstrap.log 2>&1 || { tail -n 150 neutral_bootstrap.log; exit 1; }
+          mkdir -p published_neutral_bootstrap
+          cp "$RUNNER_TEMP/neutral_bootstrap/"*.json published_neutral_bootstrap/
+          cp "$RUNNER_TEMP/neutral_bootstrap/"*.csv published_neutral_bootstrap/
+          cp neutral_bootstrap.log published_neutral_bootstrap/
+          tail -n 25 neutral_bootstrap.log
+      - name: Preserve model-level confidence intervals and caveats
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: neutral-v6-exact-bootstrap-${{ github.run_number }}
+          path: |
+            published_neutral_bootstrap/
+            neutral_bootstrap.log
+          retention-days: 21
+          if-no-files-found: warn
