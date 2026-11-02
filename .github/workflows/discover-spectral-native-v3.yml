@@ -1,0 +1,69 @@
+name: V3 train-only discovered dynamic concepts (3/5/7 stress)
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/spectral_concepts_v3.py'
+      - 'src/conceptfan_discovery/spectral_native_experiment_v3.py'
+      - 'tests/discovery/test_spectral_native_v3.py'
+      - 'configs/medical/pd_spectral_native_v3.yaml'
+      - '.github/workflows/discover-spectral-native-v3.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  native-discovery-3-5-7:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU research dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Validate measured concept definitions and true end-to-end bottleneck
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery tests/discovery
+          python -m pytest tests/discovery/test_lagged_predictive_rank.py tests/discovery/test_spectral_native_v3.py -q
+      - name: Train and evaluate 36 native concept models against the v2 learned-K baseline
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.spectral_native_experiment_v3 \
+            --config configs/medical/pd_spectral_native_v3.yaml \
+            --out-dir "$RUNNER_TEMP/native_spectral_v3" \
+            > spectral_native_training.log 2>&1 || { tail -n 150 spectral_native_training.log; exit 1; }
+          tail -n 70 spectral_native_training.log
+          mkdir -p published_spectral_native
+          cp "$RUNNER_TEMP/native_spectral_v3/"*.csv published_spectral_native/
+          cp "$RUNNER_TEMP/native_spectral_v3/"*.json published_spectral_native/
+          cp spectral_native_training.log published_spectral_native/
+      - name: Preserve aggregate numeric evidence and exact learned definitions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-spectral-concept-v3-${{ github.run_number }}
+          path: |
+            published_spectral_native/
+            spectral_native_training.log
+          retention-days: 21
+          if-no-files-found: warn
