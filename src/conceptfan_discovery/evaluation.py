@@ -212,6 +212,7 @@ def concept_passports(
     medians: np.ndarray,
     scales: np.ndarray,
     top_features: int = 5,
+    include_examples: bool = True,
 ) -> list[dict]:
     """Reversible descriptions of precisely which observations form a slot."""
     names = tuple(
@@ -239,7 +240,7 @@ def concept_passports(
             if periods:
                 episodes_with_event += 1
                 durations.extend([end - start for start, end in periods])
-                if len(example) < 2:
+                if include_examples and len(example) < 2:
                     example.append({"episode_id": int(split.episode_ids[patient]),
                                     "activation_intervals_in_hours": periods,
                                     "exact_logit_contribution": float(e.contributions[patient, k])})
