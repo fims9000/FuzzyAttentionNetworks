@@ -1,0 +1,91 @@
+name: PhysioNet annotation-free concept discovery (no test)
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/physionet.py'
+      - 'src/conceptfan_discovery/clinical_experiment.py'
+      - 'configs/medical/predictive_dynamics_physionet_v1.yaml'
+      - '.github/workflows/discover-clinical-concepts.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  observational-exploratory-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install reproducible CPU dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Download official public PhysioNet 2012 Set A and outcomes
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/official_physionet"
+          curl -fsSL --retry 3 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o "$RUNNER_TEMP/official_physionet/set-a.zip"
+          curl -fsSL --retry 3 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o "$RUNNER_TEMP/official_physionet/Outcomes-a.txt"
+          unzip -tq "$RUNNER_TEMP/official_physionet/set-a.zip" | tail -n 2
+          sha256sum "$RUNNER_TEMP/official_physionet/set-a.zip" \
+            "$RUNNER_TEMP/official_physionet/Outcomes-a.txt" \
+            > official_source_sha256.txt
+      - name: Validate no-oracle and exact-additive methodological contracts
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest tests/discovery -q
+      - name: Train 12 clinical models and audit native concept selection only on validation
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.clinical_experiment \
+            --config configs/medical/predictive_dynamics_physionet_v1.yaml \
+            --raw-zip "$RUNNER_TEMP/official_physionet/set-a.zip" \
+            --outcomes "$RUNNER_TEMP/official_physionet/Outcomes-a.txt" \
+            --out-dir "$RUNNER_TEMP/clinical_discovery" \
+            > clinical_execution.log 2>&1 || { tail -n 130 clinical_execution.log; exit 1; }
+          tail -n 45 clinical_execution.log
+          mkdir -p published_clinical
+          cp "$RUNNER_TEMP/clinical_discovery/clinical_validation_only_summary.json" published_clinical/
+          cp "$RUNNER_TEMP/clinical_discovery/clinical_per_run_aggregates.csv" published_clinical/
+          cp "$RUNNER_TEMP/clinical_discovery/clinical_model_pair_aggregates.csv" published_clinical/
+          cp "$RUNNER_TEMP/clinical_discovery/data_receipt_no_concept_targets.json" published_clinical/
+          cp official_source_sha256.txt published_clinical/
+          cp clinical_execution.log published_clinical/
+          find "$RUNNER_TEMP/clinical_discovery/runs" \
+            -name selected_concept_definitions_no_patient_examples.json \
+            -exec sh -c 'for f do d="published_clinical/passports/$(basename $(dirname "$f"))_$(basename $(dirname $(dirname "$f"))).json"; cp "$f" "$d"; done' sh {} +
+      - name: Publish ONLY aggregate clinical validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: physionet-auto-discovery-aggregate-${{ github.run_number }}
+          path: |
+            published_clinical/
+            clinical_execution.log
+            official_source_sha256.txt
+          retention-days: 14
+          if-no-files-found: warn
