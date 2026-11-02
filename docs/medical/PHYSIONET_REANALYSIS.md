@@ -179,3 +179,22 @@ The confirmed archive digest from the release metadata is
 Verify the downloaded archive against its matching GitHub `.sha256` asset
 before running the read-only reanalysis. Never commit raw patient data or
 intermediate per-patient predictions.
+
+## 10. Single-command reproducible reanalysis on Linux
+
+Use the repository virtual environment and run the read-only suite:
+
+```bash
+PYTHONPATH=src:. .venv/bin/python scripts/medical/physionet2012/run_reanalysis_suite.py \
+  --artifacts-dir artifacts/physionet2012_last_run \
+  --out-dir artifacts/physionet2012_reanalysis_20261102 \
+  --tests
+```
+
+The suite first runs the public model-only analysis, then all other analyses
+*only when their required frozen input files exist*. Its machine-readable
+`STATUS.json` marks each step PASS, NOT_AVAILABLE, or FAIL, along with missing
+paths, execution logs and SHA256 of output files. It never alters the original
+publication tables, changes checkpoints, or overwrites an existing audit folder.
+A PARTIAL_OR_FAILED status is expected when private local source tensors are
+not mounted; **it is not scientific validation**.
