@@ -75,9 +75,16 @@ jobs:
           cp "$RUNNER_TEMP/clinical_discovery/data_receipt_no_concept_targets.json" published_clinical/
           cp official_source_sha256.txt published_clinical/
           cp clinical_execution.log published_clinical/
+          mkdir -p published_clinical/passports
           find "$RUNNER_TEMP/clinical_discovery/runs" \
             -name selected_concept_definitions_no_patient_examples.json \
-            -exec sh -c 'for f do d="published_clinical/passports/$(basename $(dirname "$f"))_$(basename $(dirname $(dirname "$f"))).json"; cp "$f" "$d"; done' sh {} +
+            -print0 | while IFS= read -r -d '' f; do
+              relative="${f#"$RUNNER_TEMP/clinical_discovery/runs/"}"
+              method="${relative%%/*}"
+              rest="${relative#*/}"
+              run_id="${rest%%/*}"
+              cp "$f" "published_clinical/passports/${method}_${run_id}.json"
+            done
       - name: Publish ONLY aggregate clinical validation evidence
         if: always()
         uses: actions/upload-artifact@v4
