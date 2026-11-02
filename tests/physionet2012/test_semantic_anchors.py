@@ -132,3 +132,22 @@ def test_concept_intervention_changes_only_its_own_term():
         model.intervene_on_concept(trajectory,9,new_value)
     with pytest.raises(ValueError):
         model.intervene_on_concept(trajectory,2,new_value[:1])
+
+
+def test_global_constant_concept_rank_is_not_patient_specific_stability():
+    values=np.repeat(np.array([[3.,2.,1.,.3,-.2]]),100,axis=0)
+    result=agreement(values,values)
+    assert result["spearman_signed"]==pytest.approx(1.)
+    assert result["top1_abs"]==pytest.approx(1.)
+    assert result["spearman_excess_episode_alignment"]==pytest.approx(0.,abs=1e-12)
+    assert result["top1_excess_episode_alignment"]==pytest.approx(0.,abs=1e-12)
+
+
+def test_patient_specific_matches_exceed_permutation_chance():
+    rng=np.random.default_rng(23)
+    values=rng.normal(size=(250,5))
+    result=agreement(values,values)
+    assert result["spearman_signed"]==pytest.approx(1.,abs=1e-12)
+    assert result["spearman_excess_episode_alignment"]>.85
+    assert result["top1_excess_episode_alignment"]>.7
+    assert result["sign_excess_episode_alignment"]>.35
