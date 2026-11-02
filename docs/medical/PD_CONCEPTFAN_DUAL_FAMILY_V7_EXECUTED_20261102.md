@@ -176,3 +176,39 @@ train-only procedure for care-process slot count and genuinely
 independent observation environments/clinical truth. Tuning the
 existing historical validation to favor three slots would be
 selection leakage, not a solution.
+
+
+## Prior art: separate observation-process risk predictors are established
+
+A clinical-informatics review, *Informative presence and observation in
+routine health data: A review of methodology for clinical risk prediction*
+(Journal of the American Medical Informatics Association, 2020),
+explicitly discusses including summaries of measurement timing,
+frequency, intervals since last observation, and the clinical
+observation process as additional risk predictors alongside measured
+physiology:
+<https://academic.oup.com/jamia/article/28/1/155/5961436>.
+
+Therefore **V7's idea of using the observation process as a separate
+predictor is NOT new in itself**. The falsifiable research claim is
+more limited: strict additive native *two-family concept bottlenecks*,
+source-separated learned fuzzy mask operator definitions, an
+explicit UNKNOWN state, direct signed effect tracking, and a
+dependence-corrected test of patient-specific explanation
+reproducibility under observation-policy changes.
+
+The article's warning about generalizability across sites with
+different measurement processes applies directly here. Similarly,
+MAGNETS (2026, https://doi.org/10.1007/s10618-026-01267-y) already
+learns annotation-free temporal concepts inside the task pipeline,
+so annotation-free temporal concept training alone is not novel.
+RealMIP (npj Digital Medicine, 2025,
+https://www.nature.com/articles/s41746-025-02114-y) supplies a
+clinical ICU mortality/imputation benchmark context. A direct
+independent experimental comparison is still missing.
+
+Do not claim originality of (i) missingness as predictive input,
+(ii) positive-lag covariance/SVD, (iii) automatic unsupervised
+time-series bottlenecks, or (iv) exact additive classifiers separately.
+Any novelty must be supported by genuinely new behavioral evidence
+on identified dynamic concepts and robust attribution.
