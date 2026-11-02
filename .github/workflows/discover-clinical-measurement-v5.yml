@@ -1,0 +1,89 @@
+name: V5 PhysioNet pilot-only sensor support and missingness rank audit
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/pilot_temporal_sensors_v5.py'
+      - 'src/conceptfan_discovery/clinical_measurement_gate_v5.py'
+      - 'configs/medical/pd_clinical_measurement_v5.yaml'
+      - 'tests/discovery/test_pilot_temporal_sensors_v5.py'
+      - '.github/workflows/discover-clinical-measurement-v5.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  prospective-train-only-measurement-robustness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify pilot/held-out inference contracts
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest \
+            tests/discovery/test_pilot_temporal_sensors_v5.py \
+            tests/discovery/test_time_stratified_rank_v5.py \
+            tests/discovery/test_observation_invariance_v5.py -q
+      - name: Download official public PhysioNet 2012 observations and outcomes
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/official_set_a"
+          curl -fsSL --retry 3 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o "$RUNNER_TEMP/official_set_a/set-a.zip"
+          curl -fsSL --retry 3 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o "$RUNNER_TEMP/official_set_a/Outcomes-a.txt"
+          unzip -tq "$RUNNER_TEMP/official_set_a/set-a.zip" | tail -n 2
+          sha256sum "$RUNNER_TEMP/official_set_a/set-a.zip" \
+            "$RUNNER_TEMP/official_set_a/Outcomes-a.txt" > official_source_sha256.txt
+      - name: Rank evaluation after disjoint 600-patient mask-only pilot
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.clinical_measurement_gate_v5 \
+            --config configs/medical/pd_clinical_measurement_v5.yaml \
+            --raw-zip "$RUNNER_TEMP/official_set_a/set-a.zip" \
+            --outcomes "$RUNNER_TEMP/official_set_a/Outcomes-a.txt" \
+            --out-dir "$RUNNER_TEMP/clinical_measurement_v5" \
+            > clinical_measurement_v5.log 2>&1 || { tail -n 170 clinical_measurement_v5.log; exit 1; }
+          tail -n 70 clinical_measurement_v5.log
+          mkdir -p published_clinical_measurement_v5
+          cp "$RUNNER_TEMP/clinical_measurement_v5/"*.csv published_clinical_measurement_v5/
+          cp "$RUNNER_TEMP/clinical_measurement_v5/"*.json published_clinical_measurement_v5/
+          cp clinical_measurement_v5.log published_clinical_measurement_v5/
+          cp official_source_sha256.txt published_clinical_measurement_v5/
+      - name: Archive ONLY aggregate train sensor selection and abstention
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: physionet-train-pilot-measurement-v5-${{ github.run_number }}
+          path: |
+            published_clinical_measurement_v5/
+            clinical_measurement_v5.log
+            official_source_sha256.txt
+          retention-days: 21
+          if-no-files-found: warn
