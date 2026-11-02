@@ -25,7 +25,8 @@ def subset_split(split: DiscoverySplit, indices: np.ndarray) -> DiscoverySplit:
     return DiscoverySplit(
         x=split.x[idx], mask=split.mask[idx],
         future=split.future[idx], future_mask=split.future_mask[idx],
-        y=split.y[idx], oracle_states=split.oracle_states[idx],
+        y=split.y[idx],
+        oracle_states=split.oracle_states[idx] if split.oracle_states is not None else None,
         episode_ids=split.episode_ids[idx],
     )
 
