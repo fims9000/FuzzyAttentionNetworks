@@ -1,0 +1,50 @@
+protocol:
+  name: pd-conceptfan-spectral-native-v3
+  status: exploratory_new_synthetic_generators_after_v2_failure
+  no_test_evaluation: true
+  claim_limit: observable_dynamic_concepts_not_identified_physiological_causes
+data:
+  planted_factors_for_evaluation_only: [3, 5, 7]
+  generator_seed_base: 20261291
+  split_seed_base: 7201
+  n_samples: 960
+  n_channels: 8
+  input_steps: 36
+  horizon: 6
+spectral:
+  lags: [1, 2, 3]
+  permutations: 120
+  patient_bootstraps: 50
+  alpha: 0.05
+  seed: 20261291
+training:
+  methods: [learned_10, spectral_frozen, spectral_finetuned]
+  init_seeds: [11, 23, 37, 41]
+  order_seed: 1001
+  epochs: 18
+  batch_size: 64
+  learning_rate: 0.003
+  weight_decay: 0.0001
+  gradient_clip: 2.0
+  cpu_threads: 1
+  mask_fraction: 0.20
+  loss_weights:
+    future: 0.60
+    dynamics: 0.20
+    mdl: 0.007
+    support: 0.008
+    redundancy: 0.08
+    nonconstant: 0.25
+    transition_l1: 0.003
+    denoising: 1.25
+  spectral_regularizers:
+    alignment: 0.30
+    axis_orthogonality: 0.15
+evaluation:
+  inner_outer_validation_split_seed: 20261297
+  baseline_auprc_tolerance: 0.025
+  baseline_nll_tolerance: 0.035
+  baseline_future_tolerance: 0.045
+  baseline_denoise_tolerance: 0.035
+  no_oracle_in_optimization: true
+  no_significance_claim: true
