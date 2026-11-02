@@ -1,0 +1,17 @@
+protocol:
+  name: clinical_train_observable_predictive_rank_check_v3
+  goal: test_predictive_rank_assumptions_on_irregular_icu_data
+  no_test_or_calibration_use: true
+  no_clinical_concept_claim: true
+data:
+  split_seed: 20260717
+  input_window: 36
+  forecast_horizon: 12
+  minimum_train_patient_coverage: 0.15
+rank:
+  lags: [1,2,3]
+  permutations: 60
+  patient_bootstraps: 20
+  alpha: 0.05
+  seed: 20261221
+  subsample_seed: 20261237
