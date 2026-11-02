@@ -126,6 +126,9 @@ def evaluate_validation(model, validation: tuple[np.ndarray, np.ndarray, np.ndar
         raise AssertionError(f"Additive decomposition contract broken: {decomp}")
     weight = np.abs(v) / np.maximum(np.abs(v).sum(axis=1, keepdims=True), 1e-12)
     effective_count = np.exp(-(weight * np.log(np.maximum(weight, 1e-12))).sum(axis=1))
+    top=np.argmax(np.abs(v),axis=1)
+    topfreq=np.bincount(top,minlength=v.shape[1]).astype(float)/len(v)
+    top_diversity=float(np.exp(-(topfreq*np.log(np.maximum(topfreq,1e-12))).sum()))
     return {
         "auprc": float(average_precision_score(y, p)),
         "auroc": float(roc_auc_score(y, p)),
@@ -133,6 +136,8 @@ def evaluate_validation(model, validation: tuple[np.ndarray, np.ndarray, np.ndar
         "concept_dynamics_mae": float(np.mean(np.abs(np.diff(c,axis=1)-np.diff(target_concepts,axis=1)))),
         "max_decomposition_error": decomp,
         "mean_effective_concept_count": float(effective_count.mean()),
+        "top1_concept_diversity": top_diversity,
+        "mean_contribution_variance": float(np.var(v,axis=0).mean()),
         "probability": p,
         "contributions": v,
     }
@@ -175,23 +180,44 @@ def train_one(method: str, initial_seed: int, config: dict, anchor, data: dict, 
 def agreement(a: np.ndarray, b: np.ndarray) -> dict:
     if a.shape != b.shape:
         raise ValueError("Paired models must evaluate same patients and concepts")
-    # Exact 5-dimensional Spearman correlation with average tied ranks.
-    # Vectorized across patients to keep the 435-pair replication affordable.
+    n,k=a.shape
     ra=rankdata(a,axis=1).astype(np.float64)
     rb=rankdata(b,axis=1).astype(np.float64)
     ra-=ra.mean(axis=1,keepdims=True)
     rb-=rb.mean(axis=1,keepdims=True)
-    numer=(ra*rb).sum(axis=1)
-    denom=np.sqrt((ra*ra).sum(axis=1)*(rb*rb).sum(axis=1))
-    rank=np.divide(numer,denom,out=np.zeros_like(numer),where=denom>1e-12)
+    na=np.sqrt((ra*ra).sum(axis=1,keepdims=True))
+    nb=np.sqrt((rb*rb).sum(axis=1,keepdims=True))
+    ua=np.divide(ra,na,out=np.zeros_like(ra),where=na>1e-12)
+    ub=np.divide(rb,nb,out=np.zeros_like(rb),where=nb>1e-12)
+    observed_rank=float((ua*ub).sum(axis=1).mean())
+    # Expected rank agreement if matched patients are randomly permuted
+    # independently for both models. Captures trivial global rank ordering.
+    marginal_rank=float(ua.mean(axis=0)@ub.mean(axis=0))
     abs_a=np.abs(a)
     abs_b=np.abs(b)
     top_a=np.argmax(abs_a,axis=1)
     top_b=np.argmax(abs_b,axis=1)
+    topfreq_a=np.bincount(top_a,minlength=k)/n
+    topfreq_b=np.bincount(top_b,minlength=k)/n
+    expected_top=float(topfreq_a@topfreq_b)
+    observed_top=float(np.mean(top_a==top_b))
+    sa=np.sign(a)
+    sb=np.sign(b)
+    expected_sign=float(np.mean(sum(
+        (sa==value).mean(axis=0)*(sb==value).mean(axis=0)
+        for value in (-1,0,1)
+    )))
+    observed_sign=float(np.mean(sa==sb))
     return {
-        "spearman_signed":float(np.mean(rank)),
-        "top1_abs":float(np.mean(top_a==top_b)),
-        "sign_agreement":float(np.mean(np.sign(a)==np.sign(b))),
+        "spearman_signed": observed_rank,
+        "spearman_marginal_null": marginal_rank,
+        "spearman_excess_episode_alignment": observed_rank-marginal_rank,
+        "top1_abs": observed_top,
+        "top1_marginal_null": expected_top,
+        "top1_excess_episode_alignment": observed_top-expected_top,
+        "sign_agreement": observed_sign,
+        "sign_marginal_null": expected_sign,
+        "sign_excess_episode_alignment": observed_sign-expected_sign,
         "cosine_signed":float(np.mean(
             (a*b).sum(axis=1)/np.maximum(np.linalg.norm(a,axis=1)*np.linalg.norm(b,axis=1),1e-12)
         )),
