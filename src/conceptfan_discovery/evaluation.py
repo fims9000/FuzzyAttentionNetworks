@@ -39,6 +39,7 @@ def evaluate_discovery(
     batch_size: int = 128,
     *,
     hard_gates: bool = False,
+    selected_slots: torch.Tensor | None = None,
 ) -> DiscoveryEvidence:
     model.eval()
     probabilities = []
@@ -49,12 +50,14 @@ def evaluate_discovery(
     forecast_sse = 0.0
     forecast_denominator = 0.0
     max_decomposition = 0.0
+    selected_gates = None
     with torch.no_grad():
         for start in range(0, len(split.y), batch_size):
             stop = min(start + batch_size, len(split.y))
             values = torch.from_numpy(split.x[start:stop])
             mask = torch.from_numpy(split.mask[start:stop])
-            out = model(values, mask, hard_gates=hard_gates)
+            out = model(values, mask, hard_gates=hard_gates, selected_slots=selected_slots)
+            selected_gates = out.gates.detach().cpu().numpy()
             if not torch.isfinite(out.logits).all() or not torch.isfinite(out.future_prediction).all():
                 raise FloatingPointError("Non-finite prediction in discovery audit")
             probabilities.append(out.probability.numpy())
@@ -74,7 +77,7 @@ def evaluate_discovery(
     reliability = np.concatenate(reliabilities)
     with torch.no_grad():
         weights = model.feature_weights().numpy()
-        gates = model.gates.deterministic().numpy()
+        gates = selected_gates.copy()
         boundary, width = model.concept_boundaries()
         boundary, width = boundary.numpy(), width.numpy()
         beta = model.decision_weights().numpy()
@@ -84,6 +87,12 @@ def evaluate_discovery(
     variance = concept.var(axis=(0, 1))
     active = (gates >= 0.5) & (variance > 0.0005)
     complexity = float(model.gates.expected_l0().sum().detach())
+    magnitude = np.abs(contrib)
+    total_magnitude = magnitude.sum(axis=1, keepdims=True)
+    proportions = np.divide(magnitude, total_magnitude,
+                            out=np.zeros_like(magnitude), where=total_magnitude > 1e-12)
+    entropy = -(proportions * np.log(np.clip(proportions, 1e-12, 1.0))).sum(axis=1)
+    effective_count = np.where(total_magnitude[:, 0] > 1e-12, np.exp(entropy), 0.0)
     score = {
         "n_examples": int(len(split.y)),
         "auprc": float(average_precision_score(split.y, probability)),
@@ -94,13 +103,7 @@ def evaluate_discovery(
         "n_hard_gate_slots": int(np.count_nonzero(gates >= .5)),
         "n_active_and_nonconstant_slots": int(active.sum()),
         "expected_l0": complexity,
-        "mean_effective_concept_count": float(np.exp(
-            -np.mean(np.sum(
-                (np.abs(contrib) / np.clip(np.abs(contrib).sum(axis=1, keepdims=True), 1e-12, None))
-                * np.log(np.clip(np.abs(contrib) / np.clip(np.abs(contrib).sum(axis=1, keepdims=True), 1e-12, None), 1e-12, None)),
-                axis=1
-            ))
-        )),
+        "mean_effective_concept_count": float(effective_count.mean()),
         "mean_concept_variance": float(variance.mean()),
         "mean_measurement_coverage": float(split.mask.mean()),
         "hard_gates_used": bool(hard_gates),
@@ -224,7 +227,8 @@ def concept_passports(
             {"operator": names[j], "nonnegative_weight": float(e.weights[k, j])}
             for j in top_indices if e.weights[k, j] > 1e-6
         ]
-        raw_active = (e.raw_activation[:, :, k] >= .5) & (e.reliability[:, :, k] >= .5)
+        raw_active = ((e.raw_activation[:, :, k] >= .5) &
+                      (e.reliability[:, :, k] >= .5) & (e.gates[k] >= .5))
         episodes_with_event = 0
         durations = []
         example = []
