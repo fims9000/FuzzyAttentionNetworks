@@ -22,8 +22,14 @@ from scripts.medical.run_semantic_anchor_validation import load_split, train_one
 
 
 PER_RUN_METRICS = ("auprc", "auroc", "concept_mae",
-                   "concept_dynamics_mae", "mean_effective_concept_count")
-AGREEMENT_METRICS = ("spearman_signed","top1_abs","sign_agreement","cosine_signed")
+                   "concept_dynamics_mae", "mean_effective_concept_count",
+                   "top1_concept_diversity", "mean_contribution_variance")
+AGREEMENT_METRICS = (
+    "spearman_signed", "spearman_excess_episode_alignment",
+    "top1_abs", "top1_excess_episode_alignment",
+    "sign_agreement", "sign_excess_episode_alignment",
+    "cosine_signed",
+)
 
 
 def main() -> None:
