@@ -90,6 +90,8 @@ def _run_one(
     set_seed(init_seed)
     model = PredictiveDynamicsConceptFAN(
         n_slots=int(cfg["architecture"]["n_candidate_slots"]),
+        n_channels=dataset.train.x.shape[-1],
+        channels=tuple(dataset.receipt["channel_names"]),
         forecast_horizon=int(cfg["data"]["forecast_horizon"]),
         min_width=float(cfg["architecture"]["min_concept_width"]),
     )
@@ -137,9 +139,14 @@ def _run_one(
     model.eval()
     evidence = evaluate_discovery(model, dataset.validation)
     pruned_evidence = evaluate_discovery(model, dataset.validation, hard_gates=True)
-    oracle = oracle_correspondence(evidence, dataset.validation.oracle_states)
+    if dataset.validation.oracle_states is not None:
+        oracle = oracle_correspondence(evidence, dataset.validation.oracle_states)
+    else:
+        oracle = {"oracle_mean_abs_corr": None, "oracle_matched": None,
+                  "reason": "No observable ground-truth concept labels on clinical data"}
     passports = concept_passports(
-        evidence, model, dataset.validation, dataset.medians, dataset.scales
+        evidence, model, dataset.validation, dataset.medians, dataset.scales,
+        include_examples=dataset.validation.oracle_states is not None,
     )
     identity = f"init_{init_seed}_order_{order_seed}"
     record = {
@@ -150,6 +157,7 @@ def _run_one(
         "pruned_future_observed_rmse": pruned_evidence.metrics["future_observed_rmse"],
         "oracle_mean_abs_corr": oracle["oracle_mean_abs_corr"],
         "oracle_matched": oracle["oracle_matched"],
+        "selected_channels": "|".join(model.channels),
         "elapsed_seconds": time.perf_counter() - started,
         "validation_only": True, "oracle_supervision": False,
     }
@@ -158,6 +166,7 @@ def _run_one(
     torch.save({
         "model_state_dict": model.state_dict(),
         "architecture": cfg["architecture"],
+        "channels": list(model.channels),
         "config_fingerprint": hashlib.sha256(
             yaml.safe_dump(cfg, sort_keys=True).encode()).hexdigest(),
         "init_seed": init_seed, "order_seed": order_seed,
