@@ -1,0 +1,44 @@
+protocol:
+  name: conceptfan-auto-discovery-causal-predictive-state-v1
+  scope: exploratory_train_validation_only
+  purpose: discover_named_by_observed_operations_without_oracle_concept_labels
+  version: 1
+  original_test_locked: true
+data:
+  generator_seed: 20261105
+  split_seed: 821
+  n_episodes: 960
+  input_window: 36
+  forecast_horizon: 6
+architecture:
+  n_candidate_slots: 10
+  operator_window: 4
+  hard_gate_reporting_threshold: 0.5
+  min_concept_width: 0.08
+training:
+  init_seeds: [11, 23, 37, 41]
+  order_seeds: [1001, 2003]
+  epochs: 22
+  batch_size: 64
+  learning_rate: 0.003
+  weight_decay: 0.0001
+  cpu_threads: 1
+  gradient_clip: 2.0
+  modes: [task_only, task_future, full]
+  loss_weights:
+    future: 0.60
+    dynamics: 0.20
+    mdl: 0.007
+    support: 0.008
+    redundancy: 0.08
+    nonconstant: 0.25
+    transition_l1: 0.003
+reporting:
+  include_oracle_only_during_evaluation: true
+  min_event_duration_hours: 2
+  bootstrap_model_repetitions: 2000
+  bootstrap_seed: 20261102
+  min_mean_active_slots: 2
+  auto_select_method: false
+  no_confirmatory_pvalues: true
+  no_test_evaluation: true
