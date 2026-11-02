@@ -14,8 +14,11 @@ held-out patients once per bootstrap replicate. Both levels retain the
 dependencies induced by shared models and shared evaluation cases.
 
 The original mean/median and model-pair count remain descriptive statistics.
-The **new confidence limits must be recalculated** from frozen per-episode
-artifacts. No CI numbers have been copied forward from the old table.
+These confidence limits were independently recalculated from the published
+frozen per-episode archive in GitHub Actions on 2026-11-02. The executed
+63-row result is committed to
+`reports/physionet2012/reanalysis_20261102/two_way_stability_ci.csv`.
+The original published tables remain untouched.
 
 From the project root:
 
@@ -87,12 +90,12 @@ metrics listed elsewhere in the article.
 
 ## 5. Limits and QA
 
-Unit tests for the bootstrap and conditional probes use synthetic arrays and
-do not require patient data. The reanalysis scripts require the historical
-private/local frozen artifacts. Until the per-episode artifacts are supplied and those scripts are executed,
-**no corrected two-level confidence limits or conditional residual gains are claimed**.
-A separate fixed-cohort model-only interval can be calculated from the public
-pairwise CSV (Section 6).
+The corrected two-level stability CIs were computed from the public frozen
+release, and all 26 PhysioNet tests passed in GitHub Actions.
+The conditional residual and empirical-null scripts still require private/local
+per-run tensors and prepared patient data; **no residual gain or empirical
+permutation-null numeric result has been produced**. The separate fixed-cohort
+model-only post-hoc intervals are recorded in Section 6.
 
 Repository source and scientific manuscript remain separate deliverables.
 The manuscript must also describe the different fuzzy-evidence
@@ -108,7 +111,7 @@ The source table was independently parsed and its 0.00346858 / 0.78033745 /
 model-resampling pilot (held-out 600 patients **fixed**) produced approximate
 95% ranges: ConceptFAN [-0.0499, 0.0820], IG [0.7676, 0.7942], and
 GradientSHAP [0.8382, 0.8539]. These are not patient-bootstrap intervals
-and should not replace the two-level clinical uncertainty report.
+and must not be confused with the now-completed two-level model/patient analysis for internal ConceptFAN contributions.
 
 Reproduce the comparable Python analysis from the checked-in CSV:
 
@@ -209,3 +212,12 @@ parquets for its two-way CI analysis. Outputs should remain outside the
 frozen extraction tree, for example `--out-dir artifacts/physionet_reanalysis_01`.
 The per-run concept and contribution tensors are not in that release ZIP,
 so their audits will correctly show `NOT_AVAILABLE`.
+
+## 11. Executed evidence and immutable results
+
+See `docs/medical/PHYSIONET_REANALYSIS_EXECUTED_20261102.md` for the
+exact frozen release SHA-256, completed GitHub Actions run, corrected 95% CIs
+for all three concept architectures and the distinction between PASS and
+NOT_AVAILABLE steps. The public tables are checked into the PR under
+`reports/physionet2012/reanalysis_20261102/`. This is the evidence source
+for the updated extended manuscript; do not reuse the old pair-level CI values.
