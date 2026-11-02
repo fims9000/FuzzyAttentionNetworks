@@ -9,6 +9,7 @@ on:
       - 'src/conceptfan_discovery/spectral_rank_experiment.py'
       - 'configs/medical/pd_lagged_predictive_rank_v3.yaml'
       - 'tests/discovery/test_lagged_predictive_rank.py'
+      - 'tests/discovery/test_rank_identifiability_limits.py'
       - '.github/workflows/discover-spectral-rank.yml'
   workflow_dispatch:
 
@@ -44,7 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m compileall -q src/conceptfan_discovery tests/discovery
-          python -m pytest tests/discovery/test_lagged_predictive_rank.py -q
+          python -m pytest tests/discovery/test_lagged_predictive_rank.py tests/discovery/test_rank_identifiability_limits.py -q
       - name: Independent 3-5-7 state dimension falsification
         run: |
           set -euo pipefail
