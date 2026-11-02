@@ -1,0 +1,108 @@
+name: ConceptFAN frozen evidence reanalysis
+
+on:
+  push:
+    branches:
+      - fix/physionet-evidence-bootstrap-20261102
+    paths:
+      - 'src/conceptfan_realdata/**'
+      - 'scripts/medical/physionet2012/**'
+      - 'tests/physionet2012/**'
+      - '.github/workflows/conceptfan-reanalysis.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-reanalysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install frozen analysis dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+          python -m pip install networkx matplotlib
+      - name: Compile and import the amended analysis code
+        run: |
+          python -m compileall -q src/conceptfan_realdata scripts/medical/physionet2012 tests/physionet2012
+          PYTHONPATH=src:. python -c 'from conceptfan_realdata.stability import aggregate_stability; print("stability import OK")'
+      - name: Download published and SHA-registered frozen PhysioNet results
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/frozen"
+          gh release download physionet2012-last-run-a3a8cf8 --pattern 'PHYSIONET2012_CONCEPTFAN_LAST_RUN_e60d9a3.zip*' --dir "$RUNNER_TEMP/frozen"
+          cd "$RUNNER_TEMP/frozen"
+          sha256sum -c PHYSIONET2012_CONCEPTFAN_LAST_RUN_e60d9a3.zip.sha256
+          mkdir -p extraction
+          unzip -q PHYSIONET2012_CONCEPTFAN_LAST_RUN_e60d9a3.zip -d extraction
+          test -s extraction/artifacts/TABLES/episode_pairwise_stability.parquet
+          test -s extraction/artifacts/TABLES/stability_pair_summary.parquet
+      - name: Run real-data two-level bootstrap and full PhysioNet test suite
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          PYTHONPATH: src:.
+        run: |
+          set +e
+          python scripts/medical/physionet2012/run_reanalysis_suite.py \
+            --artifacts-dir "$RUNNER_TEMP/frozen/extraction/artifacts" \
+            --out-dir "$RUNNER_TEMP/conceptfan_reanalysis" \
+            --two-way-bootstrap 2000 \
+            --tests
+          status=$?
+          set -e
+          if [ -d "$RUNNER_TEMP/conceptfan_reanalysis" ]; then
+            cp -r "$RUNNER_TEMP/conceptfan_reanalysis" ./conceptfan_reanalysis_results
+          fi
+          exit "$status"
+      - name: Recheck crossed 10-by-3 training-seed dependence
+        env:
+          PYTHONPATH: src:.
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python scripts/medical/physionet2012/run_crossed_seed_sensitivity.py \
+            --artifacts-dir "$RUNNER_TEMP/frozen/extraction/artifacts" \
+            --out-dir "./conceptfan_reanalysis_results/seed_design_sensitivity" \
+            --repetitions 2000
+      - name: Run Med-CircuitBench V2/V3 artifact-independent regression tests
+        env:
+          PYTHONPATH: src:.
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          set -euo pipefail
+          python -m pytest tests/medical/v3 tests/medical/v2_2 tests/medical/v2 \
+            --ignore=tests/medical/v3/test_v3_delivery_outputs.py -q \
+            | tee conceptfan_reanalysis_results/medcircuitbench_unit_tests.txt
+      - name: Report archived V3 delivery-test prerequisite explicitly
+        env:
+          PYTHONPATH: src:.
+        run: |
+          set -euo pipefail
+          if [ -f artifacts/medical/v3_real/results/program_status.json ]; then
+            python -m pytest tests/medical/v3/test_v3_delivery_outputs.py -q
+            printf '{"status":"PASS","reason":"V3 release artifacts available; delivery tests passed"}\n' > conceptfan_reanalysis_results/v3_delivery_tests_status.json
+          else
+            echo "::notice::13 V3 delivery artifact checks are NOT_AVAILABLE: artifacts/medical/v3_real is gitignored and not in public release"
+            printf '{"status":"NOT_AVAILABLE","reason":"V3 validation release artifacts/medical/v3_real absent from checkout","test_module":"tests/medical/v3/test_v3_delivery_outputs.py","tests_count":13}\n' > conceptfan_reanalysis_results/v3_delivery_tests_status.json
+          fi
+      - name: Upload evidence without patient-level data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-reanalysis-summary-${{ github.run_number }}
+          path: conceptfan_reanalysis_results/
+          retention-days: 14
+          if-no-files-found: warn

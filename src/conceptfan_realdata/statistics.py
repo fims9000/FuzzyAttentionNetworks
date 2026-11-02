@@ -118,6 +118,8 @@ def paired_model_comparisons(predictive: pd.DataFrame) -> pd.DataFrame:
                     "reference": "ConceptFAN-NoAlpha",
                     "comparator": comparator,
                     "metric": metric,
+                    "reporting_state": "raw",
+                    "calibration_method": "none",
                     "pairs": len(differences),
                     "median_difference_reference_minus_comparator": float(np.median(differences)),
                     "rank_biserial": paired_rank_biserial(differences),
