@@ -13,6 +13,10 @@ on:
       - '.github/workflows/discover-concept-cardinality.yml'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   actions: read
