@@ -154,6 +154,16 @@ def compare_independent_discoveries(a: DiscoveryEvidence, b: DiscoveryEvidence) 
         l = a.contributions[:, slots_a]
         r = b.contributions[:, slots_b]
         rho, rho_excess, top1, top1_excess = _episode_excess_agreement(l, r)
+        signed_left, signed_right = np.sign(l), np.sign(r)
+        sign_observed = float((signed_left == signed_right).mean())
+        # Preserve each aligned concept's empirically learned sign frequency,
+        # rather than assuming a chance baseline of 0.5.
+        sign_marginal = float(np.mean(sum(
+            (signed_left == value).mean(axis=0) *
+            (signed_right == value).mean(axis=0)
+            for value in (-1, 0, 1)
+        )))
+        sign_excess = sign_observed - sign_marginal
         valid = []
         for k in range(len(slots_a)):
             av = a.trajectories[:, :, slots_a[k]].mean(axis=1)
@@ -163,6 +173,7 @@ def compare_independent_discoveries(a: DiscoveryEvidence, b: DiscoveryEvidence) 
         case_response_corr = float(np.mean(valid)) if valid else float("nan")
     else:
         rho = rho_excess = top1 = top1_excess = case_response_corr = float("nan")
+        sign_observed = sign_marginal = sign_excess = float("nan")
     return {
         "matched_slots": int(len(slots_a)),
         "active_slots_a": int(active_a), "active_slots_b": int(active_b),
@@ -173,6 +184,9 @@ def compare_independent_discoveries(a: DiscoveryEvidence, b: DiscoveryEvidence) 
         "excess_over_unmatched_episode_null_spearman": rho_excess,
         "paired_top1": top1,
         "excess_over_unmatched_episode_null_top1": top1_excess,
+        "paired_contribution_sign_agreement": sign_observed,
+        "sign_frequency_preserving_marginal_null": sign_marginal,
+        "case_specific_excess_sign_agreement": sign_excess,
         "matching_basis": "training-defined signed feature weights, no oracle labels",
     }
 
@@ -286,6 +300,17 @@ def concept_passports(
             "activation_episode_fraction": float(event_ratio),
             "mean_detected_event_duration_hours": float(np.mean(durations)) if durations else 0.,
             "mean_absolute_logit_contribution": float(np.abs(e.contributions[:, k]).mean()),
+            "mean_signed_logit_contribution": float(e.contributions[:, k].mean()),
+            "logit_contribution_q05_q95": [
+                float(v) for v in np.quantile(e.contributions[:, k], [.05,.95])
+            ],
+            "signed_direct_logit_coefficient": float(e.decision_weights[k]),
+            "direct_effect_direction": (
+                "raises_logit" if e.decision_weights[k] > 0
+                else "lowers_logit" if e.decision_weights[k] < 0
+                else "no_direct_logit_effect"
+            ),
+            "meaning_of_coefficient": "holding all other concept summaries fixed; model-level effect only",
             "average_precision_if_direct_contribution_zeroed": ap_removed,
             "baseline_average_precision": float(e.metrics["auprc"]),
             "illustrative_validation_episodes": example,
