@@ -29,6 +29,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
           python -m pip install -e .
+          python -m pip install networkx matplotlib
       - name: Compile and import the amended analysis code
         run: |
           python -m compileall -q src/conceptfan_realdata scripts/medical/physionet2012 tests/physionet2012
@@ -65,6 +66,13 @@ jobs:
             cp -r "$RUNNER_TEMP/conceptfan_reanalysis" ./conceptfan_reanalysis_results
           fi
           exit "$status"
+      - name: Run Med-CircuitBench v2/v3 scientific regression tests
+        env:
+          PYTHONPATH: src:.
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m pytest tests/medical/v3 tests/medical/v2_2 tests/medical/v2 -q
       - name: Upload evidence without patient-level data
         if: always()
         uses: actions/upload-artifact@v4
