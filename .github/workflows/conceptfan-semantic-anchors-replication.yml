@@ -1,0 +1,56 @@
+name: ConceptFAN independent 10x3 anchor replication
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-semantic-anchors-v1-20261102
+    paths:
+      - 'scripts/medical/run_semantic_anchor_replication.py'
+      - 'configs/medical/semantic_anchor_replication_v2.yaml'
+      - '.github/workflows/conceptfan-semantic-anchors-replication.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  replicate-train-and-validation-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU-only research dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Validate math, no-test protocol and crossed-seed inference
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_realdata/semantic_anchors.py scripts/medical/run_semantic_anchor_validation.py scripts/medical/run_semantic_anchor_replication.py src/conceptfan_realdata/crossed_seed.py
+          python -m pytest tests/physionet2012/test_semantic_anchors.py tests/physionet2012/test_crossed_seed.py -q
+      - name: Run preregistered independent synthetic data replication
+        run: |
+          set -euo pipefail
+          python scripts/medical/run_semantic_anchor_replication.py \
+            --config configs/medical/semantic_anchor_replication_v2.yaml \
+            --out-dir "$RUNNER_TEMP/conceptfan_anchor_replication"
+          mkdir -p anchor_replication_results
+          cp "$RUNNER_TEMP/conceptfan_anchor_replication/"* anchor_replication_results/
+      - name: Upload aggregate, non-patient-level replication outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-anchor-replication-${{ github.run_number }}
+          path: anchor_replication_results/
+          retention-days: 21
+          if-no-files-found: warn
