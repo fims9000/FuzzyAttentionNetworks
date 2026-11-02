@@ -5,7 +5,7 @@
 - Frozen code/research tag: `conceptfan-posthoc-attribution-final` -> `1dda55e287ccb613065e26d1ab58d5e8efe61e51`.
 - Published release: [physionet2012-last-run-a3a8cf8](https://github.com/fims9000/FuzzyAttentionNetworks/releases/tag/physionet2012-last-run-a3a8cf8).
 - Verified release ZIP SHA-256: `17faed9c89d553c3dd971dca92ee078dfb76543ec820e7c674ce128ea240b6f7`.
-- Executed GitHub Actions: [frozen-evidence reanalysis #4](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41483344327), commit `fe0d48443c590e03910db953afe763efdbd6dbcd`, successful.
+- Executed GitHub Actions: [frozen evidence + independent scientific tests #6](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41484582646), commit `5acca5cb650090888a9bee42ca9f433fad4b8802`, **successful**.
 - New aggregate-only evidence (no raw patient data): `reports/physionet2012/reanalysis_20261102/two_way_stability_ci.csv` and `model_only_posthoc_ci.csv`.
 - Archived CI outputs included STATUS.json, full 63-row two-level stability table and 18-row post-hoc model-only interval table.
 
@@ -39,9 +39,13 @@ internal ConceptFAN contributions is unchanged.
   remain much more stable on five grouped proxy dimensions than the
   architecture's internal contributions, but they attribute a different
   computational object.
-- The repository's entire PhysioNet test module passed: **26 passed** in
-  Actions #4. The first 25 passed before the repair was applied; the
-  corrected integration test catches the old broken `stability.py` code path.
+- The full PhysioNet tests passed: **26 passed** in Actions #6, including a
+  parquet-based integration test for the corrected stability bootstrap.
+- Med-CircuitBench V2/V3 artifact-independent tests also passed: **110 passed**
+  in Actions #6. A separate group of **13 V3 release-delivery checks** requires
+  ignored/unpublished `artifacts/medical/v3_real` outputs. Those checks are
+  explicitly reported `NOT_AVAILABLE`, **not PASS and not FAILED**. No dummy
+  data was constructed and no original scientific test was weakened.
 - No model training was performed. No frozen reports or original checkpoints
   were rewritten.
 
@@ -75,3 +79,18 @@ extracts the `artifacts/TABLES` tree, runs the two-level script and test
 suite, and uploads only aggregate outputs. See
 `docs/medical/PHYSIONET_REANALYSIS.md` for local commands and full
 program contracts.
+
+## Final CI receipt
+
+- Workflow: [Run #6, successful](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41484582646)
+- Run result artifact: `conceptfan-reanalysis-summary-6`; includes
+  `two_way_stability_ci.csv` (63 rows), `model_only_ci.csv` (18 rows),
+  `STATUS.json`, `medcircuitbench_unit_tests.txt`, and
+  `v3_delivery_tests_status.json`.
+- Within `STATUS.json`, the *overall* evidence scope remains
+  `PARTIAL_OR_FAILED` because two steps are `NOT_AVAILABLE` due to absent
+  private arrays, while the available real-data CI steps and PhysioNet
+  regression test step are individually `PASS`.
+- All locally rerun primary means are bitwise the same after parsing, and
+  cross-run CI endpoints agree to numerical precision (differences under
+  `5e-16` from floating-point reduction order).
