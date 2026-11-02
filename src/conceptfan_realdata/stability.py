@@ -11,6 +11,7 @@ import pyarrow.parquet as pq
 from scipy import stats
 
 from .models import STABILITY_ANALYSIS_ARMS
+from .model_pair_bootstrap import model_pair_bootstrap_ci
 
 
 METRICS = ["spearman", "kendall", "top1_agreement", "top3_jaccard", "sign_agreement", "cosine_similarity", "absolute_difference"]
@@ -110,27 +111,16 @@ def build_episode_stability(runs_root: Path, output_path: Path) -> tuple[pd.Data
                     )
     finally:
         if writer is not None:
-            writer.close()
-    return pd.DataFrame(pair_summaries), counts
-
-
-def _hierarchical_ci(
+            writer.def _hierarchical_ci(
     values: np.ndarray,
+    pair_keys: list[tuple[str, str]],
     repetitions: int,
     rng: np.random.Generator,
-    chunk_size: int = 16,
 ) -> tuple[float, float]:
-    pairs, patients = values.shape
-    estimates = np.empty(repetitions, dtype=np.float64)
-    for start in range(0, repetitions, chunk_size):
-        stop = min(start + chunk_size, repetitions)
-        size = stop - start
-        sampled_pairs = rng.integers(0, pairs, size=(size, pairs))
-        selected = values[sampled_pairs]
-        patient_sample = rng.integers(0, patients, size=(size, pairs, patients))
-        sampled = np.take_along_axis(selected, patient_sample, axis=2)
-        estimates[start:stop] = sampled.mean(axis=(1, 2))
-    return float(np.quantile(estimates, 0.025)), float(np.quantile(estimates, 0.975))
+    """Bootstrap trained models (not overlapping pairs), then held-out patients."""
+    return model_pair_bootstrap_ci(values, pair_keys, repetitions, rng)
+
+estimates, 0.025)), float(np.quantile(estimates, 0.975))
 
 
 def aggregate_stability(episode_path: Path, pair_summary: pd.DataFrame, repetitions: int = 1000) -> pd.DataFrame:
@@ -143,7 +133,7 @@ def aggregate_stability(episode_path: Path, pair_summary: pd.DataFrame, repetiti
         for metric in METRICS:
             pivot = group.pivot(index=["run_a", "run_b"], columns="RecordID", values=metric).loc[pair_keys, patient_ids]
             values = pivot.to_numpy(dtype=np.float64)
-            low, high = _hierarchical_ci(values, repetitions, rng)
+            low, high = _hierarchical_ci(values, pair_keys, repetitions, rng)
             flattened = values.reshape(-1)
             rows.append(
                 {
