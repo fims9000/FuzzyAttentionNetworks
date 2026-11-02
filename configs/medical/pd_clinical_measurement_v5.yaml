@@ -1,0 +1,34 @@
+protocol:
+  name: clinical_disjoint_pilot_measurement_invariance_v5
+  train_only: true
+  no_test_calibration_or_validation: true
+  development: exploratory_not_confirmatory
+data:
+  split_seed: 20260717
+  input_window: 36
+  forecast_horizon: 12
+  minimum_train_patient_coverage: 0.15
+measurement:
+  patient_split_seed: 20270301
+  pilot_patients: 600
+  mask_seed: 20270307
+  aggregation_hours: [1,4,6]
+  admissible_policies: [original, mcar_thin]
+  diagnostic_policy: time_channel_mar
+  admissible_worst_additional_retention: 0.65
+  minimum_pilot_hour_strata: 3
+  pilot_min_pairs_per_hour: 12
+  pilot_min_expected_null_pairs: 20.0
+  min_principal_squared_overlap: 0.75
+rank:
+  lags: [1,2]
+  permutation_repetitions: 35
+  alpha: 0.05
+  null_seed: 20270311
+  min_pairs_per_hour: 12
+  min_time_strata: 2
+  baseline_patient_bootstrap_repetitions: 5
+reporting:
+  do_not_name_clinical_concepts: true
+  fail_closed_on_rank_or_observability_disagreement: true
+  do_not_select_best_hour_granularity: true
