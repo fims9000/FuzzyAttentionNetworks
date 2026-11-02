@@ -141,3 +141,43 @@ Related conceptual frameworks:
   https://proceedings.nips.cc/paper_files/paper/2025/hash/084de6d7423c3b7af111e091799e4074-Abstract-Conference.html
 - Galliamov et al. (ICLR 2026), Concepts' Information Bottleneck Models
   https://proceedings.iclr.cc/paper_files/paper/2026/hash/8555cf308efef02adacb0f9e09bd5f10-Abstract-Conference.html
+
+## Stronger independent-data replication / trivial-consistency control
+
+Because pilot results suggested near-perfect rank consistency, the second,
+frozen, newly seeded synthetic experiment also measures whether this is
+merely a *global ranking of concepts* independent of the patient.
+
+For each pair of trained models (a,b), with explanation vectors
+(v^{(a)}(x_i),v^{(b)}(x_i)), define:
+
+[
+S_\mathrm{paired}=\frac1n\sum_i\rho(v^{(a)}(x_i),v^{(b)}(x_i)),
+\qquad
+S_\mathrm{null}=\frac1{n^2}\sum_{i,j}\rho(v^{(a)}(x_i),v^{(b)}(x_j)).
+]
+
+The *excess episode alignment* is
+(Delta S=S_\mathrm{paired}-S_\mathrm{null}).
+For Spearman, the implementation computes the exact marginal expectation
+efficiently from centered, L2-normalized rank vectors. Analogous
+independent-episode expectations are calculated for absolute Top-1 and
+sign agreement by retaining each model's empirical frequency histogram.
+
+A model that always ranks the same concept highest for every patient will
+have Top-1 agreement (1.0) **but zero excess episode alignment**. The latter
+is the better diagnostic for case-specific interpretation. We report both,
+not just the favorable raw number.
+
+The second experiment uses a new generator seed `20261103`, held-out
+validation examples distinct from the initial pilot seed, **10 training
+initializations x 3 data-order seeds x 3 methods**. This makes 435 overlapping
+model pairs per method: the bootstrap resamples seed *factors*, not the pairs.
+
+This replication is exploratory because the model choice followed the
+previous development pilot. Reporting a small p-value as if the method
+had been fully pre-registered before observing any earlier data would be
+misleading.
+
+The official historical published test remains unmodified and is NOT
+part of this experimental pipeline.
