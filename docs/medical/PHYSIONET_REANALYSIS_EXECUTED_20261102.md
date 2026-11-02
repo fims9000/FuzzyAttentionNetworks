@@ -20,11 +20,10 @@ one common patient resample for all selected pairs in each repetition.
 | Frozen arm | Mean signed Spearman | Corrected 95% model+patient bootstrap CI |
 | --- | ---: | ---: |
 | ConceptFAN-NoAlpha | 0.00346858 | [-0.04959653, 0.08313994] |
-| ConceptFAN-StabilityReg | 0.00037471 | [-0.050391, 0.071987] |
-| PureNoFuzzy | 0.08876207 | [-0.004751, 0.215929] |
+| ConceptFAN-StabilityReg | 0.00037471 | [-0.05039394, 0.07198948] |
+| PureNoFuzzy | 0.08876207 | [-0.00475029, 0.21593338] |
 
-*Rounded endpoints for the last two arms are presentation values; use the
-machine-readable CSV above for complete precision.* Means exactly reproduce
+*Endpoints are rounded to eight decimal places; the machine-readable CSV above preserves full precision.* Means exactly reproduce
 the original aggregate means, as they should. The previously published CIs
 that resampled overlapping **pairs** as independent should not be cited as
 model-level inference.
