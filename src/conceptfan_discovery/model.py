@@ -70,6 +70,7 @@ class DiscoveryOutput:
     gates: torch.Tensor
     feature_weights: torch.Tensor
     decision_bias: torch.Tensor
+    reconstruction: torch.Tensor | None = None
 
     def decomposition_error(self) -> torch.Tensor:
         return (self.logits - (self.decision_bias + self.contributions.sum(dim=-1))).abs().max()
