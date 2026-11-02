@@ -18,7 +18,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--repetitions", type=int, default=2000)
     args = parser.parse_args()
-    tables = args.artifacts_dir / "tables"
+    tables = args.artifacts_dir / "TABLES"
     episode = tables / "episode_pairwise_stability.parquet"
     pairs = tables / "stability_pair_summary.parquet"
     if not episode.is_file() or not pairs.is_file():
