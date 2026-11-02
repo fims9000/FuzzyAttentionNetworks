@@ -14,7 +14,7 @@ care_policy_rank:
   feature_permutations: 90
   familywise_alpha: 0.05
   null_seed: 20271117
-  max_computational_policy_slots: 8
+  max_computational_policy_slots: 16
   report_if_truncated: true
 training:
   methods: [train_mask_source_only, train_mask_source_and_task_prior]
