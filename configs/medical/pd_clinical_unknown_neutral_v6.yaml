@@ -1,0 +1,57 @@
+protocol:
+  name: conceptfan-v6-real-icu-architecture-comparison-exploratory
+  purpose: validate_unknown_as_neutral_versus_legacy_missingness_behavior
+  not_clinical_concept_discovery: true
+  previously_inspected_validation_warning: true
+  test_and_calibration_sealed: true
+  prior_strict_clinical_rank_gate: ABSTAIN_CLINICAL_K_UNSTABLE
+data:
+  split_seed: 20260717
+  input_window: 36
+  forecast_horizon: 12
+  minimum_train_patient_coverage: 0.15
+  pilot_selection_seed: 20270301
+  pilot_train_patients: 600
+  pilot_sensor_lags: [1, 2]
+  pilot_min_time_strata: 3
+  pilot_min_hourly_pairs: 12
+  pilot_min_expected_null_pairs: 20.0
+  pilot_worst_extra_thinning: 0.65
+rank:
+  lags: [1, 2, 3]
+  permutations: 60
+  patient_bootstraps: 12
+  alpha: 0.05
+  seed: 20270561
+  max_computational_concept_slots: 8
+training:
+  methods: [multiplicative_original, unknown_neutral, unknown_neutral_consistency]
+  initialization_seeds: [11, 23, 37]
+  batch_order_seed: 1001
+  epochs: 18
+  batch_size: 128
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  gradient_clip: 2.0
+  cpu_threads: 1
+  main_mask_fraction: 0.20
+  second_mask_fraction: 0.35
+  consistency_min_joint_reliability: 0.20
+  consistency_weight: 1.5
+  spectral_anchor_weight: 0.30
+  spectral_axis_independence_weight: 0.15
+  loss_weights:
+    future: 0.50
+    dynamics: 0.20
+    mdl: 0.007
+    support: 0.008
+    redundancy: 0.08
+    nonconstant: 0.25
+    transition_l1: 0.003
+    denoising: 1.00
+evaluation:
+  reported_validation_subset_seed: 20270567
+  measurement_mask_seed: 20270571
+  scenarios: [original, mcar_thin, time_channel_mar]
+  never_publish_individual_patient_data: true
+  no_confirmatory_statistical_testing: true
