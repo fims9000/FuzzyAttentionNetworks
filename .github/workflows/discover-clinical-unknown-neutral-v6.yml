@@ -1,0 +1,86 @@
+name: V6 exploratory ICU missingness-neutral concept head comparison
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/clinical_unknown_neutral_experiment_v6.py'
+      - 'configs/medical/pd_clinical_unknown_neutral_v6.yaml'
+      - '.github/workflows/discover-clinical-unknown-neutral-v6.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  observational-clinical-development-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install reproducible CPU research stack
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Check no measured evidence means unknown instead of pathological
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest \
+            tests/discovery/test_unknown_neutral_v6.py \
+            tests/discovery/test_pilot_temporal_sensors_v5.py \
+            tests/discovery/test_observation_invariance_v5.py -q
+      - name: Fetch official PhysioNet 2012 Set A ONLY, historical test sealed
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/physionet_official"
+          curl -fsSL --retry 3 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o "$RUNNER_TEMP/physionet_official/set-a.zip"
+          curl -fsSL --retry 3 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o "$RUNNER_TEMP/physionet_official/Outcomes-a.txt"
+          unzip -tq "$RUNNER_TEMP/physionet_official/set-a.zip" | tail -n 2
+          sha256sum "$RUNNER_TEMP/physionet_official/"* > official_sha256.txt
+      - name: Train 9 real clinical concept bottlenecks without concept labels
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.clinical_unknown_neutral_experiment_v6 \
+            --config configs/medical/pd_clinical_unknown_neutral_v6.yaml \
+            --raw-zip "$RUNNER_TEMP/physionet_official/set-a.zip" \
+            --outcomes "$RUNNER_TEMP/physionet_official/Outcomes-a.txt" \
+            --out-dir "$RUNNER_TEMP/clinical_neutral_v6" \
+            > clinical_neutral_execution.log 2>&1 || { tail -n 160 clinical_neutral_execution.log; exit 1; }
+          tail -n 60 clinical_neutral_execution.log
+          mkdir -p published_clinical_neutral
+          cp "$RUNNER_TEMP/clinical_neutral_v6/"*.json published_clinical_neutral/
+          cp "$RUNNER_TEMP/clinical_neutral_v6/"*.csv published_clinical_neutral/
+          cp clinical_neutral_execution.log published_clinical_neutral/
+          cp official_sha256.txt published_clinical_neutral/
+      - name: Archive only patient-private aggregate clinical development comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: physionet-unknown-neutral-v6-${{ github.run_number }}
+          path: |
+            published_clinical_neutral/
+            clinical_neutral_execution.log
+            official_sha256.txt
+          retention-days: 21
+          if-no-files-found: warn
