@@ -1,0 +1,43 @@
+protocol:
+  name: conceptfan-semantic-anchor-validation-v1
+  research_status: preregistered_exploratory_validation_only
+  original_frozen_test: untouched
+dataset:
+  generator_seed: 20261102
+  split_seed: 203
+  n_samples: 720
+  input_window: 36
+  sequence_length: 42
+  target_threshold: 0.0715
+  infection_prevalence: 0.25
+  infection_impulse_strength: 3.0
+model:
+  n_concepts: 5
+  sequence_length: 36
+  latent_dim: 32
+  dropout: 0.05
+  layers: 1
+  heads: 2
+  ffn: 64
+anchor:
+  recency_decay: 0.08
+  logistic_c: 1.0
+  minimum_width: 0.05
+training:
+  init_seeds: [11, 23, 37]
+  data_order_seed: 1001
+  epochs: 8
+  batch_size: 64
+  learning_rate: 0.0006
+  weight_decay: 0.01
+  lambda_concept: 2.0
+  lambda_temporal: 0.5
+  lambda_oracle: 1.0
+  lambda_cross_residual: 25.0
+  gradient_clip: 1.0
+  cpu_threads: 1
+evaluation:
+  methods: [legacy, anchor_only, anchor_regularized]
+  no_test_access: true
+  no_hyperparameter_selection_using_validation: true
+  compare_only_same_seed_pairs: true
