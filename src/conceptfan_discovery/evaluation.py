@@ -291,7 +291,15 @@ def concept_passports(
             "slot": int(k), "learned_gate": float(e.gates[k]),
             "active_under_half_gate_threshold": bool(e.gates[k] >= .5),
             "nonconstant_activation": bool(e.trajectories[:, :, k].var() > .0005),
-            "mathematical_definition": "sigmoid((sparse_signed_operator_sum - learned_threshold) / learned_width) * coverage * gate",
+            "mathematical_definition": (
+                model.concept_formula() if callable(getattr(model,"concept_formula",None))
+                else "sigmoid((sparse_signed_operator_sum - learned_threshold) / learned_width) * coverage * gate"
+            ),
+            "missing_measurement_interpretation": (
+                "UNKNOWN: baseline 0.5 times gate; direct signed logit contribution zero at zero support"
+                if callable(getattr(model,"concept_formula",None))
+                else "zero concept activation at zero support; note baseline subtraction can cause nonzero logit contribution"
+            ),
             "top_signed_operators": top,
             "learned_score_threshold": float(e.boundary[k]),
             "learned_transition_width": float(e.width[k]),
