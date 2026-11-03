@@ -7,6 +7,8 @@ on:
       - 'src/conceptfan_discovery/identifiability_v11.py'
       - 'src/conceptfan_discovery/rotation_consistency_v11.py'
       - 'src/conceptfan_discovery/train_identifiability_v11.py'
+      - 'src/conceptfan_discovery/passports_v11.py'
+      - 'tests/discovery/test_passports_v11.py'
       - 'src/conceptfan_discovery/clinical_identifiability_v11.py'
       - 'tests/discovery/test_identifiability_v11.py'
       - 'tests/discovery/test_group_learning_v11.py'
@@ -51,6 +53,7 @@ jobs:
           python -m pytest \
             tests/discovery/test_identifiability_v11.py \
             tests/discovery/test_group_learning_v11.py \
+            tests/discovery/test_passports_v11.py \
             tests/discovery/test_multiscale_physiology_v10.py -q
       - name: Acquire official PhysioNet training data and pinned V10 cohort receipt
         run: |
