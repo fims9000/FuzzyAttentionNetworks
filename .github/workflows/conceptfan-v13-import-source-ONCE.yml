@@ -1,0 +1,83 @@
+name: V13 import frozen synthetic-only source and regression test
+
+# Triggered only by uploading the exact frozen, SHA-verified source bundle.
+# The source archive contains code, tests, config and research methods document.
+on:
+  push:
+    branches: [experiment/conceptfan-v13-conditional-interventions-20261104]
+    paths: ['research/v13_source_frozen_20261104.tar.xz']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: conceptfan-v13-source-import-once
+  cancel-in-progress: false
+
+jobs:
+  verify-and-commit-readable-source:
+    if: github.event.head_commit.message == 'Stage SHA256-frozen V13 sources for reproducible extraction'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Verify source bundle SHA256, member whitelist and safe extraction
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,tarfile
+          from pathlib import Path
+          p=Path("research/v13_source_frozen_20261104.tar.xz")
+          expected="9052d1df52b65e884fc24dab1dc01b325d130fe1eed4af9a08e1d83d1a0f271b"
+          digest=hashlib.sha256(p.read_bytes()).hexdigest()
+          assert digest==expected,(digest,expected)
+          allowed={
+            "src/conceptfan_discovery/intervention_identifiability_v13.py",
+            "src/conceptfan_discovery/intervention_stress_v13.py",
+            "tests/discovery/test_intervention_v13.py",
+            "configs/medical/pd_v13_intervention_identifiability_synthetic_20261104.yaml",
+            "docs/medical/PD_CONCEPTFAN_V13_CONDITIONAL_INTERVENTION_PROTOCOL_20261104.md",
+          }
+          with tarfile.open(p,"r:xz") as tf:
+            assert {x.name for x in tf.getmembers()}==allowed
+            assert all(x.isfile() and not x.issym() and not x.islnk() for x in tf.getmembers())
+            tf.extractall(".",filter="data")
+          print("EXTRACTED SHA256 FROZEN V13 SOURCE",digest)
+          PY
+      - name: Install research dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Run V13 falsification and all discovery regressions before committing
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery/intervention_identifiability_v13.py src/conceptfan_discovery/intervention_stress_v13.py
+          python -m pytest tests/discovery/test_intervention_v13.py -q
+          python -m pytest tests/discovery -q
+      - name: Commit human-readable Python sources and methods after verified tests
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/conceptfan_discovery/intervention_identifiability_v13.py
+          git add src/conceptfan_discovery/intervention_stress_v13.py
+          git add tests/discovery/test_intervention_v13.py
+          git add configs/medical/pd_v13_intervention_identifiability_synthetic_20261104.yaml
+          git add docs/medical/PD_CONCEPTFAN_V13_CONDITIONAL_INTERVENTION_PROTOCOL_20261104.md
+          git diff --cached --check
+          git commit -m "Publish tested V13 native intervention concepts, synthetic falsification and conditional identifiability report"
+          git push origin HEAD:experiment/conceptfan-v13-conditional-interventions-20261104
