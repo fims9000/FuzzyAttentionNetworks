@@ -1,0 +1,95 @@
+name: V13 randomized intervention concept identification — synthetic falsification
+on:
+  push:
+    branches: [experiment/conceptfan-v13-intervention-identification-20261104]
+    paths:
+      - 'src/conceptfan_discovery/instrumented_v13.py'
+      - 'src/conceptfan_discovery/intervention_synthetic_v13.py'
+      - 'src/conceptfan_discovery/experiment_v13.py'
+      - 'tests/discovery/test_instrumented_v13.py'
+      - '.github/workflows/conceptfan-v13-synthetic-conditional-identification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  no-real-patients-and-no-preexisting-holdouts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install CPU research stack
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify source and all V13 negative controls
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery/instrumented_v13.py src/conceptfan_discovery/intervention_synthetic_v13.py src/conceptfan_discovery/experiment_v13.py
+          python -m pytest tests/discovery/test_instrumented_v13.py -q
+      - name: Run preregistered exploratory generator
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.experiment_v13 \
+            --out-dir V13_EXPLORATORY \
+            --epochs 85 \
+            --generator-seed-base 20261104 > v13_exploratory.log 2>&1 || {
+              tail -n 100 v13_exploratory.log
+              exit 1
+            }
+          tail -n 22 v13_exploratory.log
+      - name: Run independent new generator seed without tuning
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.experiment_v13 \
+            --out-dir V13_INDEPENDENT_SEED \
+            --epochs 85 \
+            --generator-seed-base 20261204 > v13_new_seed.log 2>&1 || {
+              tail -n 100 v13_new_seed.log
+              exit 1
+            }
+          tail -n 22 v13_new_seed.log
+      - name: Inspect immutable receipts before artifact export
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for name,seed in [('V13_EXPLORATORY',20261104),('V13_INDEPENDENT_SEED',20261204)]:
+              d=json.loads((Path(name)/'STATUS.json').read_text())
+              assert d['generator_seed_base']==seed
+              assert d['all_9_invalid_intervention_controls_rejected']
+              assert d['no_physionet_or_previous_holdout_access']
+              assert all(x['stable_individual_effect_count']==x['true_factor_count_evaluation_only'] for x in d['results'])
+              print(name,d['results'])
+          PY
+          git rev-parse HEAD > v13_git_sha.txt
+      - name: Upload aggregate metrics only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v13-synthetic-conditional-identification-${{ github.run_number }}
+          path: |
+            V13_EXPLORATORY/
+            V13_INDEPENDENT_SEED/
+            v13_exploratory.log
+            v13_new_seed.log
+            v13_git_sha.txt
+          retention-days: 30
+          if-no-files-found: warn

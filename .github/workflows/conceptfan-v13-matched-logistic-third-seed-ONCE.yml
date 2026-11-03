@@ -1,0 +1,70 @@
+name: V13 third fresh generator — native bottleneck versus ordinary logistic
+on:
+  push:
+    branches: [experiment/conceptfan-v13-intervention-identification-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v13-matched-logistic-third-seed-ONCE.yml'
+
+permissions:
+  contents: read
+concurrency:
+  group: conceptfan-v13-third-seed-no-tuning
+  cancel-in-progress: false
+
+jobs:
+  fair-action-identified-comparator:
+    if: github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install CPU research dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Validate matched source and baseline with synthetic-only tests
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery/prospective_baseline_v13.py
+          python -m pytest tests/discovery/test_instrumented_v13.py tests/discovery/test_prospective_baseline_v13.py -q
+      - name: Execute frozen new 20270104 generator against fair source-shared logistic baseline
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.prospective_baseline_v13 \
+            --out-dir V13_THIRD_SEED_MATCHED_LOGISTIC > matched_v13.log 2>&1 || {
+              tail -n 100 matched_v13.log
+              exit 1
+            }
+          tail -n 40 matched_v13.log
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          d=json.loads(Path('V13_THIRD_SEED_MATCHED_LOGISTIC/STATUS.json').read_text())
+          assert d['generator_seed']==20270104
+          assert d['same_source_certificates_for_both_methods']
+          assert len(d['summary'])==6
+          print('FROZEN THIRD GENERATOR VERIFIED')
+          PY
+          git rev-parse HEAD > V13_THIRD_SEED_MATCHED_LOGISTIC/git_sha.txt
+      - name: Upload aggregate metrics only; never per-record predictions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v13-third-seed-matched-logistic-${{ github.run_number }}
+          path: |
+            V13_THIRD_SEED_MATCHED_LOGISTIC/
+            matched_v13.log
+          retention-days: 30
+          if-no-files-found: warn
