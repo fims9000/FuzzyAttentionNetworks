@@ -21,7 +21,7 @@ METRICS = (
     "auprc_physical_only",
     "physical_masked_reconstruction_rmse",
     "physical_future_observed_rmse",
-    "mean_mask_process_abs_logit_share",
+    "mean_fraction_signed_abs_logit_from_process",
 )
 
 
