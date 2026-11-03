@@ -98,7 +98,7 @@ def test_two_family_additive_logit_and_original_mask_preserved():
     torch.testing.assert_close(
         original.observation_contributions,changed.observation_contributions
     )
-    assert torch.isfinite(changed.physical.logit).all()
+    assert torch.isfinite(changed.physical.logits).all()
     assert heldout.sum()>0.
 
 
