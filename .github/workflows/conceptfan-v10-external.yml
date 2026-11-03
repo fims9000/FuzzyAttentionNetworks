@@ -1,0 +1,100 @@
+name: V10 versus independent Logistic HGB GRU-D Transformer baselines
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v10-multiscale-20261103
+    paths:
+      - 'src/conceptfan_discovery/external_baselines_v10.py'
+      - 'src/conceptfan_discovery/clinical_v10_external_benchmark.py'
+      - 'tests/discovery/test_external_baselines_v10.py'
+      - 'configs/medical/pd_v10_vs_external_20261103.yaml'
+      - '.github/workflows/conceptfan-v10-external.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  comparable-external-models:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      PYTHONPATH: src:.
+      GH_TOKEN: ${{ github.token }}
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU model dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify all four truly external model and privacy contracts
+        run: |
+          set -euo pipefail
+          python -m compileall -q \
+            src/conceptfan_discovery/external_baselines_v10.py \
+            src/conceptfan_discovery/clinical_v10_external_benchmark.py
+          python -m pytest \
+            tests/discovery/test_external_baselines_v10.py \
+            tests/discovery/test_multiscale_physiology_v10.py -q
+      - name: Download official 2012 Set A records and original V10 method receipt
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/official_physionet" "$RUNNER_TEMP/pinned_v10"
+          curl -fsSL --retry 3 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o "$RUNNER_TEMP/official_physionet/set-a.zip"
+          curl -fsSL --retry 3 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o "$RUNNER_TEMP/official_physionet/Outcomes-a.txt"
+          unzip -tq "$RUNNER_TEMP/official_physionet/set-a.zip" | tail -n 2
+          gh run download 41623853277 \
+            --name conceptfan-v10-matched-clinical-4 \
+            --dir "$RUNNER_TEMP/pinned_v10"
+          test -s "$RUNNER_TEMP/pinned_v10/results_v10/STATUS.json"
+      - name: Fit V10 and four independent architectures on exactly matched patients
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.clinical_v10_external_benchmark \
+            --config configs/medical/pd_v10_vs_external_20261103.yaml \
+            --reference-v6-config configs/medical/pd_clinical_unknown_neutral_v6.yaml \
+            --reference-v7-config configs/medical/pd_clinical_dual_process_v7.yaml \
+            --reference-v10-config configs/medical/pd_clinical_v10_multiscale.yaml \
+            --frozen-v10-receipt "$RUNNER_TEMP/pinned_v10/results_v10/STATUS.json" \
+            --raw-zip "$RUNNER_TEMP/official_physionet/set-a.zip" \
+            --outcomes "$RUNNER_TEMP/official_physionet/Outcomes-a.txt" \
+            --out-dir "$RUNNER_TEMP/v10_external" \
+            > external_comparison_execution.log 2>&1 || {
+              tail -n 150 external_comparison_execution.log
+              exit 1
+            }
+          tail -n 55 external_comparison_execution.log
+          mkdir -p published_external
+          cp "$RUNNER_TEMP/v10_external/"*.csv published_external/
+          cp "$RUNNER_TEMP/v10_external/STATUS.json" published_external/
+          cp external_comparison_execution.log published_external/
+      - name: Publish exclusively aggregated comparisons and receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v10-vs-external-methods-${{ github.run_number }}
+          path: |
+            published_external/
+            external_comparison_execution.log
+          retention-days: 21
+          if-no-files-found: warn

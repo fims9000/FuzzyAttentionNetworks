@@ -1,0 +1,36 @@
+protocol:
+  name: pd-conceptfan-v10-physionet-multiscale-dual-family
+  status: exploratory_after_repeated_development_validation
+  reference_method: v7_retrained_baseline
+  preserve_v7_two_family_source_separation: true
+  test_calibration_sealed: true
+  clinical_semantics_not_identified: true
+  freeze_hyperparameters_before_run: true
+  no_posthoc_concept_extraction: true
+  no_human_concept_labels: true
+architecture:
+  scales_hours: [1, 4, 12, 24]
+  same_v7_physiological_computational_rank: true
+  same_v7_care_process_slots: true
+  missing_measurement_is_unknown_not_negative: true
+training:
+  initialization_seeds: [11, 23, 37]
+  methods:
+    - v7_retrained_baseline
+    - v10_multiscale
+    - v10_multiscale_consistency
+  scale_entropy_weight: 0.002
+  second_mask_fraction: 0.35
+  consistency_weight: 0.30
+  minimum_joint_reliability: 0.20
+  same_v7_epochs_optimizer_learning_rate_and_batch_order: true
+evaluation:
+  scenarios: [original, mcar_thin, time_channel_mar]
+  same_previously_seen_300_development_cases: true
+  same_original_2400_training_cases: true
+  reported_only_aggregate_metrics: true
+  match_physiological_definitions_without_outcomes: true
+  pair_scores_not_independent_sample: true
+  no_p_values: true
+  no_external_hospital_claim: true
+  no_future_or_test_features_to_encoder: true

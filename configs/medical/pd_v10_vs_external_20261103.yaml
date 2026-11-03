@@ -1,0 +1,42 @@
+protocol:
+  name: conceptfan_v10_against_independent_external_models_v1
+  date_locked: "2026-11-03"
+  no_v7_v8_v9_comparisons: true
+  old_test_and_calibration_sealed: true
+  no_external_claim_of_significance: true
+  identical_train_only_preprocessing_to_v10: true
+  no_published_model_weights_used: true
+  previous_development_has_been_inspected: true
+baselines:
+  external_methods:
+    - logistic_history
+    - hist_gradient_boosting
+    - gru_d_style
+    - transformer_timeseries
+  only_concept_model: conceptfan_v10_multiscale_consistency
+  tabular_feature_scope: observed_36h_history_plus_original_sampling_schedule
+  recurrent_feature_scope: observed_36h_history_mask_delta_plus_recorded_schedule
+  transformer_feature_scope: same_36h_history_mask_delta_plus_recorded_schedule
+training:
+  initialization_seeds: [11, 23, 37]
+  tabular_training_seed: 11
+  epochs: 18
+  batch_size: 128
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  augmentation_fraction: 0.20
+  class_weighting: train_only_inverse_prevalence
+  early_stopping_on_development: false
+statistics:
+  patient_bootstrap_repetitions: 800
+  seed: 20261119
+  no_p_values: true
+  no_external_test_eligibility: true
+  same_stratified_patient_indices_in_paired_comparisons: true
+evaluation:
+  scenarios: [original, mcar_thin, time_channel_mar]
+  metrics: [auprc, auroc, brier]
+  report_training_time: true
+  report_parameters_when_available: true
+  do_not_export_patient_predictions: true
+  no_hospital_generalization_claim: true
