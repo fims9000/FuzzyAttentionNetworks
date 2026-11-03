@@ -192,7 +192,7 @@ def predict_magnets_binary(
     return np.concatenate(probs).astype(np.float64),np.concatenate(terms).astype(np.float64)
 
 
-def train_only_concept_permutation(reference:np.ndarray,other:np.ndarray)->np.ndarray:
+def train_only_concept_permutation(reference:np.ndarray,other:np.ndarray,*,min_abs_spearman:float=.2)->np.ndarray:
     """Hungarian permutation from TRAIN features ONLY; NEVER align using DEV/B.
 
     Absolute Spearman chooses the closest shape; the sign is NOT corrected
@@ -202,6 +202,8 @@ def train_only_concept_permutation(reference:np.ndarray,other:np.ndarray)->np.nd
     b=np.asarray(other,dtype=np.float64)
     if a.shape!=b.shape or a.ndim!=2 or len(a)<10 or not np.isfinite(a).all() or not np.isfinite(b).all():
         raise ValueError("Matching requires same TRAIN patient set and K")
+    if not 0<min_abs_spearman<1:
+        raise ValueError("Positive minimum independent TRAIN alignment required")
     k=a.shape[1]
     cost=np.ones((k,k))
     for i in range(k):
@@ -212,4 +214,10 @@ def train_only_concept_permutation(reference:np.ndarray,other:np.ndarray)->np.nd
     row,col=linear_sum_assignment(cost)
     if not np.array_equal(row,np.arange(k)):
         raise AssertionError("Unassigned concept slot in Hungarian permutation")
-    return col.astype(np.int64)
+    result=col.astype(np.int64)
+    # An arbitrary Hungarian assignment on unrelated or flat concepts is
+    # NOT evidence of stable matched identities. Mark those slots ABSTAIN.
+    for i in range(k):
+        if cost[i,result[i]]>1.-min_abs_spearman:
+            result[i]=-1
+    return result
