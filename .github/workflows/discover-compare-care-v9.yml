@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/v7" "$RUNNER_TEMP/v8" "$RUNNER_TEMP/v9"
           gh run download 41509956362 \
-            --name physionet-separate-care-process-concepts-v7-2 \
+            --name physionet-separate-care-process-concepts-v7-3 \
             --dir "$RUNNER_TEMP/v7"
           gh run download 41512252657 \
             --name train-mask-care-rank-v8-3 \
