@@ -73,7 +73,7 @@ def test_learned_scales_are_nonnegative_normalized_and_differentiable():
     torch.testing.assert_close(pi.sum(dim=-1),torch.ones(3))
     assert (pi > 0).all()
     assert len(physical.multiscale_passport()["concept_temporal_weights"])==3
-    loss=out.logit.square().mean()+out.future_prediction.square().mean()
+    loss=out.logits.square().mean()+out.future_prediction.square().mean()
     loss.backward()
     assert physical.scale_logits.grad is not None
     assert torch.isfinite(physical.scale_logits.grad).all()
