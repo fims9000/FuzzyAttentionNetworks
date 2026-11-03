@@ -1,0 +1,84 @@
+name: A-ONLY transformer refit forensics (never access new Set B)
+on:
+  push:
+    branches: [experiment/conceptfan-v11-one-shot-setb-20261103]
+    paths: ['.github/workflows/conceptfan-transformer-REFIT-FORENSICS.yml']
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  original-code-original-data-determinism:
+    strategy:
+      fail-fast: false
+      matrix:
+        hash_mode: ['0', 'random']
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      PYTHONHASHSEED: ${{ matrix.hash_mode }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install same CPU torch stack as prior original external run
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Obtain ONLY original Set A and the original V10 frozen basis receipt
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/official_A" "$RUNNER_TEMP/pinned_v10"
+          curl -fsSL --retry 3 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o "$RUNNER_TEMP/official_A/set-a.zip"
+          curl -fsSL --retry 3 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o "$RUNNER_TEMP/official_A/Outcomes-a.txt"
+          gh run download 41623853277 \
+            --name conceptfan-v10-matched-clinical-4 \
+            --dir "$RUNNER_TEMP/pinned_v10"
+      - name: Reproduce external Transformer SEED11 on original frozen Set A DEV only
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os,platform
+          from pathlib import Path
+          import numpy as np,torch,pandas,sklearn
+          import yaml
+          from conceptfan_discovery.clinical_v10_external_benchmark import _load_and_match_v10_patient_cohort,_model_score
+          from conceptfan_discovery.external_baselines_v10 import fit_neural_baseline,predict_neural
+          base=yaml.safe_load(Path("configs/medical/pd_clinical_unknown_neutral_v6.yaml").read_text())
+          ref=json.loads(Path(os.environ["RUNNER_TEMP"]+"/pinned_v10/results_v10/STATUS.json").read_text())
+          cfg=yaml.safe_load(Path("configs/medical/pd_v10_vs_external_20261103.yaml").read_text())
+          data,basis,dev,cohort=_load_and_match_v10_patient_cohort(
+            source_zip=Path(os.environ["RUNNER_TEMP"]+"/official_A/set-a.zip"),
+            outcome_file=Path(os.environ["RUNNER_TEMP"]+"/official_A/Outcomes-a.txt"),
+            base_cfg=base,prior_receipt=ref)
+          torch.set_num_threads(int(base["training"]["cpu_threads"]))
+          for i in [0,1]:
+            model,training=fit_neural_baseline(
+              "transformer_timeseries",data.train,seed=11,
+              epochs=18,batch_size=128,learning_rate=.001,
+              weight_decay=.0001,augmentation_fraction=.2)
+            prediction=predict_neural(model,dev.x,dev.mask,dev.mask)
+            print(json.dumps({
+              "repeat":i,"dev_auprc":_model_score(dev.y,prediction)["auprc"],
+              "expected_original_external_run_auprc":.4603555,
+              "PYTHONHASHSEED":os.environ.get("PYTHONHASHSEED"),
+              "torch":torch.__version__,"numpy":np.__version__,
+              "sklearn":sklearn.__version__,"pandas":pandas.__version__,
+              "python":platform.python_version(),
+              "input_channels":cohort["channel_names"],
+            }),flush=True)
+          PY
