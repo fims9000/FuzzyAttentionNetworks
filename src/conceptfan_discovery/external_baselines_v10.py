@@ -48,7 +48,7 @@ def _observed_summary(x: np.ndarray, mask: np.ndarray) -> np.ndarray:
     den=np.maximum(count,1.)
     valid=np.where(mask>0,x,0.)
     mean=valid.sum(axis=1)/den
-    std=np.sqrt(((valid-mean[:,None,:])*mask).square().sum(axis=1)/den) if False else np.sqrt(
+    std=np.sqrt(
         (((valid-mean[:,None,:])**2)*mask).sum(axis=1)/den
     )
     minimum=np.where(count>0,np.where(mask>0,x,np.inf).min(axis=1),0.)
@@ -86,8 +86,10 @@ def engineer_clinical_history(
     x,m,s=_validate_view(values,visible_mask,recorded_mask)
     # Intentionally do not use values wherever visible=0, even if a caller
     # supplies impossible sentinel values in those cells.
-    return np.concatenate((_observed_summary(x*m,m),_observed_summary(np.zeros_like(x),s)
-        [:,-7*x.shape[-1]:]),axis=1).astype(np.float32)
+    # Observed-source metadata only: coverage, recent coverage, staleness,
+    # never raw values that were hidden in a simulated measurement scenario.
+    sampling=_observed_summary(np.zeros_like(x),s)[:,-6*x.shape[-1]:]
+    return np.concatenate((_observed_summary(x*m,m),sampling),axis=1).astype(np.float32)
 
 
 def class_balanced_weights(y: np.ndarray) -> np.ndarray:
