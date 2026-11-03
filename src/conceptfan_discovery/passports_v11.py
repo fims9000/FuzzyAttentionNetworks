@@ -58,6 +58,13 @@ def identified_predictive_passports(
                 {"operator":names[i],"learned_simplex_weight":float(w[slot,i])}
                 for i in selected if w[slot,i]>1e-8
             ]
+            # top-N is only a display summary. All nonzero operator
+            # coefficients are retained to reconstruct the EXACT native
+            # formula, including tiny but genuine sparsemax entries.
+            all_terms=[
+                {"operator":names[i],"learned_simplex_weight":float(w[slot,i])}
+                for i in range(len(names)) if w[slot,i]>0.0
+            ]
             slots.append({
                 "slot":int(slot),
                 "operator_formula":"signed simplex-weighted observed operators at 1h/4h/12h/24h history, reliability-normalized",
@@ -66,6 +73,8 @@ def identified_predictive_passports(
                     for h,v in zip(physical.scales,scales[slot])
                 },
                 "top_observed_operator_terms":terms,
+                "all_nonzero_observed_operator_terms":all_terms,
+                "all_weights_sum_to_one":float(w[slot].sum()),
                 "feature_activation_threshold_in_composite_score":
                     float(boundaries[slot]),
                 "transition_width_in_composite_score":float(widths[slot]),
@@ -86,6 +95,7 @@ def identified_predictive_passports(
             "exact_model_logit_group_contribution":
                 "sum(beta[k] * (mean(last_6h, concept[k]) - 0.5*gate[k]) for k in group)",
             "can_infer_true_etiology_or_intervention_effect":False,
+            "individual_member_formula_does_not_imply_individual_identifiability":True,
         })
     return {
         "description":"Actual trained model-native signed operator and temporal concept definitions",
