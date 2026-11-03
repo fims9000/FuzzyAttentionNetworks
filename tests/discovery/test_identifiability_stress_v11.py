@@ -44,7 +44,18 @@ def test_temporal_shuffle_reduces_positive_lag_predictability():
         _matrix_from_centered(_center(shuffled,masks),masks,(1,2,3)),
         compute_uv=False,
     )
-    assert signal[0]>2*null[0]
+    # Within-patient shuffling destroys ordered transitions but preserves
+    # finite-window patient means, so it need NOT halve the operator norm.
+    assert signal[0]>null[0]
+    # Fully independent episode-to-episode future pairing additionally
+    # removes patient-specific temporal links while retaining each
+    # patient's own marginal serial structure.
+    other=np.linalg.svd(
+        _matrix_from_centered(centered,m,(1,2,3),
+                              future_permutation=rng.permutation(len(x))),
+        compute_uv=False,
+    )
+    assert signal[0]>2*other[0]
 
 
 def test_distinct_dynamics_and_degeneracy_use_exact_planted_decay_regimes():
