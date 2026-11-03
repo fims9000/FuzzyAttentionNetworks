@@ -1,0 +1,6 @@
+V13 frozen synthetic-only research source import
+SHA256(xz-tar bytes): 9052d1df52b65e884fc24dab1dc01b325d130fe1eed4af9a08e1d83d1a0f271b
+Expected six source fragments: research/v13_part_0.b64 ... research/v13_part_5.b64
+Expected files: native intervention model, synthetic evaluation, 10 test cases, frozen YAML, scoped mathematical report
+Original accepted PIERE and V10/V11/V12 source/evidence untouched.
+Do not use previously consumed PhysioNet Set B as V13 holdout.
