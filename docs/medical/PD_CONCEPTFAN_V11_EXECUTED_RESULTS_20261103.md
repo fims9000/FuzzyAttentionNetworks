@@ -8,7 +8,7 @@ causal discovery theorem. Original accepted PIERE and V10 evidence unchanged.
 ## 1. Executed evidence — pinned sources
 
 - V11 native structural source, 3-model baseline and six new model fits:
-  [successful PhysioNet CI 41685277605](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41685277605),
+  [final optimized native-passport CI 41689286080](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41689286080) **PASS**, artifact `conceptfan-v11-predictive-groups-12`; earlier [original dense-Gram run 41685277605](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41685277605) also PASS,
   artifact `conceptfan-v11-predictive-groups-3`.
   All 9 fitted methods were evaluated on **the exact same 300 already
   inspected DEV patients**, after training on the same 2400 official
@@ -65,17 +65,17 @@ Averages across independent model initialization seeds 11,23,37,
 
 | DEVELOPMENT metric (NOT independent test) | V10 refit | V11 projector + original view loss | V11 projector + group view loss |
 | --- | ---: | ---: | ---: |
-| AUPRC original | **0.379405** | 0.368838 | 0.368702 |
-| AUPRC additional MCAR | **0.327814** | 0.313210 | 0.313031 |
-| AUPRC time/channel MAR | **0.387328** | 0.373247 | 0.376664 |
+| AUPRC original | **0.379405** | 0.368838 | 0.368722 |
+| AUPRC additional MCAR | **0.327814** | 0.313210 | 0.313020 |
+| AUPRC time/channel MAR | **0.387328** | 0.373247 | 0.376609 |
 | AUPRC physical branch alone | **0.372582** | 0.362564 | 0.363530 |
 | 6-12h future observed-signal RMSE | 0.806170 | 0.805947 | **0.805923** |
 | Randomly withheld observed-signal RMSE | 0.809086 | **0.808088** | 0.808176 |
-| Case-specific physiological concept-rank Spearman EXCESS over patient-permutation marginal null | 0.113021 | 0.183561 | **0.189422** |
-| Mean learned group definition projector overlap | 0.682838 | 0.777431 | **0.778995** |
-| Mean signed group-contribution Spearman over **7** groups | -0.004809 | **0.087708** | 0.087644 |
-| Effective number of physiological contributions | 5.2488 | 5.1309 | 5.1689 |
-| Max exact logit decomposition error | 1.2e-7 | 1.2e-7 | 8.6e-8 |
+| Case-specific physiological concept-rank Spearman EXCESS over patient-permutation marginal null | 0.113021 | 0.183561 | **0.188934** |
+| Mean learned group definition projector overlap | 0.682838 | 0.777431 | **0.778996** |
+| Mean signed group-contribution Spearman over **7** groups | -0.004809 | **0.087708** | 0.087637 |
+| Effective number of physiological contributions | 5.2488 | 5.1309 | 5.1735 |
+| Max exact logit decomposition error | 1.2e-7 | 1.2e-7 | 6.0e-8 |
 
 **Tradeoff:** improved consistency and slightly lower auxiliary
 errors, but AUPRC falls by 0.0106/0.0107; this does **not** meet
@@ -252,3 +252,25 @@ The first protocol with passport integration is a distinct
 full-model refit on the same development cohort and must have its
 own completed CI receipt before using those learned formulas as
 an experimentally verified example.
+
+
+### Final implementation receipt
+
+The complete **nine-model** re-analysis with the optimized
+zero-safe group Gram, final native learned weight/threshold
+passports, and the original sealed test policy **passed** in
+[CI 41689286080](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41689286080).
+All nine `concept_formulas_{method}_init_{seed}.json` files
+contain the *complete* exact set of nonzero signed operator
+weights, temporal scale simplexes, widths and thresholds,
+clinical-abstention status and a no-individual-patient-data
+declaration. Each concept's weights have been checked to sum to 1.
+
+The all-research synthetic regression CI
+[41689404167](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41689404167)
+passed 179 tests. The final group-view AUPRC is **0.368722**
+and signed case-ranking Spearman excess **0.188934**, differing
+minimally from the old dense prototype. Neither is proof of
+population superiority. A fresh signed-effect certificate must
+be calculated from the final optimized artifacts rather than
+blindly reusing the previous three-model certificate.
