@@ -26,8 +26,10 @@
   completed model fits and printed all AUPRCs but failed at the aggregate
   serialization stage because of a Python variable-shadowing typo.
   Fixed in separate commit with scientific model/loss/config Git blob SHA
-  held unchanged. A second A-ONLY run completes the report, without
-  using Set B. The rerun is NOT an independent cohort.
+  held unchanged. [**A-only report repair 41721295743: SUCCESS**](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41721295743),
+  artifact `conceptfan-v12-seta-development-report-fixed-1`, completed
+  every 13-fit aggregate and strict signed-effect certificate, **without
+  using Set B**. The rerun is NOT an independent cohort.
 - **Independent MAGNETS-style method:** self-developed mask/time
   aggregation + a binary classification concept bottleneck, *inspired*
   by Forest/Wei/Fink's regression MAGNETS; it is **NOT** their released
@@ -109,7 +111,75 @@ This is a meaningful negative control, not a missing result: forcing
 risk-sign labels from weak sample associations would give apparently
 stable signs **by construction** and invalidate the scientific question.
 
-## 4. What this proves / fails to prove
+## 4. Matched Set A historical DEV: an exploratory but different signal
+
+[**Successfully completed full report-only rerun 41721295743**](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41721295743).
+Models/losses/data configs and 3 independent seeds were byte-identical to
+the first execution; only the local Python variable shadowing in the report
+writer was fixed. The same 2,400 Set A TRAIN / previously seen **300 DEV**
+records were reused. **No Set B patient records or outcomes were accessed.**
+
+| Method | Mean AUPRC original DEV | AUROC | MCAR AUPRC | MAR AUPRC | Independent fits |
+|---|---:|---:|---:|---:|---:|
+| V11 group | **0.368722** | 0.727021 | 0.313020 | 0.376609 | 3 |
+| V12 observable anchor | 0.355270 | 0.722591 | 0.300449 | 0.374383 | 3 |
+| V12 anchor + signed effects | 0.353549 | 0.720715 | 0.301294 | 0.369991 | 3 |
+| MAGNETS-style binary adaptation | **0.404660** | **0.781561** | **0.357957** | **0.384526** | 3 |
+| HistGradientBoosting | 0.313649 | 0.746493 | 0.317102 | 0.294133 | 1 |
+
+V12 signed vs V11 original AUPRC difference **-0.015173**,
+descriptive paired patient/model bootstrap 95% interval
+**[-0.064502,+0.024792]**, spanning zero. V12 signed versus
+MAGNETS-style: **-0.051112**, descriptive interval
+**[-0.168427,+0.057507]**. Repeatedly inspected DEV plus 3
+initializations do **NOT** support population-level superiority,
+inferiority, noninferiority or a p-value claim.
+
+### Strict source identity and signed effects, on same earlier DEV cases
+
+| Method | Certified reproducible individual singleton effects | Multi-axis group effects | Abstained groups |
+|---|---:|---:|---:|
+| V11 group | **1** | 0 | 6 |
+| V12 observable anchor | **2** | 0 | 5 |
+| V12 anchor + signed effects | **2** | 0 | 5 |
+
+The surviving **source slots 3 and 4** pass all 3 pair comparisons
+for both V12 methods, while V11 passed only slot 4.
+For the full V12 signed arm, minimum signed same-patient Spearman
+across its 3 seed pairs was **0.9197** on slot 3 and **0.9004**
+on slot 4; minimum learned definition-projector overlap was
+**0.8586** and **0.8951**, respectively. This gain over V11 was
+observed **ONLY on the repeatedly inspected historical Set A DEV** and
+was **NOT reproduced** in the different new-seed synthetic regimes
+above (at K=5, V12 had fewer robust singletons than V11).
+
+On this Set A TRAIN sample the Bonferroni patient-label tests selected
+three risk coefficient signs for source slots **0:-, 4:-, 7:+**.
+**Slot 3 was not given a forced task sign**, despite passing the DEV
+strict effect test; conversely, the forced 0/7 signs did not make those
+slots pass the joint DEV direct-effect/definition screen.
+Therefore even the positive historical DEV effect cannot be
+interpreted as a mathematical guarantee from forced beta signs.
+
+The independent MAGNETS-style binary adaptation attained mean
+signed, train-only Hungarian matched DEV same-patient Spearman
+**0.8807** across 24 matched slot/pair comparisons (min **0.7634**);
+all 24 correlations were positive. **These 24 scores share only
+three trained model instances**. Strong cross-model effect correlation
+after matching is NOT proof of distinct concepts, genuine semantic
+factor recovery, clinical validity, low redundancy, or a direct
+comparison with official regression MAGNETS. The new-seed synthetic
+oracle correlation of the adapted method (0.020–0.105) was weak even
+when some AUPRCs were competitive.
+
+This creates a clear contradiction worth reporting, not erasing:
+**on the old DEV, V12 has two rather than one stable mathematical
+effect; on unseen synthetic factor regimes, it has no advantage
+and sometimes performs worse.** The valid conclusion is that V12
+remains exploratory and the central improvement hypothesis has
+NOT generalized.
+
+## 5. What this proves / fails to prove
 
 **Established in code and falsification:**
 - Native, train-time concept bottleneck; no direct encoder-to-logit
@@ -142,9 +212,10 @@ distinguish correlated physiological factors. New experiments should
 remain in a separate version/branch, and **must not use Set B again
 as a fresh holdout**.
 
-## 5. Evidence and provenance
+## 6. Evidence and provenance
 
 - [Synthetic 3/5/7 confirmed run](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41720328037)
+- [Completed Set A previous DEV report](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41721295743)
 - `src/conceptfan_discovery/oracle_synthetic_v12.py`,
   `src/conceptfan_discovery/signed_effect_v12.py`,
   `src/conceptfan_discovery/train_signed_effect_v12.py`,
