@@ -1,0 +1,64 @@
+name: ConceptFAN V10 exact paired seed uncertainty on frozen CI evidence
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v10-multiscale-20261103
+    paths:
+      - 'src/conceptfan_discovery/v10_seed_sensitivity.py'
+      - 'tests/discovery/test_v10_seed_sensitivity.py'
+      - '.github/workflows/conceptfan-v10-seed-audit.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  frozen-evidence-uncertainty:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONPATH: src:.
+      GH_TOKEN: ${{ github.token }}
+      OPENBLAS_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install analysis-only requirements
+        run: |
+          python -m pip install numpy pandas scipy pytest
+      - name: Validate exact small-N seed tests
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery/v10_seed_sensitivity.py
+          python -m pytest tests/discovery/test_v10_seed_sensitivity.py -q
+      - name: Retrieve exactly pinned successful V10 9-model release
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/v10_evidence"
+          gh run download 41623853277 \
+            --name conceptfan-v10-matched-clinical-4 \
+            --dir "$RUNNER_TEMP/v10_evidence"
+          test -s "$RUNNER_TEMP/v10_evidence/results_v10/v10_matched_development_by_scenario.csv"
+      - name: Recalculate honest dependent-model uncertainty
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.v10_seed_sensitivity \
+            --frozen-results "$RUNNER_TEMP/v10_evidence/results_v10" \
+            --out-dir audited_v10_seed_statistics
+      - name: Publish only summary tables
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v10-exact-three-seed-sensitivity-${{ github.run_number }}
+          path: audited_v10_seed_statistics/
+          retention-days: 21
+          if-no-files-found: warn
