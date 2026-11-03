@@ -1,0 +1,36 @@
+protocol:
+  name: conceptfan-v13-conditional-intervention-identification-exploratory
+  synthetic_only_no_patient_data: true
+  no_oracle_in_training: true
+  original_piere_v11_v12_untouched: true
+  no_proof_for_physionet_or_real_clinical_interventions: true
+  intervention_single_target_exclusivity_is_externally_verified_provenance: true
+  no_claim_without_provenance: true
+  no_latent_identity_guarantee_under_mixed_targets_or_causal_propagation: true
+data:
+  seed: 20270213
+  prior_internal_development_seed_not_reused_for_frozen_study: 20261104
+  k_true: [3, 5, 7]
+  n_train_per_environment: 180
+  n_holdout_control: 260
+certificate:
+  patient_bootstraps: 64
+  min_patients_per_environment: 40
+  lower_decile_direction_cosine: 0.80
+  min_singular_over_bootstrap_noise: 2.0
+  max_condition: 30.0
+training:
+  epochs: 40
+  observable_response_weight: 0.8
+  seeds: [11, 23, 37]
+  train_native_sensor_definitions: true
+  risk_prediction_has_no_hidden_to_logit_bypass: true
+  max_observed_history_hours: 36
+  concept_summary_window_hours: 6
+evaluation:
+  regimes: [exclusive, multitarget, duplicated, sham]
+  oracle_A_used_only_after_certificate_and_training: true
+  raw_logistic_and_optimistic_pca_baselines: true
+  signed_effect_rank_agreement_must_keep_sign: true
+  report_incorrect_target_exclusivity_failure: true
+  no_confirmatory_claim: true
