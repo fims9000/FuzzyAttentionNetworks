@@ -22,6 +22,7 @@ import argparse
 from collections import defaultdict
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import time
 import zipfile
@@ -275,6 +276,13 @@ def main()->None:
     a=p.parse_args()
     if a.out_dir.exists():
         p.error("ONE-SHOT experiment refuses any existing output directory")
+    # Forensic A-ONLY controls proved transformer refit AUPRC changes
+    # from 0.4603555 when the original Python hash seed is fixed at 0
+    # to 0.4522096 under a random hash seed, despite identical model
+    # code and torch 2.15.0+cpu. Must reproduce original environment
+    # BEFORE any novel Set B patient source can be accessed.
+    if os.environ.get("PYTHONHASHSEED")!="0":
+        p.error("Original external Transformer baseline requires PYTHONHASHSEED=0")
     # The new cohort must be absent at process entry. The SAME process
     # performs the complete frozen Set A refit check before fetching it.
     if a.set_b_zip.exists() or a.outcomes_b.exists():
