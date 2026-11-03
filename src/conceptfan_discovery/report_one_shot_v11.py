@@ -80,7 +80,7 @@ def format_one_shot_scientific_report(artifact_directory:Path)->str:
     for name in ARCHITECTURES:
         r=row(name)
         lines.append(
-            f"| \`{name}\` | {int(r.independent_model_initializations)} "
+            f"| `{name}` | {int(r.independent_model_initializations)} "
             f"| {float(r.mean_auprc):.4f} | {float(r.mean_auroc):.4f} "
             f"| {float(r.mean_brier_uncalibrated):.4f} |"
         )
@@ -98,7 +98,7 @@ def format_one_shot_scientific_report(artifact_directory:Path)->str:
     for name in ARCHITECTURES[:3]:
         j=effects[name]
         lines.append(
-            f"| \`{name}\` | {int(j['n_candidate_individual_effects'])} "
+            f"| `{name}` | {int(j['n_candidate_individual_effects'])} "
             f"| {int(j['n_candidate_group_only'])} "
             f"| {int(j['n_abstained'])} |"
         )
@@ -137,7 +137,7 @@ def format_one_shot_scientific_report(artifact_directory:Path)->str:
         if len(ci)!=2 or not np.isfinite(ci).all():
             raise ValueError("Invalid paired resampling interval")
         lines.append(
-            f"- \`{candidate}\` minus \`{comparison}\`: "
+            f"- `{candidate}` minus `{comparison}`: "
             f"ΔAUPRC {float(rec.mean_auprc_difference_candidate_minus_comparator):+.4f}, "
             f"descriptive paired patient/model 95% interval "
             f"[{float(ci[0]):+.4f}, {float(ci[1]):+.4f}]."
@@ -155,7 +155,7 @@ def format_one_shot_scientific_report(artifact_directory:Path)->str:
         "such as MAGNETS (not part of this seven-architecture cohort score).",
         "",
         "**Provenance:** original V10/V11 development receipt hashes and "
-        "Set B source SHA256s are retained in \`STATUS.json\`. "
+        "Set B source SHA256s are retained in `STATUS.json`. "
         "No raw patient-level predictions are included in this report.",
     ])
     return "\n".join(lines)+"\n"
