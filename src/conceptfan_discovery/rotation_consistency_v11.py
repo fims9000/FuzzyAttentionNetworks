@@ -54,8 +54,11 @@ def grouped_rotation_invariant_view_consistency(
         gram_a=a.transpose(1,2)@a
         gram_b=b.transpose(1,2)@b
         gram_cross=a.transpose(1,2)@b
-        norm_a=gram_a.square().sum(dim=(1,2)).sqrt()
-        norm_b=gram_b.square().sum(dim=(1,2)).sqrt()
+        # vector_norm defines a finite zero-norm backward subgradient;
+        # sqrt(sum(square(.))) would produce inf * 0 -> NaN at exactly
+        # constant or fully unobserved concept histories.
+        norm_a=torch.linalg.vector_norm(gram_a.flatten(1),dim=1)
+        norm_b=torch.linalg.vector_norm(gram_b.flatten(1),dim=1)
         cross=gram_cross.square().sum(dim=(1,2))
         da=norm_a+epsilon
         db=norm_b+epsilon
