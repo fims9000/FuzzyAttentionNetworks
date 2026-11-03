@@ -292,7 +292,7 @@ def run(a):
     pd.DataFrame(comparison).to_csv(a.out_dir/"DESCRIPTIVE_ONLY_DEV_BOOTSTRAP.csv",index=False)
     _write(a.out_dir/"TRAIN_ONLY_SOURCE_AND_SIGN_CERTIFICATE.json",anchors.to_json())
     _write(a.out_dir/"SIGNED_EFFECT_AND_DEFINITION_SCREEN.json",certificate)
-    _write(a.out_dir/"MASK_AGGREGATE_TRAIN_ONLY_ALIGNMENT.json",maps_json if False else {
+    _write(a.out_dir/"MASK_AGGREGATE_TRAIN_ONLY_ALIGNMENT.json",{
         "baseline":"INDEPENDENT MAGNETS_STYLE_BINARY_ADAPTATION_NOT_OFFICIAL",
         "matched_using":"TRAIN only, no DEV or Set B matching",
         "minimum_abs_train_spearman":float(
