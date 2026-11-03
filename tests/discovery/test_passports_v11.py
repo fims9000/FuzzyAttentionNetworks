@@ -48,6 +48,10 @@ def test_pasports_disclose_true_learned_thresholds_and_no_fabricated_physical_cu
     assert first["transition_width_in_composite_score"]==pytest.approx(float(width[0].detach()))
     assert first["single_physical_channel_clinical_cutoff"] is None
     assert first["top_observed_operator_terms"]
+    assert first["all_nonzero_observed_operator_terms"]
+    assert first["all_weights_sum_to_one"]==pytest.approx(1.)
+    assert sum(t["learned_simplex_weight"] for t in
+               first["all_nonzero_observed_operator_terms"])==pytest.approx(1.)
     for group in passport["groups"]:
         for unit in group["member_parameter_formulas"]:
             assert sum(unit["temporal_scale_mixture_hours"].values())==pytest.approx(1.)
