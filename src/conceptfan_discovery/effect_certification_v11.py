@@ -31,6 +31,7 @@ def joint_concept_screen(
     expected_seeds:tuple[int,...]=(11,23,37),
     min_every_pair_spearman:float=.5,
     min_every_pair_definition_overlap:float=.75,
+    already_repeatedly_inspected_development:bool=True,
 )->dict:
     if not 0<min_every_pair_spearman<=1 or not 0<min_every_pair_definition_overlap<=1:
         raise ValueError("Strict positive empirical threshold required")
@@ -136,7 +137,7 @@ def joint_concept_screen(
         "n_pair_scores_not_independent":len(expected_pairs),
         "not_causal_identification":True,
         "patient_oracle_clinical_ground_truth_used":False,
-        "already_repeatedly_inspected_development":True,
+        "already_repeatedly_inspected_development":bool(already_repeatedly_inspected_development),
         "statistical_significance_claim":False,
         "methods":screens,
     }
