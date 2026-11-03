@@ -299,6 +299,9 @@ def main()->None:
             s["no_set_a_test_or_calibration_evaluation"] and
             s["set_b_is_same_mimic_ii_source"] and s["one_shot_no_retuning"]
             and s["no_patient_level_export"]
+            and s["original_external_pythonhashseed"]=="0"
+            and s["after_first_aborted_pre_B_refit_drift"]
+            and s["original_set_b_untouched_through_all_previous_runs"]
             and v10_receipt["status"]=="EXPLORATORY_V10_MATCHED_TRAINING_COMPLETE"):
         p.error("Frozen cross-cohort audit contract missing")
     if tuple(cfg["methods"])!=METHODS or tuple(cfg["seeds"])!=SEEDS:
