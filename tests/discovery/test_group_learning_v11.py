@@ -143,3 +143,26 @@ def test_full_one_epoch_synthetic_fit_no_oracle_supervision(variant):
     assert meta["source_basis_is_train_only"]
     import math
     assert meta["n_training_minibatches"]==math.ceil(len(ds.train.y)/80)
+
+
+def test_low_rank_gram_identity_exactly_matches_full_temporal_kernel_loss():
+    g=torch.Generator().manual_seed(2026)
+    c=torch.randn(4,36,3,generator=g)
+    b=torch.randn(4,36,3,generator=g)
+    reliability=torch.ones_like(c)
+    first,second=_output(c,reliability),_output(b,reliability)
+    compressed,_=grouped_rotation_invariant_view_consistency(
+        first,second,_groups(),epsilon=1e-7,
+    )
+    direct=0.
+    for group in _groups():
+        a=c[:,:,group.first:group.stop]
+        d=b[:,:,group.first:group.stop]
+        a=a-a.mean(dim=1,keepdim=True)
+        d=d-d.mean(dim=1,keepdim=True)
+        ga=a@a.transpose(1,2)
+        gb=d@d.transpose(1,2)
+        ga=ga/(ga.flatten(1).norm(dim=-1).view(-1,1,1)+1e-7)
+        gb=gb/(gb.flatten(1).norm(dim=-1).view(-1,1,1)+1e-7)
+        direct=direct+(ga-gb).square().mean()/len(_groups())
+    torch.testing.assert_close(compressed, direct, atol=2e-8,rtol=1e-5)
