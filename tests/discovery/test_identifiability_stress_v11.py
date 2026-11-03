@@ -74,3 +74,22 @@ def test_distinct_dynamics_and_degeneracy_use_exact_planted_decay_regimes():
 def test_invalid_oracle_generators_rejected(bad):
     with pytest.raises(ValueError):
         simulate_linear_dynamics(k=bad[0],regime=bad[1],seed=1)
+
+
+def test_strict_iid_time_null_retains_cross_sensor_structure_but_not_predictable_lags():
+    x,m,emission,_=simulate_linear_dynamics(
+        k=3,regime="iid_temporal_null",seed=47,n_patients=450,
+        observed_fraction=.96,
+    )
+    y,mm,other_emission,_=simulate_linear_dynamics(
+        k=3,regime="distinct",seed=47,n_patients=450,
+        observed_fraction=.96,
+    )
+    # Exactly the same mixing matrix makes it a legitimate control,
+    # rather than reducing signal by hiding channels or changing sensors.
+    np.testing.assert_allclose(emission,other_emission)
+    iid=np.linalg.svd(_matrix_from_centered(_center(x,m),m,(1,2,3)),
+                      compute_uv=False)[0]
+    source=np.linalg.svd(_matrix_from_centered(_center(y,mm),mm,(1,2,3)),
+                         compute_uv=False)[0]
+    assert source>2*iid
