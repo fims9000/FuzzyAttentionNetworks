@@ -36,8 +36,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.12.15'
           cache: pip
+      - name: Ensure original VERIFIED Python patch version before any A-only fit
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import platform,sys
+          assert platform.python_version()=="3.12.15",platform.python_version()
+          print("ORIGINAL_PYTHON_RUNTIME",platform.python_version(),sys.executable)
+          PY
       - name: Install frozen CPU inference + research dependencies
         run: |
           set -euo pipefail
