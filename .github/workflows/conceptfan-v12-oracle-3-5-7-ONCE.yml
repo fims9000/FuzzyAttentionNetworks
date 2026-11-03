@@ -1,0 +1,87 @@
+name: V12 unseen-seed 3-5-7 planted-factor oracle falsification (synthetic ONLY)
+
+# Runs ONCE at introduction of this workflow file. New generator seeds are
+# frozen in YAML; oracle factors are removed from training objects. No
+# PhysioNet Set A/B datasets are fetched or touched here.
+on:
+  push:
+    branches: [experiment/conceptfan-v12-signed-effect-identification-20261103]
+    paths:
+      - '.github/workflows/conceptfan-v12-oracle-3-5-7-ONCE.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: conceptfan-v12-frozen-first-new-seed-oracle-3-5-7
+  cancel-in-progress: false
+
+jobs:
+  hidden-factor-falsification:
+    if: github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install pinned compatible math and model stack
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Falsify train-only sign and evaluation-only oracle contracts
+        run: |
+          set -euo pipefail
+          python -m compileall -q \
+            src/conceptfan_discovery/signed_effect_v12.py \
+            src/conceptfan_discovery/train_signed_effect_v12.py \
+            src/conceptfan_discovery/magnets_binary_baseline_v12.py \
+            src/conceptfan_discovery/oracle_synthetic_v12.py
+          python -m pytest \
+            tests/discovery/test_signed_effect_v12.py \
+            tests/discovery/test_magnets_binary_v12.py \
+            tests/discovery/test_oracle_synthetic_v12.py \
+            tests/discovery/test_identifiability_v11.py -q
+      - name: Fit new-seed synthetic 3-5-7 factor models and reveal oracle ONLY at evaluation
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.oracle_synthetic_v12 \
+            --config configs/medical/pd_v12_new_oracle_synthetic_20261103.yaml \
+            --reference-v6-config configs/medical/pd_clinical_unknown_neutral_v6.yaml \
+            --reference-v7-config configs/medical/pd_clinical_dual_process_v7.yaml \
+            --reference-v10-config configs/medical/pd_clinical_v10_multiscale.yaml \
+            --reference-v11-config configs/medical/pd_clinical_v11_identifiable_groups.yaml \
+            --reference-v12-config configs/medical/pd_v12_trainonly_signed_effects_20261103.yaml \
+            --out-dir "$RUNNER_TEMP/V12_SYNTHETIC_ORACLE" \
+            > oracle_v12.log 2>&1 || {
+              tail -n 100 oracle_v12.log
+              exit 1
+            }
+          tail -n 85 oracle_v12.log
+          mkdir -p V12_SYNTHETIC_ORACLE
+          cp "$RUNNER_TEMP/V12_SYNTHETIC_ORACLE/"*.csv V12_SYNTHETIC_ORACLE/
+          cp "$RUNNER_TEMP/V12_SYNTHETIC_ORACLE/"*.json V12_SYNTHETIC_ORACLE/
+          cp oracle_v12.log V12_SYNTHETIC_ORACLE/
+          git rev-parse HEAD > V12_SYNTHETIC_ORACLE/source_commit_sha.txt
+          sha256sum configs/medical/pd_v12_new_oracle_synthetic_20261103.yaml \
+            > V12_SYNTHETIC_ORACLE/frozen_protocol_sha256.txt
+      - name: Upload ONLY oracle aggregate summary and reproducibility receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v12-new-seed-oracle-3-5-7-${{ github.run_number }}
+          path: |
+            V12_SYNTHETIC_ORACLE/
+            oracle_v12.log
+          retention-days: 30
+          if-no-files-found: warn
