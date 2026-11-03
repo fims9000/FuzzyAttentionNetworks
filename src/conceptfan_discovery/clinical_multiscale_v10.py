@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import itertools
+from dataclasses import replace
 import json
 import random
 import tempfile
@@ -32,7 +33,7 @@ from .lagged_rank import fit_lagged_predictive_rank
 from .model_v2 import masked_observation_view, v2_loss
 from .multiscale_physiology_v10 import (
     MultiScaleDualProcessConceptFAN, MultiScaleUnknownNeutralConceptFAN,
-    physiological_scale_entropy, SCALES,
+    physiological_scale_entropy, expanded_multiscale_definition, SCALES,
 )
 from .observation_process_concepts_v7 import dual_training_objective
 from .physionet import prepare_physionet_discovery
@@ -240,7 +241,14 @@ def main() -> None:
                     data,basis,seed,ref,v7,cfg,
                     consistency=(method=="v10_multiscale_consistency"),
                 )
-            per_seed[method]["phys"][seed]=evaluate_discovery(model.physical,dev)
+            # Match concept identities using BOTH the learned signed feature
+            # dictionary and the learned temporal scale mixture. Otherwise
+            # V10 could look falsely stable even when scale assignments drift.
+            physical_evidence=evaluate_discovery(model.physical,dev)
+            per_seed[method]["phys"][seed]=replace(
+                physical_evidence,
+                weights=expanded_multiscale_definition(model),
+            )
             per_seed[method]["care"][seed]=collect_observation_process_evidence(
                 model,dev.mask,dev.y
             )
