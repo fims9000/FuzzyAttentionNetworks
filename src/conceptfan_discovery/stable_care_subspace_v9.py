@@ -149,7 +149,14 @@ def find_common_mask_subspace(
                     candidate-=previous*np.dot(previous,candidate)
                 scores[sensor]=np.linalg.norm(candidate)
                 candidates[:,sensor]=candidate
-            order=np.argsort(-scores,kind="stable")
+            # When projected coordinate norms are equal to floating
+            # precision, LAPACK's arbitrary basis rotations can change
+            # their sub-ulp ordering. Deterministic observable coordinate
+            # indices MUST break ties, not random eigensolver noise.
+            # This is a canonical dictionary convention, not an assertion
+            # that close physiological axes are uniquely identifiable.
+            ordered_scores=np.round(scores,decimals=11)
+            order=np.lexsort((np.arange(dimension),-ordered_scores))
             pivot=int(order[0])
             score=float(scores[pivot])
             if score<1e-8:
