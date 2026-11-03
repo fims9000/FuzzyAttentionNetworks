@@ -1,0 +1,101 @@
+name: V14 three-environment blind source concepts — train-only, synthetic
+on:
+  push:
+    branches: [experiment/conceptfan-v14-multienvironment-contrast-20261104]
+    paths:
+      - 'src/conceptfan_discovery/environment_contrast_v14.py'
+      - 'src/conceptfan_discovery/environment_synthetic_v14.py'
+      - 'src/conceptfan_discovery/experiment_v14.py'
+      - 'tests/discovery/test_environment_v14.py'
+      - 'tests/discovery/test_environment_adversary_v14.py'
+      - '.github/workflows/conceptfan-v14-three-environment-synthetic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  only-generated-synthetic-multienvironment-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install reproducible CPU dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Syntax and negative falsification tests
+        run: |
+          set -euo pipefail
+          python -m compileall -q \
+            src/conceptfan_discovery/environment_contrast_v14.py \
+            src/conceptfan_discovery/environment_synthetic_v14.py \
+            src/conceptfan_discovery/experiment_v14.py
+          python -m pytest \
+            tests/discovery/test_environment_v14.py \
+            tests/discovery/test_environment_adversary_v14.py -q
+      - name: Reproduce frozen exploratory old-generator study
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.experiment_v14 \
+            --out-dir V14_EXPLORATORY \
+            --generator-base 20261104 > V14_exploratory.log 2>&1 || {
+              tail -n 90 V14_exploratory.log
+              exit 1
+            }
+          tail -n 25 V14_exploratory.log
+      - name: Reproduce independent seeded heldout generator WITHOUT tuning
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.experiment_v14 \
+            --out-dir V14_NEW_SEED \
+            --generator-base 20270104 > V14_new_seed.log 2>&1 || {
+              tail -n 90 V14_new_seed.log
+              exit 1
+            }
+          tail -n 25 V14_new_seed.log
+      - name: Verify both audits did not fake an all-passing k=7 result
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for folder,seed in [('V14_EXPLORATORY',20261104),('V14_NEW_SEED',20270104)]:
+              d=json.loads((Path(folder)/'STATUS.json').read_text())
+              assert d['status']=='V14_CONDITIONAL_MULTI_ENVIRONMENT_COMPARISON_COMPLETE'
+              assert d['generator_base']==seed
+              assert d['no_real_patient_or_previous_set_b_read']
+              assert d['no_known_action_labels_or_target_map']
+              assert d['latent_count_was_never_passed_to_fitting_algorithm']
+              assert d['abstention_count_by_true_k']['7']>=1, 'Do not imply 3/3 identification at k=7'
+              print(folder,'ABSTENTIONS',d['abstention_count_by_true_k'])
+          PY
+          git rev-parse HEAD > git_sha_V14.txt
+      - name: Upload only aggregate comparison and falsification receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v14-three-environment-conditional-synthetic-${{ github.run_number }}
+          path: |
+            V14_EXPLORATORY/
+            V14_NEW_SEED/
+            V14_exploratory.log
+            V14_new_seed.log
+            git_sha_V14.txt
+          retention-days: 30
+          if-no-files-found: warn
