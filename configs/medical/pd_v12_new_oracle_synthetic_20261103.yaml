@@ -1,0 +1,42 @@
+protocol:
+  name: v12_new_seed_oracle_synthetic_3_5_7_after_algorithm_frozen
+  frozen_before_generated_validation_scoring: true
+  synthetic_only_no_clinical_data: true
+  latent_factor_labels_for_evaluation_only: true
+  no_oracle_parameters_in_optimizer: true
+  no_validation_outcome_in_selection: true
+  no_physical_clinical_identification_claim: true
+  record_negative_null_results: true
+data:
+  k_true: [3, 5, 7]
+  n_samples: 960
+  channels: 10
+  history_hours: 36
+  forecast_hours: 12
+  generator_seed_base: 20261113
+  split_seed_base: 20261121
+rank:
+  lags: [1, 2, 3]
+  permutations: 60
+  patient_bootstraps: 12
+  alpha: 0.05
+  seed_base: 20261131
+  max_computational_slots: 8
+certificate:
+  patient_bootstraps: 40
+  seed_base: 20261141
+  min_subspace_overlap: 0.8
+  gap_noise_quantile: 0.9
+evaluation:
+  methods:
+    - v11_projector_group_view
+    - v12_observable_anchor
+    - v12_anchor_signed_effect
+    - magnets_style_binary_adaptation
+  seeds: [11, 23, 37]
+  original_validation_untouched_by_model_training: true
+  oracle_alignment_only_after_training: true
+  data_rank_mismatch_must_be_reported: true
+  oracle_matched_max_abs_spearman_is_optimistic: true
+  independent_time_and_patient_scrambling_negative_control: true
+  no_new_hospital_claim: true

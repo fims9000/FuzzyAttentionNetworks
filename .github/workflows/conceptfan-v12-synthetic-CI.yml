@@ -1,0 +1,61 @@
+name: V12 train-only signed effects — synthetic falsification and regressions
+
+on:
+  push:
+    branches: [experiment/conceptfan-v12-signed-effect-identification-20261103]
+    paths:
+      - 'src/conceptfan_discovery/signed_effect_v12.py'
+      - 'src/conceptfan_discovery/magnets_binary_baseline_v12.py'
+      - 'src/conceptfan_discovery/clinical_signed_effect_v12.py'
+      - 'src/conceptfan_discovery/oracle_synthetic_v12.py'
+      - 'src/conceptfan_discovery/train_signed_effect_v12.py'
+      - 'tests/discovery/test_signed_effect_v12.py'
+      - 'tests/discovery/test_magnets_binary_v12.py'
+      - 'tests/discovery/test_oracle_synthetic_v12.py'
+      - '.github/workflows/conceptfan-v12-synthetic-CI.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  no-real-patients-used:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install pinned compatible CPU PyTorch and package
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Check new mathematics and established V11 invariants
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery/signed_effect_v12.py src/conceptfan_discovery/train_signed_effect_v12.py src/conceptfan_discovery/magnets_binary_baseline_v12.py src/conceptfan_discovery/clinical_signed_effect_v12.py src/conceptfan_discovery/oracle_synthetic_v12.py
+          python -m pytest \
+            tests/discovery/test_signed_effect_v12.py \
+            tests/discovery/test_magnets_binary_v12.py \
+            tests/discovery/test_oracle_synthetic_v12.py \
+            tests/discovery/test_identifiability_v11.py \
+            tests/discovery/test_group_learning_v11.py \
+            tests/discovery/test_effect_certification_v11.py -q
+      - name: Full discovery regression with Set B strictly inaccessible
+        run: |
+          set -euo pipefail
+          python -m pytest tests/discovery -q

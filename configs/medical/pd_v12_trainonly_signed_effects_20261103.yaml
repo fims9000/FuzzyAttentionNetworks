@@ -1,0 +1,64 @@
+# Exploratory BEFORE first V12 fit; never tune this protocol on Set B.
+protocol:
+  name: conceptfan-v12-observable-signed-effect-training-20261103
+  stage: EXPLORATORY_PREVIOUSLY_INSPECTED_SET_A_DEV_ONLY
+  original_piere_paper_untouched: true
+  set_b_consumed_by_frozen_v11_evaluation_never_used_in_v12: true
+  no_new_hospital_validation: true
+  medical_semantics_not_identified: true
+  original_set_a_test_and_calibration_remain_sealed: true
+  no_raw_patient_data_or_predictions_in_artifacts: true
+  interpretation: compare_patient_specific_signed_logit_contributions_not_forced_training_signs
+source:
+  prior_v11_completed_run: 41689286080
+  prior_v10_refit_run: 41623853277
+  prior_v11_setb_first_completion: 41710356212
+  set_a_url: https://physionet.org/files/challenge-2012/1.0.0/set-a.zip
+  outcomes_a_url: https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt
+  forbid_download_or_read_set_b: true
+training:
+  methods:
+    - v11_projector_group_view
+    - v12_observable_anchor
+    - v12_anchor_signed_effect
+    - magnets_style_binary_adaptation
+    - hist_gradient_boosting
+  seeds: [11, 23, 37]
+  same_v10_epochs_and_optimization: true
+  anchor_history_hours: 6
+  observable_anchor_weight: 0.75
+  signed_effect_view_weight: 1.5
+  train_association_sign_weight: 0.20
+  risk_sign_margin: 0.08
+  freeze_signs_and_source_groups_before_model_fits: true
+  mask_aggregate_architecture:
+    n_masks: 4
+    hidden_channels: 32
+    temperature: 0.7
+    loss_mask_size: 0.006
+    loss_mask_total_variation: 0.01
+    loss_bottleneck_l1: 0.01
+    loss_concept_redundancy: 0.01
+    regression_paper_authors_original_code_used: false
+    classification_adaptation_not_official_magnets: true
+source_anchors:
+  patient_bootstraps: 96
+  train_only_label_permutations: 199
+  seed: 20261104
+  bonferroni_familywise_alpha: 0.05
+  minimum_absolute_train_class_difference: 0.02
+  only_structural_singletons: true
+  orientation_rule: sign_pivot_of_largest_absolute_observed_sensor_loading_positive
+evaluation:
+  n_previous_development_cases: 300
+  scenarios: [original, mcar_thin, time_channel_mar]
+  evaluate_exact_same_patients_across_methods: true
+  per_seed_auprc_auroc_brier: true
+  signed_pairwise_min_spearman: 0.5
+  learned_definition_min_overlap: 0.75
+  align_magnets_only_on_training_records: true
+  min_train_magnets_alignment_abs_spearman: 0.2
+  descriptive_bootstrap_draws: 300
+  bootstrap_seed: 20261104
+  all_development_intervals_descriptive_no_significance: true
+  no_v12_comparisons_or_retrofitting_on_set_b: true
