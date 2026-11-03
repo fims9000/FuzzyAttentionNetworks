@@ -158,3 +158,13 @@ The exact frozen `src/conceptfan_discovery/holdout_setb_v11.py` blob SHA at the 
 The previous second failed Set B workflow, despite having correct PYTHONHASHSEED=0, is documented above and remains visible. The source issue was the **combined per-process execution sequence**, not an intrinsic lack of Transformer reproducibility in its historical original execution context. No Set B labels have been read in any previous attempt; no hyperparameter or data-preprocessing modification was driven by external outcomes.
 
 The first actual Set B analysis must now use the same A-only-verified `FIT_ORDER` and environment settings, reject any refit drift, and publish only the predefined cohort aggregate outputs. Any B result, positive or negative, must be retained without optimizing on that holdout.
+
+## Third aborted pre-B run and Python patch-level environment drift
+
+[CI 41708168502](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41708168502) reached the exact historic source-blob and frozen A-only reference checks, then **again aborted BEFORE downloading Set B** when independent Transformer seed 11 returned DEV AUPRC 0.4405848 instead of 0.4603555. This failure is recorded, not dismissed, and its status explicitly says `REFIT DRIFT before Set B access`. Earlier methods including V10, HGB and GRU-D had reproduced reference DEV results.
+
+Log inspection found the decisive additional environment difference: all 17 historical refits passed EXACTLY under **Python 3.12.15** in CI 41706946832, whereas this failed new-cohort runner had automatically selected **Python 3.12.16** under the floating `setup-python python-version: '3.12'`. The CPU PyTorch 2.15.0, NumPy 2.5.4, pandas 3.1.0, scikit-learn 1.9.1, SciPy 1.18.1 and other installed package versions matched on both jobs. This is a concrete verified source-of-environment drift, though causality must be confirmed by an exact patch-pinned A-only rerun before the next external evaluation.
+
+An exact-Python-3.12.15 **A-ONLY** full 17-model refit now has a separate CI receipt ([run 41709363597](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41709363597)). No new-cohort experiment may be initiated until it succeeds without source or tuning changes. The first three failed new-cohort jobs have never passed their source-model refit guards and **none has downloaded or scored Set B**. Their failed logs are retained for software reproducibility analysis.
+
+No interpretation of method superiority may be based on these aborted pre-B jobs.
