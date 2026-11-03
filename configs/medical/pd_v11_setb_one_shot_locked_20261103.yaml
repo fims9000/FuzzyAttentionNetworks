@@ -1,0 +1,58 @@
+# Frozen before new-cohort Set B outcomes are loaded or scored.
+# Do not tune model weights, seed count, threshold or hyperparameters on Set B.
+protocol:
+  name: conceptfan_v11_one_shot_new_physionet_set_b_patient_cohort_20261103
+  only_set_a_training: true
+  set_b_access_after_refit_verification: true
+  fixed_methods_before_holdout: true
+  no_set_a_test_or_calibration_evaluation: true
+  set_b_is_same_mimic_ii_source: true
+  one_shot_no_retuning: true
+  no_patient_level_export: true
+  max_prior_dev_auprc_drift: 0.002
+  original_external_pythonhashseed: "0"
+  after_first_aborted_pre_B_refit_drift: true
+  original_set_b_untouched_through_all_previous_runs: true
+  no_outcome_derived_features_or_future_36h_to_48h_b_data: true
+source:
+  prior_v11_run: 41689286080
+  prior_external_run: 41626717843
+  original_v10_receipt_run: 41623853277
+  expected_set_b_url: https://physionet.org/files/challenge-2012/1.0.0/set-b.zip
+  expected_outcomes_b_url: https://physionet.org/files/challenge-2012/1.0.0/Outcomes-b.txt
+  original_set_a_url: https://physionet.org/files/challenge-2012/1.0.0/set-a.zip
+methods:
+  - v10_consistency_refit
+  - v11_projector_axis_view
+  - v11_projector_group_view
+  - logistic_history
+  - hist_gradient_boosting
+  - gru_d_style
+  - transformer_timeseries
+seeds: [11, 23, 37]
+external_training:
+  tabular_seed: 11
+  epochs: 18
+  batch_size: 128
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  augmentation_fraction: 0.20
+evaluation:
+  history_hours: 36
+  holdout_expected_patients: 4000
+  scenarios: [original, mcar_thin, time_channel_mar]
+  no_freeze_or_hyperparameter_refit_after_b: true
+  original_set_a_calibration_and_test_not_evaluated: true
+  comparison_cohort: new_set_b_4000_icu_stays_from_same_mimic_ii_source
+statistics:
+  paired_bootstrap_draws: 800
+  seed: 20261103
+  effect_min_every_pair_spearman: 0.50
+  definition_min_every_pair_overlap: 0.75
+  descriptive_paired_patient_model_interval_only: true
+  no_cross_hospital_claim: true
+comparisons:
+  - [v11_projector_group_view, v10_consistency_refit]
+  - [v11_projector_group_view, transformer_timeseries]
+  - [v10_consistency_refit, transformer_timeseries]
+  - [v11_projector_axis_view, v10_consistency_refit]
