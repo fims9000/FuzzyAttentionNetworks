@@ -25,6 +25,7 @@ import json
 from pathlib import Path
 import time
 import zipfile
+import urllib.request
 
 import numpy as np
 import pandas as pd
@@ -63,6 +64,42 @@ METHODS=ARMS+EXTERNAL_METHODS
 SCENARIOS=("original","mcar_thin","time_channel_mar")
 REFERENCE_V11_RUN=41689286080
 REFERENCE_V10_EXTERNAL_RUN=41626717843
+
+
+def download_set_b_only_after_all_refit_guards_pass(
+    *, destination_zip:Path,destination_outcomes:Path,
+    source_zip_url:str,outcome_url:str,
+)->None:
+    """Actual HOLDOUT source access is deferred until ALL A-only refits pass.
+
+    A failed refit check therefore cannot accidentally access or inspect
+    any new cohort labels, even in the GitHub runner filesystem.
+    """
+    prefix="https://physionet.org/files/challenge-2012/1.0.0/"
+    if (source_zip_url!=prefix+"set-b.zip" or
+        outcome_url!=prefix+"Outcomes-b.txt"):
+        raise ValueError("Only exact pre-registered official Set B source URLs")
+    if destination_zip.exists() or destination_outcomes.exists():
+        raise FileExistsError("Set B files must be absent BEFORE frozen refit")
+    for destination,url in (
+        (destination_zip,source_zip_url),(destination_outcomes,outcome_url),
+    ):
+        destination.parent.mkdir(parents=True,exist_ok=True)
+        try:
+            request=urllib.request.Request(
+                url,headers={"User-Agent":"ConceptFAN-frozen-one-shot-holdout/1.0"}
+            )
+            with urllib.request.urlopen(request,timeout=180) as source, destination.open("xb") as sink:
+                while True:
+                    part=source.read(1024*1024)
+                    if not part:
+                        break
+                    sink.write(part)
+            if destination.stat().st_size<1000:
+                raise IOError("Official Set B source unexpectedly small")
+        except Exception:
+            destination.unlink(missing_ok=True)
+            raise
 
 
 def load_set_b_strict(
@@ -238,6 +275,10 @@ def main()->None:
     a=p.parse_args()
     if a.out_dir.exists():
         p.error("ONE-SHOT experiment refuses any existing output directory")
+    # The new cohort must be absent at process entry. The SAME process
+    # performs the complete frozen Set A refit check before fetching it.
+    if a.set_b_zip.exists() or a.outcomes_b.exists():
+        p.error("Set B files must not exist before DEV refit verification")
     cfg=yaml.safe_load(a.config.read_text(encoding="utf-8"))
     ref=yaml.safe_load(a.reference_v6_config.read_text(encoding="utf-8"))
     v7=yaml.safe_load(a.reference_v7_config.read_text(encoding="utf-8"))
@@ -286,9 +327,10 @@ def main()->None:
         source_zip=a.set_a_zip,outcome_file=a.outcomes_a,
         base_cfg=ref,prior_receipt=v10_receipt,
     )
-    old_train_ids={int(Path(path).stem)
-                   for path in zipfile.ZipFile(a.set_a_zip).namelist()
-                   if path.lower().endswith(".txt")}
+    with zipfile.ZipFile(a.set_a_zip) as source_a:
+        old_train_ids={int(Path(path).stem)
+                       for path in source_a.namelist()
+                       if path.lower().endswith(".txt")}
     if len(old_train_ids)!=4000:
         raise ValueError("Source Set A record manifest unexpectedly altered")
     order=np.random.default_rng(int(ref["data"]["pilot_selection_seed"])).permutation(
@@ -368,8 +410,14 @@ def main()->None:
             print("Set A train-only verified",method,seed,"dev AUPRC",
                   round(dev_score,6),flush=True)
 
-    # Phase 2: ONLY NOW is the new Set B opened. This explicit order avoids
-    # viewing B labels/outcomes during source feature or model selection.
+    # Phase 2: ONLY NOW do we DOWNLOAD and open the new Set B cohort.
+    # The raw source and outcome bytes were absent during every fit/refit.
+    download_set_b_only_after_all_refit_guards_pass(
+        destination_zip=a.set_b_zip,
+        destination_outcomes=a.outcomes_b,
+        source_zip_url=cfg["source"]["expected_set_b_url"],
+        outcome_url=cfg["source"]["expected_outcomes_b_url"],
+    )
     holdout,holdout_meta=load_set_b_strict(
         a.set_b_zip,a.outcomes_b,selected_channels=tuple(data.receipt["channel_names"]),
         medians=data.medians,scales=data.scales,
