@@ -12,7 +12,7 @@ import torch
 
 from conceptfan_discovery.holdout_setb_v11 import (
     load_set_b_strict,predict_fixed_concept,_reference_score,
-    METHODS,ARMS,SCENARIOS,SEEDS,download_set_b_only_after_all_refit_guards_pass,
+    METHODS,ARMS,SCENARIOS,SEEDS,FIT_ORDER,download_set_b_only_after_all_refit_guards_pass,
 )
 from conceptfan_discovery.multiscale_physiology_v10 import MultiScaleDualProcessConceptFAN
 from conceptfan_discovery.effect_certification_v11 import joint_concept_screen
@@ -198,3 +198,20 @@ def test_late_download_accepts_only_frozen_official_urls_and_never_overwrites(tm
         )
     assert b.read_bytes()==b"EXISTING_HOLDOUT_FORBIDDEN"
     assert not o.exists()
+
+
+def test_original_external_train_order_executed_before_v11_new_arms():
+    # Source external comparison originally trained V10 -> traditional
+    # classifiers -> GRU-D -> Transformer, each with fixed input seeds.
+    # The new experimental V11 arms must not affect that baseline's
+    # surrounding training sequence or global random state.
+    assert FIT_ORDER==(
+        "v10_consistency_refit",
+        "logistic_history",
+        "hist_gradient_boosting",
+        "gru_d_style",
+        "transformer_timeseries",
+        "v11_projector_axis_view",
+        "v11_projector_group_view",
+    )
+    assert set(FIT_ORDER)==set(METHODS)
