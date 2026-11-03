@@ -36,3 +36,18 @@ def test_rank_mismatch_must_not_be_called_true_k_recovery():
     assert len(report["matched_signed_spearman"])==3
     assert report["n_true_factors"]==5
     assert report["n_learned_slots"]==3
+
+
+def test_seta_exploratory_reporting_cannot_shadow_cli_namespace():
+    # The first full study correctly trained every model, but a local name
+    # reused the CLI namespace 'a' for a NumPy effect vector just before
+    # writing aggregate output. This explicit regression prevents recurrence.
+    import ast
+    import inspect
+    from conceptfan_discovery.clinical_signed_effect_v12 import run
+    tree=ast.parse(inspect.getsource(run))
+    writes=[
+        node for node in ast.walk(tree)
+        if isinstance(node,ast.Name) and node.id=="a" and isinstance(node.ctx,ast.Store)
+    ]
+    assert not writes, "Runner CLI args cannot be overwritten by effect arrays"
