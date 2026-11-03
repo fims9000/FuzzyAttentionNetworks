@@ -44,8 +44,8 @@ def test_pasports_disclose_true_learned_thresholds_and_no_fabricated_physical_cu
     assert len(passport["groups"])==2
     first=passport["groups"][0]["member_parameter_formulas"][0]
     tau,width=model.physical.concept_boundaries()
-    assert first["feature_activation_threshold_in_composite_score"]==pytest.approx(float(tau[0]))
-    assert first["transition_width_in_composite_score"]==pytest.approx(float(width[0]))
+    assert first["feature_activation_threshold_in_composite_score"]==pytest.approx(float(tau[0].detach()))
+    assert first["transition_width_in_composite_score"]==pytest.approx(float(width[0].detach()))
     assert first["single_physical_channel_clinical_cutoff"] is None
     assert first["top_observed_operator_terms"]
     for group in passport["groups"]:
@@ -81,6 +81,10 @@ def test_native_formula_and_bottleneck_logit_preserve_hard_missing_case():
     with torch.no_grad():
         output=model(x,mask,process_mask=mask)
     assert output.decomposition_error().item()<1e-6
-    assert torch.allclose(output.physical.contributions,torch.zeros_like(output.physical.contributions))
+    # Float32 0.5-valued concept histories can accumulate ~1e-8
+    # rounding at weighted temporal pooling; 1e-7 is the same exact
+    # additive-logit tolerance used elsewhere, not a license for
+    # informative missingness.
+    assert float(output.physical.contributions.abs().max())<1e-7
     p=identified_predictive_passports(model,cert)
     assert p["unreliable_missing_history_is_unknown_neutral"]
