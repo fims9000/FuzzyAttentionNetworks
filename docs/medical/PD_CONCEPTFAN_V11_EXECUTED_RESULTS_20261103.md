@@ -23,14 +23,17 @@ causal discovery theorem. Original accepted PIERE and V10 evidence unchanged.
   accounting, train-only bootstrap reproducibility and projector
   gradient tests.
 
-**Important:** the low-rank group Gram implementation introduced a
-non-finite backward gradient at zero concept variance in a follow-up
-CI run, even though a previous dense-Gram implementation completed
-successfully. This failure is reproducible and has been corrected by
-`torch.linalg.vector_norm` with a finite zero subgradient and an
-explicit all-constant backward regression test. The later full rerun
-must pass before treating the optimized kernel as verified. Neither
-the failure nor its significance is hidden.
+**Important debugging evidence:** the optimized low-rank group
+Gram implementation initially introduced a non-finite backward
+gradient at zero concept variance, even though the previous
+dense-Gram implementation completed successfully. The failure was
+reproduced, corrected with `torch.linalg.vector_norm` and a dedicated
+constant-trajectory backward regression test. The **optimized nine-model
+full clinical rerun PASSED** in
+[CI 41687304858](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41687304858).
+Do not erase the earlier failed runs; the fix and verified rerun are
+part of the provenance. A subsequent passport-reporting refit
+retains the same model loss and must be independently checked.
 
 ## 2. Distinguishing source structure from clinical semantics
 
