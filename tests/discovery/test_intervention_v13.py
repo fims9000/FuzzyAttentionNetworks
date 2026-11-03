@@ -26,7 +26,9 @@ def _fixture(regime="exclusive",k=3,n=120,seed=104):
 def _cert(train, *, verified=True, bootstraps=32):
     return estimate_intervention_certificate(
         train.x,train.mask,train.environment,
-        exclusive_single_target_provenance=verified,bootstraps=bootstraps,seed=25,
+        exclusive_single_target_provenance=verified,
+        no_downstream_propagation_provenance=verified,
+        bootstraps=bootstraps,seed=25,
     )
 
 
@@ -59,6 +61,21 @@ def test_unverified_targets_abstain_even_when_contrasts_full_rank_and_stable():
         InterventionAnchoredConceptModel(safe)
 
 
+def test_direct_target_labels_alone_cannot_certify_absence_of_propagation():
+    train,_=_fixture(k=3,n=120)
+    cert=estimate_intervention_certificate(
+        train.x,train.mask,train.environment,
+        exclusive_single_target_provenance=True,
+        no_downstream_propagation_provenance=False,
+        bootstraps=32,seed=25,
+    )
+    assert cert.status=="ABSTAIN_UNVERIFIED_NO_DOWNSTREAM_PROPAGATION"
+    assert cert.receipt["empirical_response_resolution_independent_of_provenance"]=="RESOLVED_OBSERVABLE_ENVIRONMENT_RESPONSES"
+    assert not cert.to_json()["no_downstream_propagation_verified_externally"]
+    with pytest.raises(ValueError,match="Only verified"):
+        InterventionAnchoredConceptModel(cert)
+
+
 @pytest.mark.parametrize("regime",["duplicated","sham"])
 def test_insufficient_or_duplicated_interventions_abstain(regime):
     train,_=_fixture(regime,k=3,n=150)
@@ -74,7 +91,8 @@ def test_shuffled_train_environment_labels_cannot_claim_identification():
     rng=np.random.default_rng(81)
     perm=rng.permutation(train.environment)
     cert=estimate_intervention_certificate(train.x,train.mask,perm,
-        exclusive_single_target_provenance=True,bootstraps=32,seed=3)
+        exclusive_single_target_provenance=True,
+        no_downstream_propagation_provenance=True,bootstraps=32,seed=3)
     assert cert.status!="CERTIFIED_CONDITIONAL_SINGLE_TARGET_RESPONSE"
 
 
@@ -137,17 +155,21 @@ def test_invalid_experimental_protocol_is_rejected():
     train,_=_fixture(k=3,n=80)
     with pytest.raises(ValueError):
         estimate_intervention_certificate(train.x,train.mask,train.environment,
+            no_downstream_propagation_provenance=True,
             exclusive_single_target_provenance="yes",bootstraps=16)
     with pytest.raises(ValueError):
         estimate_intervention_certificate(train.x,train.mask,train.environment,
+            no_downstream_propagation_provenance=True,
             exclusive_single_target_provenance=True,bootstraps=1)
     missing=train.mask.copy()
     missing[0,0,0]=np.nan
     with pytest.raises(ValueError):
         estimate_intervention_certificate(train.x,missing,train.environment,
+            no_downstream_propagation_provenance=True,
             exclusive_single_target_provenance=True)
     with pytest.raises(ValueError):
         estimate_intervention_certificate(train.x,train.mask,train.environment[:25],
+            no_downstream_propagation_provenance=True,
             exclusive_single_target_provenance=True)
 
 
