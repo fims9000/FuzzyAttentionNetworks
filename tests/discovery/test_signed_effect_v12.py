@@ -173,3 +173,54 @@ def test_unresolved_group_never_gets_artificial_signed_effect():
     other=_out(1-t,model.physical.decision_weights())
     loss=signed_effect_training_regularizers(model,a,other,x,mask,bank)
     assert all(v.item()==pytest.approx(0.) for v in loss.values())
+
+
+def test_v12_short_native_training_has_no_new_classifier_or_holdout(tmp_path):
+    from pathlib import Path
+    import yaml
+    from conceptfan_discovery.data import DiscoveryData,DiscoverySplit
+    from conceptfan_discovery.train_signed_effect_v12 import fit_signed_effect_v12
+    from conceptfan_discovery.signed_effect_v12 import fit_train_only_signed_anchors
+    root=Path(__file__).resolve().parents[2]
+    ref=yaml.safe_load((root/"configs/medical/pd_clinical_unknown_neutral_v6.yaml").read_text())
+    v7=yaml.safe_load((root/"configs/medical/pd_clinical_dual_process_v7.yaml").read_text())
+    v10=yaml.safe_load((root/"configs/medical/pd_clinical_v10_multiscale.yaml").read_text())
+    v11=yaml.safe_load((root/"configs/medical/pd_clinical_v11_identifiable_groups.yaml").read_text())
+    v12=yaml.safe_load((root/"configs/medical/pd_v12_trainonly_signed_effects_20261103.yaml").read_text())
+    ref["training"]["epochs"]=1
+    ref["training"]["batch_size"]=24
+    rng=np.random.default_rng(17)
+    x=rng.normal(scale=.4,size=(96,36,4)).astype(np.float32)
+    m=(rng.random(x.shape)>.15).astype(np.float32)
+    x*=m
+    y=(rng.random(96)>.5).astype(np.float32)
+    split=DiscoverySplit(
+        x=x,mask=m,
+        future=rng.normal(size=(96,12,4)).astype(np.float32),
+        future_mask=np.ones((96,12,4),dtype=np.float32),
+        y=y,oracle_states=None,episode_ids=np.arange(96),
+    )
+    data=DiscoveryData(
+        train=split,validation=split,
+        receipt={"channel_names":["HR","MAP","GCS","Temp"]},
+        medians=np.zeros(4),scales=np.ones(4),
+    )
+    certificate=_certificate()
+    anchors=fit_train_only_signed_anchors(
+        x,m,y,certificate,bootstraps=32,permutations=99,seed=17,
+    )
+    for method in ("v12_observable_anchor","v12_anchor_signed_effect"):
+        model,receipt=fit_signed_effect_v12(
+            data,anchors.basis,certificate,anchors,11,
+            ref,v7,v10,v11,v12,variant=method,
+        )
+        model.eval()
+        with torch.no_grad():
+            out=model(torch.from_numpy(x[:4]),torch.from_numpy(m[:4]),
+                      process_mask=torch.from_numpy(m[:4]))
+        assert float(out.decomposition_error())<1e-5
+        assert receipt["n_training_minibatches"]==4
+        assert receipt["no_new_concept_classifier_or_posthoc_explainer"]
+        assert np.isfinite(receipt["mean_train_v12_observable_anchor"])
+        assert np.isfinite(receipt["mean_train_v12_signed_effect_view"])
+        assert all("student" not in k and "teacher" not in k for k in model.state_dict())
