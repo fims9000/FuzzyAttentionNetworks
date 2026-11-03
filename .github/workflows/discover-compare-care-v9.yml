@@ -1,0 +1,84 @@
+name: V9 independent numerical comparison against V7 and V8 frozen clinical evidence
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/clinical_v9_pinned_comparison.py'
+      - '.github/workflows/discover-compare-care-v9.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  model-seed-paired-frozen-source-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install data analysis dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Verify exact model-level resampling
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest tests/discovery/test_exact_seed_bootstrap.py -q
+      - name: Load original frozen studies, not regenerated or edited results
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/v7" "$RUNNER_TEMP/v8" "$RUNNER_TEMP/v9"
+          gh run download 41509956362 \
+            --name physionet-separate-care-process-concepts-v7-3 \
+            --dir "$RUNNER_TEMP/v7"
+          gh run download 41512252657 \
+            --name train-mask-care-rank-v8-3 \
+            --dir "$RUNNER_TEMP/v8"
+          gh run download 41610735337 \
+            --name trained-stable-mask-care-v9-1 \
+            --dir "$RUNNER_TEMP/v9"
+          test -s "$RUNNER_TEMP/v7/published_dual/dual_process_v7_per_policy.csv"
+          test -s "$RUNNER_TEMP/v8/published_care_v8/anchored_care_v8_measurement_stress.csv"
+          test -s "$RUNNER_TEMP/v9/published_v9_trained/v9_common_care_model_by_policy.csv"
+      - name: Compute full and component AUPRC with exact paired model-only bootstrap
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.clinical_v9_pinned_comparison \
+            --v7-dir "$RUNNER_TEMP/v7" \
+            --v8-dir "$RUNNER_TEMP/v8" \
+            --v9-dir "$RUNNER_TEMP/v9" \
+            --out-dir "$RUNNER_TEMP/care_comparison" \
+            > care_comparison.log 2>&1 || { tail -n 150 care_comparison.log; exit 1; }
+          tail -n 58 care_comparison.log
+          mkdir -p published_care_comparison
+          cp "$RUNNER_TEMP/care_comparison/"*.csv published_care_comparison/
+          cp "$RUNNER_TEMP/care_comparison/"*.json published_care_comparison/
+          cp care_comparison.log published_care_comparison/
+      - name: Preserve complete numerical comparison, no patient cases
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v7-v8-v9-true-k-comparison-${{ github.run_number }}
+          path: |
+            published_care_comparison/
+            care_comparison.log
+          retention-days: 21
+          if-no-files-found: warn

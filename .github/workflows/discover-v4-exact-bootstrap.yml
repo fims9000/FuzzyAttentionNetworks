@@ -1,0 +1,76 @@
+name: Exact model-level v4 explanation bootstrap (frozen results)
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/exact_seed_bootstrap.py'
+      - 'src/conceptfan_discovery/exact_seed_bootstrap_report.py'
+      - 'tests/discovery/test_exact_seed_bootstrap.py'
+      - '.github/workflows/discover-v4-exact-bootstrap.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  exact-dependence-correction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install minimal analysis dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Verify exact dependent-pair bootstrap tests
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest tests/discovery/test_exact_seed_bootstrap.py -q
+      - name: Download pinned successful v4 results (no retraining)
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/frozen_v4"
+          gh run download 41501300941 \
+            --name spectral-task-head-v4-1 \
+            --dir "$RUNNER_TEMP/frozen_v4"
+          test -s "$RUNNER_TEMP/frozen_v4/published_task_head/task_head_v4_pairwise.csv"
+          test -s "$RUNNER_TEMP/frozen_v4/published_task_head/task_head_v4_per_run.csv"
+      - name: Enumerate all five-to-the-fifth source-model bootstrap draws
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.exact_seed_bootstrap_report \
+            --source-dir "$RUNNER_TEMP/frozen_v4" \
+            --out-dir "$RUNNER_TEMP/v4_exact_bootstrap" \
+            > exact_bootstrap.log 2>&1 || { cat exact_bootstrap.log; exit 1; }
+          mkdir -p published_exact
+          cp "$RUNNER_TEMP/v4_exact_bootstrap/"* published_exact/
+          cp exact_bootstrap.log published_exact/
+          grep -E 'spectral_finetuned.*task_head_prior' exact_bootstrap.log | head -12 || true
+      - name: Upload complete dependence-corrected model-only receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exact-v4-model-bootstrap-${{ github.run_number }}
+          path: |
+            published_exact/
+            exact_bootstrap.log
+          retention-days: 21
+          if-no-files-found: warn

@@ -1,0 +1,83 @@
+name: V8 verify care process K on independent TRAIN masks and observation regimes
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/care_process_rank_sensitivity_v8.py'
+      - '.github/workflows/discover-care-rank-sensitivity-v8.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate-care-observation-rank-reproducibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU stack
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify rank, independent observation models and missingness controls
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest \
+            tests/discovery/test_care_process_rank_v8.py \
+            tests/discovery/test_observation_invariance_v5.py -q
+      - name: Fetch official clinical observations only
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/raw"
+          curl -fsSL --retry 3 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o "$RUNNER_TEMP/raw/set-a.zip"
+          curl -fsSL --retry 3 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o "$RUNNER_TEMP/raw/Outcomes-a.txt"
+          unzip -tq "$RUNNER_TEMP/raw/set-a.zip" | tail -n 2
+      - name: Check K across 600-patient pilot and distinct 900-patient inference halves
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.care_process_rank_sensitivity_v8 \
+            --config configs/medical/pd_clinical_anchored_care_v8.yaml \
+            --reference-v6-config configs/medical/pd_clinical_unknown_neutral_v6.yaml \
+            --raw-zip "$RUNNER_TEMP/raw/set-a.zip" \
+            --outcomes "$RUNNER_TEMP/raw/Outcomes-a.txt" \
+            --out-dir "$RUNNER_TEMP/care_rank_sensitivity" \
+            > care_rank_sensitivity.log 2>&1 \
+            || { tail -n 160 care_rank_sensitivity.log; exit 1; }
+          tail -n 70 care_rank_sensitivity.log
+          mkdir -p published_care_sensitivity
+          cp "$RUNNER_TEMP/care_rank_sensitivity/"*.csv published_care_sensitivity/
+          cp "$RUNNER_TEMP/care_rank_sensitivity/"*.json published_care_sensitivity/
+          cp care_rank_sensitivity.log published_care_sensitivity/
+      - name: Publish negative and positive rank evidence without patient rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: care-mask-rank-sensitivity-v8-${{ github.run_number }}
+          path: |
+            published_care_sensitivity/
+            care_rank_sensitivity.log
+          retention-days: 21
+          if-no-files-found: warn

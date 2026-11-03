@@ -1,0 +1,73 @@
+name: V5 measurement-aware train-only dynamic rank invariance
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/time_stratified_rank_v5.py'
+      - 'src/conceptfan_discovery/observation_regimes_v5.py'
+      - 'src/conceptfan_discovery/measurement_invariance_experiment_v5.py'
+      - 'tests/discovery/test_time_stratified_rank_v5.py'
+      - 'tests/discovery/test_observation_invariance_v5.py'
+      - 'configs/medical/pd_measurement_invariance_v5.yaml'
+      - '.github/workflows/discover-missingness-v5.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  independent-measurement-environment-rank:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Mathematical contracts (conditional MAR, MNAR control, time drift, abstention)
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery tests/discovery
+          python -m pytest \
+            tests/discovery/test_time_stratified_rank_v5.py \
+            tests/discovery/test_observation_invariance_v5.py -q
+      - name: Benchmark 3/5/7 planted ranks across observation regimes
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.measurement_invariance_experiment_v5 \
+            --config configs/medical/pd_measurement_invariance_v5.yaml \
+            --out-dir "$RUNNER_TEMP/measurement_v5" \
+            > measurement_v5_execution.log 2>&1 || { tail -n 170 measurement_v5_execution.log; exit 1; }
+          tail -n 75 measurement_v5_execution.log
+          mkdir -p published_measurement_v5
+          cp "$RUNNER_TEMP/measurement_v5/"*.csv published_measurement_v5/
+          cp "$RUNNER_TEMP/measurement_v5/"*.json published_measurement_v5/
+          cp measurement_v5_execution.log published_measurement_v5/
+      - name: Publish all rank failures and conditional assumptions, no raw patient rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: observation-invariance-v5-${{ github.run_number }}
+          path: |
+            published_measurement_v5/
+            measurement_v5_execution.log
+          retention-days: 21
+          if-no-files-found: warn

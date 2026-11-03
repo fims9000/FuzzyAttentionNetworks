@@ -1,0 +1,70 @@
+name: Falsify discovered K on 3/5/7-factor dynamic systems
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/variable_factor_data.py'
+      - 'src/conceptfan_discovery/variable_factor_experiment.py'
+      - 'configs/medical/pd_discovery_factor_count_stress.yaml'
+      - '.github/workflows/discover-factor-count.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  variable-hidden-factor-count:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install frozen CPU dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify benchmark has different hidden factor counts and no oracle in learner
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest tests/discovery -q
+      - name: Train 27 networks and evaluate factor-count recovery only after fitting
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.variable_factor_experiment \
+            --config configs/medical/pd_discovery_factor_count_stress.yaml \
+            --out-dir "$RUNNER_TEMP/variable_factors" \
+            > factor_count_execution.log 2>&1 || { tail -n 100 factor_count_execution.log; exit 1; }
+          tail -n 45 factor_count_execution.log
+          mkdir -p published_factor_stress
+          cp "$RUNNER_TEMP/variable_factors/variable_true_k_runs.csv" published_factor_stress/
+          cp "$RUNNER_TEMP/variable_factors/variable_true_k_pairwise.csv" published_factor_stress/
+          cp "$RUNNER_TEMP/variable_factors/variable_factor_count_summary.csv" published_factor_stress/
+          cp "$RUNNER_TEMP/variable_factors/RESEARCH_STATUS.json" published_factor_stress/
+          cp factor_count_execution.log published_factor_stress/
+      - name: Publish only aggregate oracle-falsification measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: factor-count-discovery-audit-${{ github.run_number }}
+          path: |
+            published_factor_stress/
+            factor_count_execution.log
+          retention-days: 21
+          if-no-files-found: warn

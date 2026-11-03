@@ -1,0 +1,85 @@
+name: V9 stable mask-process core without false exact clinical K
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/stable_care_subspace_v9.py'
+      - 'src/conceptfan_discovery/clinical_common_care_core_v9.py'
+      - 'tests/discovery/test_stable_care_subspace_v9.py'
+      - 'configs/medical/pd_clinical_common_care_v9.yaml'
+      - '.github/workflows/discover-common-care-core-v9.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  independent-masked-subspace-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU mathematical dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test rotations, source disagreement, and missing clinical identity abstention
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest \
+            tests/discovery/test_stable_care_subspace_v9.py \
+            tests/discovery/test_care_process_rank_v8.py \
+            tests/discovery/test_observation_invariance_v5.py -q
+      - name: Obtain official public source, test and calibration not examined
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/physionet"
+          curl -fsSL --retry 3 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o "$RUNNER_TEMP/physionet/set-a.zip"
+          curl -fsSL --retry 3 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o "$RUNNER_TEMP/physionet/Outcomes-a.txt"
+          unzip -tq "$RUNNER_TEMP/physionet/set-a.zip" | tail -n 2
+      - name: Validate patient-half common care mask subspace under 3 observation regimes
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.clinical_common_care_core_v9 \
+            --config configs/medical/pd_clinical_common_care_v9.yaml \
+            --reference-v6-config configs/medical/pd_clinical_unknown_neutral_v6.yaml \
+            --raw-zip "$RUNNER_TEMP/physionet/set-a.zip" \
+            --outcomes "$RUNNER_TEMP/physionet/Outcomes-a.txt" \
+            --out-dir "$RUNNER_TEMP/common_care_v9" \
+            > common_care_v9.log 2>&1 || { tail -n 160 common_care_v9.log; exit 1; }
+          tail -n 55 common_care_v9.log
+          mkdir -p published_common_care
+          cp "$RUNNER_TEMP/common_care_v9/STATUS.json" published_common_care/
+          cp common_care_v9.log published_common_care/
+      - name: Archive all positive/negative K evidence with patient records withheld
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stable-masked-care-core-v9-${{ github.run_number }}
+          path: |
+            published_common_care/
+            common_care_v9.log
+          retention-days: 21
+          if-no-files-found: warn

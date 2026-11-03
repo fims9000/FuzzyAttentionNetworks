@@ -1,0 +1,72 @@
+name: V4 task-specific heads on discovered dynamic concepts
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/spectral_task_head.py'
+      - 'src/conceptfan_discovery/spectral_task_head_experiment_v4.py'
+      - 'configs/medical/pd_spectral_task_head_v4.yaml'
+      - 'tests/discovery/test_spectral_task_head_v4.py'
+      - '.github/workflows/discover-spectral-task-head-v4.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  v4-independent-task-head-study:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU research dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify canonical head training boundaries and signed effect audit
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest \
+            tests/discovery/test_spectral_task_head_v4.py \
+            tests/discovery/test_explanation_sign_stability.py \
+            tests/discovery/test_spectral_native_v3.py -q
+      - name: Replicate 45 models on unseen synthetic generators
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.spectral_task_head_experiment_v4 \
+            --config configs/medical/pd_spectral_task_head_v4.yaml \
+            --out-dir "$RUNNER_TEMP/task_head_v4" \
+            > task_head_training.log 2>&1 || { tail -n 150 task_head_training.log; exit 1; }
+          tail -n 75 task_head_training.log
+          mkdir -p published_task_head
+          cp "$RUNNER_TEMP/task_head_v4/"*.csv published_task_head/
+          cp "$RUNNER_TEMP/task_head_v4/"*.json published_task_head/
+          cp task_head_training.log published_task_head/
+      - name: Upload only aggregated scientific evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spectral-task-head-v4-${{ github.run_number }}
+          path: |
+            published_task_head/
+            task_head_training.log
+          retention-days: 21
+          if-no-files-found: warn

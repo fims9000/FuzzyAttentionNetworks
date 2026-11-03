@@ -1,0 +1,69 @@
+name: Discover dynamic concepts without labels (validation only)
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/**'
+      - 'configs/medical/predictive_dynamics_discovery_v1.yaml'
+      - 'scripts/medical/run_predictive_dynamics_discovery.py'
+      - 'tests/discovery/**'
+      - '.github/workflows/discover-dynamic-concepts.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  concept-discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONHASHSEED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU research dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Compile and run focused mathematical contracts
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery tests/discovery scripts/medical/run_predictive_dynamics_discovery.py
+          python -m pytest tests/discovery -q
+      - name: Execute 24 learned concept discovery models without true concept labels
+        run: |
+          set -euo pipefail
+          python scripts/medical/run_predictive_dynamics_discovery.py \
+            --config configs/medical/predictive_dynamics_discovery_v1.yaml \
+            --out-dir "$RUNNER_TEMP/discovery_results" \
+            > discovery_execution.log 2>&1 || { tail -n 150 discovery_execution.log; exit 1; }
+          tail -n 35 discovery_execution.log
+          mkdir -p published_discovery
+          cp -a "$RUNNER_TEMP/discovery_results/." published_discovery/
+          cp discovery_execution.log published_discovery/
+      - name: Archive observed discovery results, not personal data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dynamic-discovery-validation-${{ github.run_number }}
+          path: |
+            published_discovery/
+            discovery_execution.log
+          retention-days: 21
+          if-no-files-found: warn

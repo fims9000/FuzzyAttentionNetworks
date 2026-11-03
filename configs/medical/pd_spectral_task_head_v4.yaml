@@ -1,0 +1,49 @@
+protocol:
+  name: pd_conceptfan_train_observable_task_head_v4
+  motivation: isolate_seed_instability_of_task_to_concept_readout
+  exploratory_after_v3_negative_case_specific_results: true
+  no_test_evaluation: true
+data:
+  true_factors_external_audit_only: [3,5,7]
+  generator_seed_base: 20261371
+  split_seed_base: 8101
+  n_samples: 960
+  n_channels: 8
+  input_steps: 36
+  horizon: 6
+rank:
+  lags: [1,2,3]
+  permutations: 100
+  patient_bootstraps: 30
+  alpha: 0.05
+  seed: 20261371
+training:
+  methods: [spectral_finetuned, task_head_prior, task_head_fixed]
+  initialization_seeds: [11,23,37,41,53]
+  order_seed: 1001
+  epochs: 18
+  batch_size: 64
+  learning_rate: 0.003
+  weight_decay: 0.0001
+  mask_fraction: 0.20
+  gradient_clip: 2.0
+  cpu_threads: 1
+  logistic_head_c: 1.0
+  signed_beta_max: 2.8
+  head_prior_weight: 1.5
+  feature_prior_weight: 0.30
+  feature_orthogonality_weight: 0.15
+  loss_weights:
+    future: 0.60
+    dynamics: 0.20
+    mdl: 0.007
+    support: 0.008
+    redundancy: 0.08
+    nonconstant: 0.25
+    transition_l1: 0.003
+    denoising: 1.25
+evaluation:
+  outer_validation_fraction: 0.5
+  inner_split_seed: 20261379
+  no_confirmation_pvalue: true
+  no_test: true

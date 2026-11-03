@@ -1,0 +1,89 @@
+name: V8 automatically rank and stabilize care-process concepts
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/care_process_rank_v8.py'
+      - 'src/conceptfan_discovery/anchored_care_process_v8.py'
+      - 'src/conceptfan_discovery/clinical_anchored_care_experiment_v8.py'
+      - 'tests/discovery/test_care_process_rank_v8.py'
+      - 'tests/discovery/test_anchored_care_process_v8.py'
+      - 'configs/medical/pd_clinical_anchored_care_v8.yaml'
+      - '.github/workflows/discover-anchored-care-v8.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  train-data-ranked-native-mask-concepts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install research CPU dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test K is computed from masks and signed anchors affect task through bottleneck
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest \
+            tests/discovery/test_care_process_rank_v8.py \
+            tests/discovery/test_anchored_care_process_v8.py \
+            tests/discovery/test_dual_process_stability_v7.py \
+            tests/discovery/test_observation_process_concepts_v7.py -q
+      - name: Download official clinical Set A, no test predictions
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/official_physionet"
+          curl -fsSL --retry 3 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o "$RUNNER_TEMP/official_physionet/set-a.zip"
+          curl -fsSL --retry 3 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o "$RUNNER_TEMP/official_physionet/Outcomes-a.txt"
+          unzip -tq "$RUNNER_TEMP/official_physionet/set-a.zip" | tail -n 2
+      - name: Fit six clinical dual-head models with train-only automatic care K
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.clinical_anchored_care_experiment_v8 \
+            --config configs/medical/pd_clinical_anchored_care_v8.yaml \
+            --reference-v6-config configs/medical/pd_clinical_unknown_neutral_v6.yaml \
+            --raw-zip "$RUNNER_TEMP/official_physionet/set-a.zip" \
+            --outcomes "$RUNNER_TEMP/official_physionet/Outcomes-a.txt" \
+            --out-dir "$RUNNER_TEMP/anchored_care_v8" \
+            > care_v8_execution.log 2>&1 || { tail -n 180 care_v8_execution.log; exit 1; }
+          tail -n 70 care_v8_execution.log
+          mkdir -p published_care_v8
+          cp "$RUNNER_TEMP/anchored_care_v8/"*.json published_care_v8/
+          cp "$RUNNER_TEMP/anchored_care_v8/"*.csv published_care_v8/
+          cp care_v8_execution.log published_care_v8/
+      - name: Archive data-ranked concept counts, signed definitions and negative findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: train-mask-care-rank-v8-${{ github.run_number }}
+          path: |
+            published_care_v8/
+            care_v8_execution.log
+          retention-days: 21
+          if-no-files-found: warn

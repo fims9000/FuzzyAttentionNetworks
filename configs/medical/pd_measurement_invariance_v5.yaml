@@ -1,0 +1,33 @@
+protocol:
+  name: pd-conceptfan-v5-observation-invariance-falsification
+  status: exploratory_new_protocol_after_clinical_k_nonidentifiability
+  no_test_or_calibration_evaluation: true
+  scientific_target: detectable_observable_predictive_rank_not_physiological_cause
+data:
+  planted_k_external_audit_only: [3, 5, 7]
+  generator_seeds: [20270127]
+  split_seed_base: 6501
+  n_samples: 960
+  n_channels: 8
+  input_steps: 36
+  horizon: 6
+measurement:
+  admissible_environments: [original, mcar_thin, time_channel_mar]
+  diagnostic_mnar_environment: observed_value_mnar
+  mask_seed_base: 20270201
+  train_halves_seed: 20270207
+  minimum_half_subspace_squared_cosine: 0.75
+rank:
+  lags: [1, 2, 3]
+  permutation_repetitions: 48
+  alpha: 0.05
+  null_seed: 20270211
+  min_pairs_per_hour: 12
+  min_time_strata: 3
+  baseline_patient_bootstrap_repetitions: 5
+reporting:
+  fail_closed_on_bad_measurement_support: true
+  no_oracle_for_any_rank_selection: true
+  no_selection_by_best_environment: true
+  no_human_concept_targets: true
+  no_significance_claim: true

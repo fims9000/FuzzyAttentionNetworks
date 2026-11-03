@@ -1,0 +1,51 @@
+protocol:
+  name: pd-conceptfan-v6-missingness-neutral-concept-train-time-stability
+  exploratory_after_v5_rank_gate: true
+  no_test_use: true
+  no_medical_concept_name: true
+data:
+  planted_k_external_evaluation_only: [3, 5, 7]
+  generator_seed_base: 20270527
+  split_seed_base: 9021
+  n_samples: 960
+  n_channels: 8
+  input_window: 36
+  horizon: 6
+rank:
+  train_only_lags: [1, 2, 3]
+  permutations: 80
+  patient_bootstraps: 15
+  alpha: 0.05
+  rank_seed: 20270533
+training:
+  methods: [multiplicative_original, unknown_neutral, unknown_neutral_consistency]
+  initialization_seeds: [11, 23, 37, 41]
+  batch_order_seed: 1001
+  epochs: 18
+  batch_size: 64
+  learning_rate: 0.003
+  weight_decay: 0.0001
+  gradient_clip: 2.0
+  cpu_threads: 1
+  main_mask_fraction: 0.20
+  second_mask_fraction: 0.35
+  consistency_min_joint_reliability: 0.20
+  consistency_weight: 1.5
+  spectral_anchor_weight: 0.30
+  spectral_axis_independence_weight: 0.15
+  loss_weights:
+    future: 0.60
+    dynamics: 0.20
+    mdl: 0.007
+    support: 0.008
+    redundancy: 0.08
+    nonconstant: 0.25
+    transition_l1: 0.003
+    denoising: 1.25
+evaluation:
+  outer_validation_split_seed: 20270539
+  mask_seed_base: 20270541
+  scenarios: [original, mcar_thin, time_channel_mar, observed_value_mnar]
+  no_patient_rows_published: true
+  no_confirmatory_pvalues: true
+  all_risk_predictions_concept_mediated: true

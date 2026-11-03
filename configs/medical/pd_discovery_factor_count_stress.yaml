@@ -1,0 +1,41 @@
+protocol:
+  name: pd-conceptfan-variable-latent-count-stress-v1
+  scope: exploratory_synthetic_train_validation_only
+  scientific_question: does model select a stable task-sufficient K when hidden true K changes?
+  no_test_evaluation: true
+data:
+  n_true_factors: [3, 5, 7]
+  generator_base_seed: 20261111
+  split_seed: 2701
+  n_samples: 960
+  n_channels: 8
+  input_steps: 36
+  horizon: 6
+architecture:
+  n_candidate_slots: 10
+  min_concept_width: 0.08
+training:
+  init_seeds: [11, 23, 37]
+  order_seeds: [1001]
+  epochs: 18
+  batch_size: 64
+  learning_rate: 0.003
+  weight_decay: 0.0001
+  gradient_clip: 2.0
+  cpu_threads: 1
+  modes: [task_only, task_future, full]
+  loss_weights:
+    future: 0.6
+    dynamics: 0.2
+    mdl: 0.007
+    support: 0.008
+    redundancy: 0.08
+    nonconstant: 0.25
+    transition_l1: 0.003
+reporting:
+  cardinality_selection_seed: 20261107
+  auprc_tolerance: 0.025
+  nll_tolerance: 0.035
+  future_rmse_tolerance: 0.045
+  oracle_only_for_final_evaluation: true
+  no_significance_claim: true

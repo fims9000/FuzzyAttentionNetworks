@@ -1,0 +1,43 @@
+protocol:
+  name: physionet2012-auto-discovery-v1-validation-only
+  scope: exploratory_no_clinical_concept_supervision
+  test_locked: true
+  source: https://physionet.org/content/challenge-2012/1.0.0/
+data:
+  set_a_zip: data/physionet2012/raw/set-a.zip
+  outcomes_a: data/physionet2012/raw/Outcomes-a.txt
+  split_seed: 20260717
+  input_window: 36
+  forecast_horizon: 12
+  minimum_train_patient_coverage: 0.15
+architecture:
+  n_candidate_slots: 12
+  hard_gate_reporting_threshold: 0.5
+  min_concept_width: 0.08
+training:
+  init_seeds: [11, 23, 37, 41]
+  order_seeds: [1001]
+  epochs: 18
+  batch_size: 128
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  cpu_threads: 1
+  gradient_clip: 2.0
+  modes: [task_only, task_future, full]
+  loss_weights:
+    future: 0.40
+    dynamics: 0.20
+    mdl: 0.007
+    support: 0.008
+    redundancy: 0.08
+    nonconstant: 0.25
+    transition_l1: 0.003
+reporting:
+  inner_outer_validation_selection_seed: 20261107
+  auprc_tolerance: 0.025
+  nll_tolerance: 0.035
+  future_rmse_tolerance: 0.045
+  no_patient_level_records_in_release: true
+  no_concept_ground_truth_claim: true
+  no_test_evaluation: true
+  no_confirmatory_pvalues: true

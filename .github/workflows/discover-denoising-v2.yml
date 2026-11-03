@@ -1,0 +1,71 @@
+name: Denoising concept sufficiency v2 across hidden factor counts
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/model_v2.py'
+      - 'src/conceptfan_discovery/selection_v2.py'
+      - 'src/conceptfan_discovery/denoising_experiment.py'
+      - 'tests/discovery/test_denoising_concepts_v2.py'
+      - 'configs/medical/pd_discovery_denoising_v2.yaml'
+      - '.github/workflows/discover-denoising-v2.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  independent-v2-dynamic-bottleneck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Validate zero information bypass and missing-value safeguards
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery tests/discovery
+          python -m pytest tests/discovery -q
+      - name: Run v2 3/5/7-factor denoising discovery pilot
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.denoising_experiment \
+            --config configs/medical/pd_discovery_denoising_v2.yaml \
+            --out-dir "$RUNNER_TEMP/v2_discovery" \
+            > denoising_execution.log 2>&1 || { tail -n 150 denoising_execution.log; exit 1; }
+          tail -n 50 denoising_execution.log
+          mkdir -p published_denoising
+          cp "$RUNNER_TEMP/v2_discovery/denoising_v2_per_run.csv" published_denoising/
+          cp "$RUNNER_TEMP/v2_discovery/denoising_v2_summary.csv" published_denoising/
+          cp "$RUNNER_TEMP/v2_discovery/STATUS.json" published_denoising/
+          cp denoising_execution.log published_denoising/
+      - name: Publish only aggregate exploratory results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-denoising-v2-${{ github.run_number }}
+          path: |
+            published_denoising/
+            denoising_execution.log
+          retention-days: 21
+          if-no-files-found: warn

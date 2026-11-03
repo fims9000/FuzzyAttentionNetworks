@@ -1,0 +1,20 @@
+protocol:
+  name: pd_conceptfan_train_only_lagged_rank_v3
+  purpose: estimate_observable_predictive_state_dimension_without_oracle_targets
+  interpretation: exploratory_method_after_v2_negative_result
+  no_test_evaluation: true
+data:
+  true_factor_counts_evaluation_only: [3, 5, 7]
+  generator_seeds: [20261221, 20261237]
+  split_seed_offset: 4100
+  n_samples: 960
+  n_channels: 8
+  input_steps: 36
+  horizon: 6
+rank:
+  positive_lags: [1, 2, 3]
+  permutation_repetitions: 120
+  patient_bootstrap_repetitions: 50
+  familywise_alpha: 0.05
+  seed: 20261221
+  no_true_k_use_for_selection: true

@@ -1,0 +1,79 @@
+name: Validate discovered K on disjoint validation halves
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/selection.py'
+      - 'src/conceptfan_discovery/cardinality_audit.py'
+      - 'src/conceptfan_discovery/model.py'
+      - 'src/conceptfan_discovery/evaluation.py'
+      - 'tests/discovery/**'
+      - '.github/workflows/discover-concept-cardinality.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  select-and-audit-native-concepts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU evaluation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Check concept selection mathematics, independence and honest metrics
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery tests/discovery
+          python -m pytest tests/discovery -q
+      - name: Download pinned 24 trained concept models (not retrained)
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pinned_models"
+          gh run download 41491449889 \
+            --name dynamic-discovery-validation-1 \
+            --dir "$RUNNER_TEMP/pinned_models"
+          test -s "$RUNNER_TEMP/pinned_models/published_discovery/runs/full/init_11_order_1001/model.pt"
+      - name: Select native concept slots on inner validation and score on untouched outer validation
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.cardinality_audit \
+            --config configs/medical/predictive_dynamics_discovery_v1.yaml \
+            --checkpoints-root "$RUNNER_TEMP/pinned_models" \
+            --out-dir "$RUNNER_TEMP/cardinality_audit" \
+            > cardinality_execution.log 2>&1 || { tail -n 120 cardinality_execution.log; exit 1; }
+          tail -n 45 cardinality_execution.log
+          mkdir -p published_cardinality
+          cp -a "$RUNNER_TEMP/cardinality_audit/." published_cardinality/
+          cp cardinality_execution.log published_cardinality/
+      - name: Archive native model selection receipts and concept passports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dynamic-cardinality-audit-${{ github.run_number }}
+          path: |
+            published_cardinality/
+            cardinality_execution.log
+          retention-days: 21
+          if-no-files-found: warn

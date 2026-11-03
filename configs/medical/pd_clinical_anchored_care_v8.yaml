@@ -1,0 +1,31 @@
+protocol:
+  name: conceptfan-v8-clinical-data-determined-care-process-k
+  status: exploratory_development_after_v7_process_instability
+  historical_test_and_calibration_sealed: true
+  previously_used_validation_not_confirmatory: true
+  no_medical_or_causal_interpretation: true
+data:
+  source_v6_config: configs/medical/pd_clinical_unknown_neutral_v6.yaml
+  same_2400_train_600_validation_and_12_pilot_selected_sensors: true
+  same_train_based_physiological_observable_basis: true
+care_policy_rank:
+  train_only: true
+  operator_categories: [observation_fraction, recent_observation_fraction, normalized_time_since_last_observation, sampling_transition_fraction]
+  feature_permutations: 90
+  familywise_alpha: 0.05
+  null_seed: 20271117
+  max_computational_policy_slots: 16
+  report_if_truncated: true
+training:
+  methods: [train_mask_source_only, train_mask_source_and_task_prior]
+  initialization_seeds: [11,23,37]
+  canonical_c: 1.0
+  max_canonical_beta: 2.7
+  signed_task_prior_weight: 0.80
+  mask_coeff_l1: 0.03
+  mask_definition_redundancy: 0.01
+evaluation:
+  original_and_artificially_thinned_observations: [original,mcar_thin,time_channel_mar]
+  same_development_validation_as_v7: true
+  comparison_to_random_v7_from_frozen_artifact_only: true
+  no_confirmatory_pvalues: true

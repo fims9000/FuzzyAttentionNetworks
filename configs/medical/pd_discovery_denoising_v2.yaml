@@ -1,0 +1,43 @@
+protocol:
+  name: pd-conceptfan-v2-masked-observation-predictive-state
+  development_status: new_exploratory_hypothesis_after_v1_negative_result
+  no_test_evaluation: true
+  any_clinical_claim: false
+data:
+  n_true_factors: [3, 5, 7]
+  generator_base_seed: 20261121
+  split_seed: 4301
+  n_samples: 960
+  n_channels: 8
+  input_steps: 36
+  horizon: 6
+architecture:
+  n_candidate_slots: 10
+  min_concept_width: 0.08
+training:
+  modes: [task_only, full_without_denoising, full]
+  init_seeds: [11, 23, 37]
+  order_seed: 1001
+  epochs: 18
+  batch_size: 64
+  learning_rate: 0.003
+  weight_decay: 0.0001
+  mask_fraction: 0.20
+  gradient_clip: 2.0
+  cpu_threads: 1
+  loss_weights:
+    future: 0.6
+    dynamics: 0.2
+    mdl: 0.007
+    support: 0.008
+    redundancy: 0.08
+    nonconstant: 0.25
+    transition_l1: 0.003
+    denoising: 1.25
+selection:
+  random_seed: 20261107
+  masking_seed: 20261113
+  auprc_tolerance: 0.025
+  nll_tolerance: 0.035
+  forecast_tolerance: 0.045
+  denoising_tolerance: 0.035
