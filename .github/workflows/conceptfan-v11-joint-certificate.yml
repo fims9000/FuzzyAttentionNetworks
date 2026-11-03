@@ -34,7 +34,8 @@ jobs:
       - name: Install audit-only requirements
         run: |
           set -euo pipefail
-          python -m pip install numpy pandas pytest
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
       - name: Test refusal when a spectrally stable axis reverses risk effect
         run: |
           set -euo pipefail
