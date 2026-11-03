@@ -1,0 +1,119 @@
+name: EXPLORATORY V12 Set A TRAIN + PREVIOUSLY INSPECTED DEV ONLY (NO Set B)
+
+# Run once when this workflow is introduced. Not a second holdout analysis.
+# The 4,000-record Set B was consumed by V11 CI 41710356212.
+# No access to Set B in this job, nor to original Set A test/calibration.
+on:
+  push:
+    branches: [experiment/conceptfan-v12-signed-effect-identification-20261103]
+    paths:
+      - '.github/workflows/conceptfan-v12-seta-EXPLORATORY-ONCE.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: conceptfan-v12-seta-exploratory-first-try
+  cancel-in-progress: false
+
+jobs:
+  matched-real-dev:
+    if: github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Confirm original historical V11 reproducible Python patch
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import platform
+          assert platform.python_version()=='3.12.15',platform.python_version()
+          PY
+      - name: Install pinned compatible research stack
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Run synthetic/falsification checks before accessing Set A
+        run: |
+          set -euo pipefail
+          python -m compileall -q \
+            src/conceptfan_discovery/signed_effect_v12.py \
+            src/conceptfan_discovery/train_signed_effect_v12.py \
+            src/conceptfan_discovery/magnets_binary_baseline_v12.py \
+            src/conceptfan_discovery/clinical_signed_effect_v12.py
+          python -m pytest \
+            tests/discovery/test_signed_effect_v12.py \
+            tests/discovery/test_magnets_binary_v12.py \
+            tests/discovery/test_effect_certification_v11.py -q
+      - name: Download only official Set A training source and original source receipts
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/official_A" "$RUNNER_TEMP/frozen_v10" "$RUNNER_TEMP/frozen_v11"
+          curl -fsSL --retry 3 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o "$RUNNER_TEMP/official_A/set-a.zip"
+          curl -fsSL --retry 3 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o "$RUNNER_TEMP/official_A/Outcomes-a.txt"
+          gh run download 41623853277 \
+            --name conceptfan-v10-matched-clinical-4 \
+            --dir "$RUNNER_TEMP/frozen_v10"
+          gh run download 41689286080 \
+            --name conceptfan-v11-predictive-groups-12 \
+            --dir "$RUNNER_TEMP/frozen_v11"
+          test -s "$RUNNER_TEMP/frozen_v10/results_v10/STATUS.json"
+          test -s "$RUNNER_TEMP/frozen_v11/v11_evidence/STATUS.json"
+          test ! -e "$RUNNER_TEMP/official_A/set-b.zip"
+          test ! -e "$RUNNER_TEMP/official_A/Outcomes-b.txt"
+      - name: V12 native signed ablations versus V11, HGB, MAGNETS-style classifier
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.clinical_signed_effect_v12 \
+            --config configs/medical/pd_v12_trainonly_signed_effects_20261103.yaml \
+            --reference-v6-config configs/medical/pd_clinical_unknown_neutral_v6.yaml \
+            --reference-v7-config configs/medical/pd_clinical_dual_process_v7.yaml \
+            --reference-v10-config configs/medical/pd_clinical_v10_multiscale.yaml \
+            --reference-v11-config configs/medical/pd_clinical_v11_identifiable_groups.yaml \
+            --frozen-v10-receipt "$RUNNER_TEMP/frozen_v10/results_v10/STATUS.json" \
+            --frozen-v11-artifact "$RUNNER_TEMP/frozen_v11" \
+            --set-a-zip "$RUNNER_TEMP/official_A/set-a.zip" \
+            --outcomes-a "$RUNNER_TEMP/official_A/Outcomes-a.txt" \
+            --out-dir "$RUNNER_TEMP/V12_PREVIOUS_DEV_ONLY" \
+            > v12_seta_exploratory.log 2>&1 || {
+              tail -n 130 v12_seta_exploratory.log
+              exit 1
+            }
+          tail -n 65 v12_seta_exploratory.log
+          mkdir -p V12_PREVIOUS_DEV_ONLY
+          cp "$RUNNER_TEMP/V12_PREVIOUS_DEV_ONLY/"*.csv V12_PREVIOUS_DEV_ONLY/
+          cp "$RUNNER_TEMP/V12_PREVIOUS_DEV_ONLY/"*.json V12_PREVIOUS_DEV_ONLY/
+          cp v12_seta_exploratory.log V12_PREVIOUS_DEV_ONLY/
+          git rev-parse HEAD > V12_PREVIOUS_DEV_ONLY/frozen_git_sha.txt
+          sha256sum configs/medical/pd_v12_trainonly_signed_effects_20261103.yaml \
+            > V12_PREVIOUS_DEV_ONLY/frozen_protocol_sha256.txt
+          find V12_PREVIOUS_DEV_ONLY -type f -print | sort
+      - name: Upload aggregates only — never patient observations or predictions
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conceptfan-v12-seta-development-only-${{ github.run_number }}
+          path: |
+            V12_PREVIOUS_DEV_ONLY/
+            v12_seta_exploratory.log
+          retention-days: 30
+          if-no-files-found: warn
