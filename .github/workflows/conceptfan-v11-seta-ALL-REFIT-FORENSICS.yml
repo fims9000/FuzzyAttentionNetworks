@@ -1,0 +1,125 @@
+name: Set A-only forensic 17-model historical-order refit (NO Set B)
+
+# First attempted submission 41694189228 aborted BEFORE any Set B data access
+# because the original external baseline requires PYTHONHASHSEED=0.
+# A-only randomized-vs-fixed forensic control 41695791418 confirmed this;
+# both fixed-hash refits exactly reproduced the old Transformer DEV AUPRC.
+# No model definition or outcome-dependent selection was changed.
+# No workflow_dispatch or automatic source-code push rerun: the experiment
+# runs only on the commit ADDING this workflow for the first time.
+# The program downloads Set B ONLY AFTER all previous Set A model refits
+# pass their frozen per-seed DEV AUPRC identity checks. Never tune on Set B.
+on:
+  push:
+    branches: [experiment/conceptfan-v11-one-shot-setb-20261103]
+    paths:
+      - '.github/workflows/conceptfan-v11-seta-ALL-REFIT-FORENSICS.yml'
+
+concurrency:
+  group: conceptfan-seta-all-17-source-refits-noB
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  refit-identity-A-only:
+    if: github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      GH_TOKEN: ${{ github.token }}
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install frozen CPU inference + research dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Re-check held-out future and outcome-field leakage on FAKE patients
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery/holdout_setb_v11.py
+          python -m pytest \
+            tests/discovery/test_holdout_setb_v11.py \
+            tests/discovery/test_effect_certification_v11.py \
+            tests/discovery/test_group_learning_v11.py -q
+      - name: Retrieve historical FROZEN receipts and Set A training source ONLY
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/official_A" \
+            "$RUNNER_TEMP/frozen_v10" \
+            "$RUNNER_TEMP/frozen_v11" \
+            "$RUNNER_TEMP/frozen_external"
+          curl -fsSL --retry 3 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o "$RUNNER_TEMP/official_A/set-a.zip"
+          curl -fsSL --retry 3 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o "$RUNNER_TEMP/official_A/Outcomes-a.txt"
+          gh run download 41623853277 \
+            --name conceptfan-v10-matched-clinical-4 \
+            --dir "$RUNNER_TEMP/frozen_v10"
+          gh run download 41689286080 \
+            --name conceptfan-v11-predictive-groups-12 \
+            --dir "$RUNNER_TEMP/frozen_v11"
+          gh run download 41626717843 \
+            --name conceptfan-v10-vs-external-methods-1 \
+            --dir "$RUNNER_TEMP/frozen_external"
+          test -s "$RUNNER_TEMP/frozen_v10/results_v10/STATUS.json"
+          test -s "$RUNNER_TEMP/frozen_v11/v11_evidence/STATUS.json"
+          test -s "$RUNNER_TEMP/frozen_external/published_external/STATUS.json"
+          test ! -e "$RUNNER_TEMP/NO_B_UNTIL_ALL_REFITS_PASS/set-b.zip"
+          test ! -e "$RUNNER_TEMP/NO_B_UNTIL_ALL_REFITS_PASS/Outcomes-b.txt"
+      - name: FROZEN A-ONLY — refit all 17 historical models, never download B
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.holdout_setb_v11 \
+            --a-only-preflight \
+            --config configs/medical/pd_v11_setb_one_shot_locked_20261103.yaml \
+            --reference-v6-config configs/medical/pd_clinical_unknown_neutral_v6.yaml \
+            --reference-v7-config configs/medical/pd_clinical_dual_process_v7.yaml \
+            --reference-v10-config configs/medical/pd_clinical_v10_multiscale.yaml \
+            --reference-v11-config configs/medical/pd_clinical_v11_identifiable_groups.yaml \
+            --frozen-v10-receipt "$RUNNER_TEMP/frozen_v10/results_v10/STATUS.json" \
+            --frozen-v11-artifact "$RUNNER_TEMP/frozen_v11" \
+            --frozen-external-artifact "$RUNNER_TEMP/frozen_external" \
+            --set-a-zip "$RUNNER_TEMP/official_A/set-a.zip" \
+            --outcomes-a "$RUNNER_TEMP/official_A/Outcomes-a.txt" \
+            --set-b-zip "$RUNNER_TEMP/NO_B_UNTIL_ALL_REFITS_PASS/set-b.zip" \
+            --outcomes-b "$RUNNER_TEMP/NO_B_UNTIL_ALL_REFITS_PASS/Outcomes-b.txt" \
+            --out-dir "$RUNNER_TEMP/SET_A_ONLY_REFIT_AGGREGATES" \
+            > set_a_only_refit_execution.log 2>&1 || {
+              tail -n 140 set_b_one_shot_execution.log
+              exit 1
+            }
+          tail -n 65 set_b_one_shot_execution.log
+          mkdir -p SET_A_ONLY_REFIT_AGGREGATES
+          cp "$RUNNER_TEMP/SET_A_ONLY_REFIT_AGGREGATES/"*.csv SET_B_ONE_SHOT_AGGREGATES/
+          cp "$RUNNER_TEMP/ONE_SHOT_FINAL_SET_B_AGGREGATES/"*.json SET_B_ONE_SHOT_AGGREGATES/
+          cp set_b_one_shot_execution.log SET_B_ONE_SHOT_AGGREGATES/
+          git rev-parse HEAD > SET_B_ONE_SHOT_AGGREGATES/frozen_git_sha.txt
+          sha256sum configs/medical/pd_v11_setb_one_shot_locked_20261103.yaml \
+            > SET_B_ONE_SHOT_AGGREGATES/frozen_protocol_sha256.txt
+          find SET_B_ONE_SHOT_AGGREGATES -type f -print | sort
+      - name: Upload only verified Set A refit score differences, no B accessed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-seta-noB-all17-refit-${{ github.run_number }}
+          path: |
+            SET_B_ONE_SHOT_AGGREGATES/
+            set_b_one_shot_execution.log
+          retention-days: 30
+          if-no-files-found: warn
