@@ -166,3 +166,19 @@ def test_low_rank_gram_identity_exactly_matches_full_temporal_kernel_loss():
         gb=gb/(gb.flatten(1).norm(dim=-1).view(-1,1,1)+1e-7)
         direct=direct+(ga-gb).square().mean()/len(_groups())
     torch.testing.assert_close(compressed, direct, atol=2e-8,rtol=1e-5)
+
+
+def test_exactly_constant_or_unobserved_groups_have_finite_backward_gradients():
+    # Valid but inactive concepts are common on ICU rows with missingness.
+    # The Gram norm must not send NaN into the operator softmax or weights.
+    c=torch.zeros(3,18,3,requires_grad=True)
+    d=torch.zeros(3,18,3,requires_grad=True)
+    availability=torch.ones_like(c)
+    a=_output(c,availability)
+    b=_output(d,availability)
+    penalty,_=grouped_rotation_invariant_view_consistency(a,b,_groups())
+    assert penalty.item()==0.0
+    penalty.backward()
+    assert c.grad is not None and d.grad is not None
+    assert torch.isfinite(c.grad).all()
+    assert torch.isfinite(d.grad).all()
