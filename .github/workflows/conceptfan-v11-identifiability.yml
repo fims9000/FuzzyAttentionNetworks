@@ -1,0 +1,44 @@
+name: V11 predictive-subspace identifiability proof-of-mechanics
+
+on:
+  push:
+    branches: [experiment/conceptfan-v11-predictive-identifiability-20261103]
+    paths:
+      - 'src/conceptfan_discovery/identifiability_v11.py'
+      - 'tests/discovery/test_identifiability_v11.py'
+      - '.github/workflows/conceptfan-v11-identifiability.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  certify-and-falsify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU experiment dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Audit V11 invariants and degeneracy controls
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery/identifiability_v11.py tests/discovery/test_identifiability_v11.py
+          python -m pytest tests/discovery/test_identifiability_v11.py -q
