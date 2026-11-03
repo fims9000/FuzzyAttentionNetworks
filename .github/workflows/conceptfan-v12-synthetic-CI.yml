@@ -6,9 +6,12 @@ on:
     paths:
       - 'src/conceptfan_discovery/signed_effect_v12.py'
       - 'src/conceptfan_discovery/magnets_binary_baseline_v12.py'
+      - 'src/conceptfan_discovery/clinical_signed_effect_v12.py'
+      - 'src/conceptfan_discovery/oracle_synthetic_v12.py'
       - 'src/conceptfan_discovery/train_signed_effect_v12.py'
       - 'tests/discovery/test_signed_effect_v12.py'
       - 'tests/discovery/test_magnets_binary_v12.py'
+      - 'tests/discovery/test_oracle_synthetic_v12.py'
       - '.github/workflows/conceptfan-v12-synthetic-CI.yml'
   workflow_dispatch:
 
@@ -44,10 +47,11 @@ jobs:
       - name: Check new mathematics and established V11 invariants
         run: |
           set -euo pipefail
-          python -m compileall -q src/conceptfan_discovery/signed_effect_v12.py src/conceptfan_discovery/train_signed_effect_v12.py src/conceptfan_discovery/magnets_binary_baseline_v12.py
+          python -m compileall -q src/conceptfan_discovery/signed_effect_v12.py src/conceptfan_discovery/train_signed_effect_v12.py src/conceptfan_discovery/magnets_binary_baseline_v12.py src/conceptfan_discovery/clinical_signed_effect_v12.py src/conceptfan_discovery/oracle_synthetic_v12.py
           python -m pytest \
             tests/discovery/test_signed_effect_v12.py \
             tests/discovery/test_magnets_binary_v12.py \
+            tests/discovery/test_oracle_synthetic_v12.py \
             tests/discovery/test_identifiability_v11.py \
             tests/discovery/test_group_learning_v11.py \
             tests/discovery/test_effect_certification_v11.py -q
