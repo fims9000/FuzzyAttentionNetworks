@@ -46,16 +46,24 @@ def grouped_rotation_invariant_view_consistency(
         bv=(b*weight.unsqueeze(-1)).sum(dim=1,keepdim=True)/denom.unsqueeze(-1)
         a=(a-av)*weight.sqrt().unsqueeze(-1)
         b=(b-bv)*weight.sqrt().unsqueeze(-1)
-        g1=a@a.transpose(1,2)
-        g2=b@b.transpose(1,2)
-        # Separate Frobenius normalization avoids scale-only agreement
-        # falsely counted as predictive identity; near-zero trajectories
-        # are handled by an independent nonconstant-activation loss.
-        n1=g1.flatten(1).norm(dim=-1).view(-1,1,1)
-        n2=g2.flatten(1).norm(dim=-1).view(-1,1,1)
-        g1=g1/(n1+epsilon)
-        g2=g2/(n2+epsilon)
-        difference=(g1-g2).square().mean(dim=(1,2))
+        # Use the exact Gram identity in group-width (K_g), not time (T):
+        # ||AA' - BB'||_F^2
+        #     = ||A'A||_F^2 + ||B'B||_F^2 - 2||A'B||_F^2.
+        # This avoids a [B,T,T] tensor and keeps within-group rotation
+        # invariance, with the SAME normalization as the full Gram formula.
+        gram_a=a.transpose(1,2)@a
+        gram_b=b.transpose(1,2)@b
+        gram_cross=a.transpose(1,2)@b
+        norm_a=gram_a.square().sum(dim=(1,2)).sqrt()
+        norm_b=gram_b.square().sum(dim=(1,2)).sqrt()
+        cross=gram_cross.square().sum(dim=(1,2))
+        da=norm_a+epsilon
+        db=norm_b+epsilon
+        difference=(
+            norm_a.square()/da.square()
+            + norm_b.square()/db.square()
+            -2.*cross/(da*db)
+        ).clamp_min(0.)/float(a.shape[1]**2)
         exists=(weight.sum(dim=1)>1).to(dtype=x.dtype)
         total=total+(difference*exists).sum()/exists.sum().clamp_min(1.)
         valid=valid+exists.mean()
