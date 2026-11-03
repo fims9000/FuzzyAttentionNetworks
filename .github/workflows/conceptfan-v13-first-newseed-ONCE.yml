@@ -1,0 +1,89 @@
+name: V13 first frozen independent-seed intervention falsification — synthetic only
+
+# No rerun on source/config changes; no manual dispatch.
+# The unseen generator seed 20270213 is fixed in YAML before this workflow.
+on:
+  push:
+    branches: [experiment/conceptfan-v13-conditional-interventions-20261104]
+    paths: ['.github/workflows/conceptfan-v13-first-newseed-ONCE.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: conceptfan-v13-first-unseen-seed-single-synthetic-experiment
+  cancel-in-progress: false
+
+jobs:
+  new-seed-synthetic-interventions:
+    if: github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Verify frozen code, config, and never-used generator seed
+        run: |
+          set -euo pipefail
+          echo '1048f36254a832432fcf0b97aa3368d0d09c9b5b5bb269fe6c8d418b3dcb7dd5  src/conceptfan_discovery/intervention_identifiability_v13.py' | sha256sum -c -
+          echo '4f070cbb409b74edf0efb3b4da0d0f8ce73799452b0ad6466d2dd63c2f8df653  src/conceptfan_discovery/intervention_stress_v13.py' | sha256sum -c -
+          echo '92a741d5215f024c4fc7faad67885a88ea19cf3391a91bbd4b96fab9cdb7abbf  configs/medical/pd_v13_intervention_identifiability_synthetic_20261104.yaml' | sha256sum -c -
+          python - <<'PY'
+          import yaml
+          c=yaml.safe_load(open("configs/medical/pd_v13_intervention_identifiability_synthetic_20261104.yaml"))
+          assert c["data"]["seed"]==20270213
+          assert c["data"]["seed"]!=c["data"]["prior_internal_development_seed_not_reused_for_frozen_study"]
+          assert c["data"]["k_true"]==[3,5,7]
+          assert c["evaluation"]["regimes"]==["exclusive","multitarget","duplicated","sham"]
+          assert c["protocol"]["synthetic_only_no_patient_data"]
+          assert c["protocol"]["no_oracle_in_training"]
+          print("FROZEN UNSEEN SEED / CODE / EXCLUSIVITY PROTOCOL VERIFIED")
+          PY
+      - name: Install pinned synthetic research execution environment
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test all V13 safety contracts and historical discovery regressions
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery/intervention_identifiability_v13.py src/conceptfan_discovery/intervention_stress_v13.py
+          python -m pytest tests/discovery/test_intervention_v13.py -q
+          python -m pytest tests/discovery -q
+      - name: FIRST and ONLY frozen new seed 3/5/7 intervention/exclusivity scoring
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.intervention_stress_v13 \
+            --config configs/medical/pd_v13_intervention_identifiability_synthetic_20261104.yaml \
+            --out-dir "$RUNNER_TEMP/V13_FIRST_FROZEN_NEWSEED" \
+            > V13_FIRST_NEWSEED_EXECUTION.log 2>&1 || {
+              tail -n 130 V13_FIRST_NEWSEED_EXECUTION.log
+              exit 1
+            }
+          tail -n 80 V13_FIRST_NEWSEED_EXECUTION.log
+          mkdir -p V13_FIRST_NEWSEED_AGGREGATES
+          cp "$RUNNER_TEMP/V13_FIRST_FROZEN_NEWSEED/"*.csv V13_FIRST_NEWSEED_AGGREGATES/
+          cp "$RUNNER_TEMP/V13_FIRST_FROZEN_NEWSEED/"*.json V13_FIRST_NEWSEED_AGGREGATES/
+          cp V13_FIRST_NEWSEED_EXECUTION.log V13_FIRST_NEWSEED_AGGREGATES/
+          git rev-parse HEAD > V13_FIRST_NEWSEED_AGGREGATES/source_commit_sha.txt
+          sha256sum configs/medical/pd_v13_intervention_identifiability_synthetic_20261104.yaml > V13_FIRST_NEWSEED_AGGREGATES/protocol_sha256.txt
+      - name: Export only synthetic cohort aggregates (no individual predictions)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: V13-first-frozen-unseen-20270213-synthetic-aggregates
+          path: |
+            V13_FIRST_NEWSEED_AGGREGATES/
+            V13_FIRST_NEWSEED_EXECUTION.log
+          retention-days: 30
+          if-no-files-found: warn
