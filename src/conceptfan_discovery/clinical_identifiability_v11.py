@@ -34,6 +34,7 @@ from .identifiability_v11 import (
 from .model_v2 import masked_observation_view
 from .multiscale_physiology_v10 import expanded_multiscale_definition
 from .train_identifiability_v11 import fit_identifiability_aware_v11
+from .passports_v11 import identified_predictive_passports
 from .v10_seed_sensitivity import exact_seed_sensitivity
 
 
@@ -156,6 +157,14 @@ def main()->None:
                     variant=method,
                 )
             model.eval()
+            # A trained model-native passport is sufficient to reproduce the
+            # actual concept formula and boundaries without patient examples.
+            # A source SVD axis is not a medical diagnosis. Report this
+            # alongside the separate post-fit signed-effect audit.
+            _write_json(
+                a.out_dir/f"concept_formulas_{method}_init_{seed}.json",
+                identified_predictive_passports(model,cert,max_operator_terms=8)
+            )
             physical=evaluate_discovery(model.physical,dev)
             trained_definition=expanded_multiscale_definition(model)
             aligned=replace(physical,weights=trained_definition)
