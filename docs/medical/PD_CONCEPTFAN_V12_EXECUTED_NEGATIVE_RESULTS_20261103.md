@@ -15,8 +15,8 @@
 - [V12 mathematical unit/regression CI 41720254720: SUCCESS](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41720254720):
   37 focused tests and **197 full-discovery tests** passed, one warning.
 - 3/5/7 different new generator seeds were selected before scoring;
-  **96?** (see source certificate for exact patient bootstrap counts) and
-  199 train-only label permutations were performed on their training data.
+  **96 stratified training-patient bootstraps** and **199 train-only label
+  permutations** were performed for singleton risk-sign testing in each regime.
   Oracle hidden trajectories were stripped from the training object and
   opened only for scoring learned concept summaries on heldout synthetic
   validation cases; their true count did not guide computational K.
