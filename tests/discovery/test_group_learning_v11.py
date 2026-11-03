@@ -141,4 +141,5 @@ def test_full_one_epoch_synthetic_fit_no_oracle_supervision(variant):
     assert out.decomposition_error().item()<1e-5
     assert meta["arbitrary_svd_axis_anchor_disabled"]
     assert meta["source_basis_is_train_only"]
-    assert meta["n_training_minibatches"]>=3
+    import math
+    assert meta["n_training_minibatches"]==math.ceil(len(ds.train.y)/80)
