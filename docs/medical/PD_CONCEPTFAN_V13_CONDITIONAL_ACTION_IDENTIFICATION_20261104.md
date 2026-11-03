@@ -59,3 +59,19 @@ python -m conceptfan_discovery.experiment_v13 --out-dir ./v13_new_seed --generat
 ```
 
 **Do not merge these numbers into the original accepted PIERE manuscript as if they came from the same problem.** The next important scientific hurdle is identification under missing/partially-targeted interventions, multi-environment changes and independent intervention-generating mechanisms, with honest abstention whenever an assumption fails.
+
+
+## Priority-related work and *non-novel* identification equation
+
+**Important scientific correction:** the covariance identity `R=Cov(X[t+1],U[t])Cov(U[t])^-1` under randomized action assignment is a straightforward linear moment / instrumental-variable-style argument. It is **not a new theorem** in causal representation learning. We must not market the synthetic recovery as the first solution to causal concept identification.
+
+Relevant established theory:
+- Varıcı, Acartürk, Shanmugam, Tajer, *General Identifiability and Achievability for Causal Representation Learning*, AISTATS 2024, https://proceedings.mlr.press/v238/varici24a.html . Covers much more general latent and observation models and uncoupled intervention settings.
+- Varıcı et al., *Score-based Causal Representation Learning: Linear and General Transformations*, JMLR 2025, https://jmlr.org/papers/v26/24-0194.html . Establishes identifiability under suitable hard interventions and partial results for soft interventions.
+- Bing, Ninad, Wahl, Runge, *Identifying Linearly-Mixed Causal Representations from Multi-Node Interventions*, CLeaR 2024, https://proceedings.mlr.press/v236/bing24a . Addresses multi-node interventions, beyond our known diagonal action-target assumption.
+- Morioka, Hyvärinen, *Causal Representation Learning Made Identifiable by Grouping of Observational Variables*, ICML 2024, https://proceedings.mlr.press/v235/morioka24a.html . An alternative route using grouped observational variables rather than targeted interventions.
+- Yao et al., *Unifying Causal Representation Learning with the Invariance Principle*, ICLR 2025, https://proceedings.iclr.cc/paper_files/paper/2025/hash/85381f4549b5ddf1d48e2e287d7d3d15-Abstract-Conference.html . Distinguishes representation invariance from genuinely causal assumptions.
+
+**Defensible V13 contribution at this stage:** a controlled integration of externally identified action-response coordinates into an exact train-time additive temporal concept bottleneck, together with honest per-concept abstention, randomized-action and confounding negative controls, independently refitted signed-logit audit, and source-oracle evaluation. Novelty relative to existing CRL and concept-bottleneck techniques is **not established** without a matched implementation and performance comparison. The strength of the identification assumption is substantial; it does not solve the user's original stronger objective of automatically identifying concepts from unlabeled observational ICU time series.
+
+Next pre-registered comparator should include an ordinary logistic regression on the **same identified action-response coordinates**, and potentially an established CRL/interventional representation method adapted with equal prior information. All comparison weights and baselines must be frozen before generating a third independent test seed; the two existing generators cannot become fresh validation again.
