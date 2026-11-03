@@ -245,8 +245,9 @@ def fit_predictive_group_certificate(
         "resampling_unit":"complete train patient",
         "bootstraps":int(bootstraps),
         "seed":int(seed),
-        "train_patient_order_sha256":sha256(
-            np.ascontiguousarray(x.shape,dtype="<i8").tobytes()
+        "train_measurements_and_masks_sha256":sha256(
+            np.ascontiguousarray(x,dtype="<f4").tobytes()+
+            np.ascontiguousarray(m,dtype="<f4").tobytes()
         ).hexdigest(),
     })
     return report
