@@ -127,3 +127,14 @@ PYTHONPATH=src:. python -m pytest \
 recorded in the same authors' repository, not a third-party trusted
 registration service. Treat uncertainty intervals and any
 borderline effects accordingly.
+
+
+## Forensic amendment BEFORE ever accessing Set B (2026-11-03)
+
+[First attempted CI run 41694189228](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41694189228) **aborted while still in Set A TRAIN-only refit verification**. All three V10, all six V11 and all three GRU-D models reproduced their prior DEV AUPRC; Logistic deviated 0.000907 (within the preregistered 0.002 tolerance), HGB matched. The Transformer seed 11 yielded 0.440585 instead of 0.460356 and the script raised `REFIT DRIFT before Set B access`. Its Set B download call occurs strictly after the guard, so **no Set B feature or outcome was downloaded, opened or scored** in that attempt.
+
+A separate [A-ONLY two-environment forensic test, CI 41695791418](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41695791418) recovered the cause: the original external baseline workflow explicitly fixed `PYTHONHASHSEED=0` while the attempted one-shot workflow omitted it. Python/torch/scikit-learn versions, the data adapter, model code and 12 observed input channels are identical. Under `PYTHONHASHSEED=0` two independent seed-11 Transformer refits both reproduce AUPRC **0.46035551611473996** exactly. Under `PYTHONHASHSEED=random`, both refits produced **0.4522096274019566**, and the first aborted run with an unpinned environment was 0.4405848. These are SOURCE-COHORT metrics only, not Set B outcomes.
+
+The protocol is now strengthened to **reject execution unless `PYTHONHASHSEED=0`**, keeping all previous fixed model weights, optimization rules, seeds and held-out evaluation criteria unchanged. The corrected B workflow will receive a distinct one-shot filename and link back to the aborted pre-B run, not silently overwrite historical evidence. A failed refit guard would still stop before downloading B.
+
+This amendment fixes reproducibility before the first actual Set B access and **must not** be described as optimization on external outcome labels. The difference in random-hash environments is itself an implementation reproducibility finding, not proof that the Transformer is fundamentally stochastic under a fully pinned environment.
