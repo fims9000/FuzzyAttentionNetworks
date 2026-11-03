@@ -92,3 +92,39 @@ def test_train_only_outcome_path_and_action_selected_K():
     assert receipt["concept_count_from_independent_action_channels"]==3
     x=torch.tensor(sim.observations[:8,:12],dtype=torch.float32)
     assert model(x)["contributions"].shape==(8,3)
+
+
+def test_mislabeled_action_target_cannot_be_discovered_from_randomization_alone():
+    """Deliberate blind spot: undocumented multi-target actions can fool V13.
+
+    This control is supposed to SUCCEED at estimating *response* columns
+    but FAIL at matching them to true latent sources, demonstrating why
+    external single-target provenance is a necessary, non-testable assumption.
+    """
+    rng=np.random.default_rng(44)
+    n,t,k,d=380,12,3,6
+    mixing=np.zeros((d,k))
+    mixing[:k]=np.eye(k)
+    # Each action actually hits the NEXT source, not its declared source.
+    unknown_action_mixing=np.array([
+        [0.,1.,0.],[0.,0.,1.],[1.,0.,0.],
+    ])
+    z=np.zeros((n,t,k),dtype=np.float64)
+    actions=rng.choice([-1.,1.],size=(n,t-1,k))
+    for time in range(t-1):
+        z[:,time+1]=(.7*z[:,time]
+                     +.5*(actions[:,time]@unknown_action_mixing.T)
+                     +rng.normal(scale=.06,size=(n,k)))
+    measured=z@mixing.T+rng.normal(scale=.03,size=(n,t,d))
+    # Incorrect metadata falsely claims individually targeted latent axes.
+    claimed=_design(k)
+    result=identify_action_anchored_concepts(
+        measured,actions,claimed,seed=66,bootstraps=24,permutations=99,
+    )
+    true_sources=mixing/np.linalg.norm(mixing,axis=0)
+    self_label_similarity=np.abs(np.sum(result.signature*true_sources,axis=0))
+    # All measured action responses are identifiable, but their latent names
+    # are WRONG; the estimator cannot detect false metadata from this data.
+    assert np.max(self_label_similarity)<.1
+    assert result.pretreatment_balance_permutation_p>=.02
+    assert result.to_json()['latent_scale_identified'] is False
