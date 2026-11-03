@@ -169,6 +169,7 @@ def run_study(
             cert=estimate_intervention_certificate(
                 train.x,train.mask,train.environment,
                 exclusive_single_target_provenance=verified,
+                no_downstream_propagation_provenance=verified,
                 bootstraps=bootstraps,seed=seed+k,
             )
             row={"true_k_for_evaluation_only":k,"regime":regime,
@@ -187,7 +188,9 @@ def run_study(
             if regime=="multitarget":
                 false_cert=estimate_intervention_certificate(
                     train.x,train.mask,train.environment,
-                    exclusive_single_target_provenance=True,bootstraps=bootstraps,seed=seed+k,
+                    exclusive_single_target_provenance=True,
+                    no_downstream_propagation_provenance=True,
+                    bootstraps=bootstraps,seed=seed+k,
                 )
                 row["counterfactual_FALSE_provenance_status"]=false_cert.status
                 row["counterfactual_FALSE_provenance_would_claim_identity"]=false_cert.status.startswith("CERTIFIED")
