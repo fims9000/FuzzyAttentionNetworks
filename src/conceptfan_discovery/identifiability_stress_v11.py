@@ -166,7 +166,7 @@ def main()->None:
         "null_condition":"shuffle time order independently inside patient",
         "measured_metrics_are_empirical_not_a_new_identifiability_theorem":True,
         "n_factors_evaluated":list(cfg["data"]["k_factors"]),
-        "results":table.to_dict(orient="records"),
+        "results":table.astype(object).where(pd.notna(table),None).to_dict(orient="records"),
         "limitations":[
             "Linear stationary AR toy, not real physiology",
             "Finite-data gaps and group thresholds are heuristic certificates",
