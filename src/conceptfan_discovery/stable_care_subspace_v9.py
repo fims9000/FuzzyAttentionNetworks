@@ -200,3 +200,45 @@ def find_common_mask_subspace(
         sensitivity_counts=sensitivity,
         no_shared_patient_outcomes_or_oracle=True,
     )
+
+
+@dataclass(frozen=True)
+class StableCareAnchor:
+    """Minimal typed contract for training with V9 projector-derived axes.
+
+    Unlike V8's CarePolicyRank, this is NOT presented as a single
+    permutation-calibrated full-cohort eigenvalue rank.
+    """
+    chosen_k:int
+    n_observed_sensor_channels:int
+    positive_negative_simplex_anchors:np.ndarray
+    source_method:str
+    source_workflow:str
+    identifiable_medical_concept_names:bool=False
+
+    @classmethod
+    def from_v9_status(cls,receipt:dict)->"StableCareAnchor":
+        src=receipt.get("cross_environment_common_core",{})
+        channels=int(receipt["n_pilot_selected_measurement_channels"])
+        k=src.get("k_observable_common_core")
+        if (src.get("status")!="OBSERVATION_COMMON_SUBSPACE_ONLY"
+            or not isinstance(k,int) or k<1):
+            raise ValueError("Cannot force V9 K when observational common core abstained")
+        bases=np.asarray(src["positive_negative_operator_simplex"],dtype=np.float64)
+        d=4*channels
+        if bases.shape!=(k,2*d):
+            raise ValueError("V9 signed operator anchors do not match selected measured channels")
+        if not np.isfinite(bases).all() or np.any(bases<0) or (
+            not np.allclose(bases.sum(axis=1),1,atol=1e-6)
+        ):
+            raise ValueError("V9 anchors are not valid nonnegative signed-operator mixtures")
+        if not receipt["validation_calibration_test_not_used"]:
+            raise ValueError("V9 rank must be frozen strictly on TRAIN patients")
+        return cls(
+            chosen_k=k,
+            n_observed_sensor_channels=channels,
+            positive_negative_simplex_anchors=bases.astype(np.float32),
+            source_method="train_only_half_subsample_mean_projector_common_core",
+            source_workflow="https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41609582143",
+            identifiable_medical_concept_names=False,
+        )
