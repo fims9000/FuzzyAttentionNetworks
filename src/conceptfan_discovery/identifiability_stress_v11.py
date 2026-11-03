@@ -29,7 +29,7 @@ def simulate_linear_dynamics(
     steps:int=36,channels:int=10,
     observed_fraction:float=.94,
 ) -> tuple[np.ndarray,np.ndarray,np.ndarray,dict]:
-    if k not in (3,5,7) or regime not in ("distinct","degenerate","time_shuffled"):
+    if k not in (3,5,7) or regime not in ("distinct","degenerate","time_shuffled","iid_temporal_null"):
         raise ValueError("Only predeclared 3/5/7-factor mechanisms are supported")
     if channels<k+1 or n_patients<100 or steps<10 or not .5<observed_fraction<=1.:
         raise ValueError("Insufficient generator resolution")
@@ -46,6 +46,12 @@ def simulate_linear_dynamics(
     innovation_scale=np.sqrt(1.-rate**2)
     for t in range(1,steps):
         latent[:,t]=rate*latent[:,t-1]+rng.normal(size=(n_patients,k))*innovation_scale
+    if regime=="iid_temporal_null":
+        # A STRICT negative control: independent latent innovations at EACH
+        # time, retaining cross-sensor instantaneous mixing and marginals,
+        # but removing all past-to-future latent dependence. This is stronger
+        # than shuffling each patient's times (which preserves episode means).
+        latent=rng.normal(size=(n_patients,steps,k))
     raw=latent@emission.T+rng.normal(scale=.09,size=(n_patients,steps,channels))
     mask=(rng.random(size=raw.shape)<observed_fraction).astype(np.float64)
     if regime=="time_shuffled":
@@ -64,6 +70,7 @@ def simulate_linear_dynamics(
         "oracle_emission_never_used_for_fit":True,
         "oracle_latent_traces_never_used_for_fit":True,
         "time_shuffled_control_preserves_channel_distribution":regime=="time_shuffled",
+        "strict_no_temporal_dependence_control":regime=="iid_temporal_null",
         "seed":seed,
     }
     return x,mask.astype(np.float32),emission,receipt
@@ -118,7 +125,7 @@ def run_stress(cfg:dict)->tuple[pd.DataFrame,dict]:
                 # Report projection onto true observable emission span only
                 # when K is matched; mismatched rank has no equal-dimensional
                 # projector overlap and should NOT be called recovered.
-                if count==k and regime!="time_shuffled":
+                if count==k and regime in ("distinct","degenerate"):
                     row["oracle_span_overlap"]=projector_overlap(
                         cert.reference_basis[:,:k],emission
                     )
@@ -151,7 +158,7 @@ def main()->None:
             cfg["protocol"]["no_test_or_clinical_data"] and
             cfg["protocol"]["negative_time_shuffle_required"]):
         p.error("Falsification protocol not frozen")
-    if set(cfg["data"]["regimes"])!={"distinct","degenerate","time_shuffled"}:
+    if set(cfg["data"]["regimes"])!={"distinct","degenerate","time_shuffled","iid_temporal_null"}:
         p.error("Do not omit the negative time-shuffle control")
     table,details=run_stress(cfg)
     a.out_dir.mkdir(parents=True,exist_ok=False)
@@ -163,7 +170,7 @@ def main()->None:
         "status":"V11_PREDICTIVE_IDENTIFIABILITY_STRUCTURAL_STRESS_COMPLETE",
         "no_true_factors_supplied_to_estimator":True,
         "simulation_hidden_state_identities_are_evaluation_only":True,
-        "null_condition":"shuffle time order independently inside patient",
+        "null_condition":"Within-patient time shuffle (weak null) AND independent iid latent time draws (strict null)",
         "measured_metrics_are_empirical_not_a_new_identifiability_theorem":True,
         "n_factors_evaluated":list(cfg["data"]["k_factors"]),
         "results":table.astype(object).where(pd.notna(table),None).to_dict(orient="records"),
@@ -172,6 +179,7 @@ def main()->None:
             "Finite-data gaps and group thresholds are heuristic certificates",
             "True factor count may not equal observable predictive rank",
             "Repeated eigenvalues make individual directions non-unique",
+            "Within-patient time shuffle retains patient-specific episode means and can create spurious positive-lag structure",
             "All clinical claims need independent assessment",
         ],
     }
