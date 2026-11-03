@@ -57,3 +57,31 @@ Only three original training initializations and the repeatedly inspected 300-pa
 **Not justified:** four clinically interpretable or causal care-process concepts, four unique physiological factors, clinical transportability, prediction superiority, significant outcome gains, or contamination-free causality from sampling behavior.
 
 The original frozen PIERE paper's conclusion that exact functional decomposition does not guarantee semantic reproducibility remains unchanged. The corrected camera-ready PIERE draft does **not** silently replace its negative original benchmark with V9's post-selected new protocol.
+
+
+## Pinned, dependent-model-corrected V7/V8/V9 numerical comparison
+
+[GitHub Actions PASS 41611555259](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41611555259), artifact `v7-v8-v9-true-k-comparison-2`. The workflow downloaded the exact frozen original V7, V8 and V9 reports from their successful runs, verified identical initialization seeds 11/23/37 and all three observation scenarios, and enumerated **all 3^3=27 model-index resamples** for each paired method difference. No neural retraining or patient row export was needed.
+
+| Prespecified architecture | Original validation AUPRC | MCAR-thinned AUPRC | Time/channel MAR AUPRC |
+| --- | ---: | ---: | ---: |
+| V7, 3 fixed care-process slots | 0.298550 | 0.263071 | 0.286363 |
+| V8, rank-estimated 9 source-frozen care slots | 0.285949 | 0.242719 | 0.260491 |
+| V9, 4 common-core source-frozen care slots | 0.283122 | 0.239737 | 0.258150 |
+| V9, 4 common-core slots + task-head prior | 0.214601 | 0.172977 | 0.186542 |
+
+**V9 source-only minus V7 source:**
+
+- Original development validation AUPRC **-0.015429**, descriptive 95% **model-only** bootstrap interval **[-0.033773,+0.008451]**.
+- Simulated MCAR AUPRC **-0.023333** [-0.041550,-0.002044].
+- Simulated time/channel MAR AUPRC **-0.028213** [-0.046348,-0.007381].
+
+**V9 source-only minus V8 source-only:**
+
+- Original AUPRC **-0.002828** [-0.006910,+0.001744].
+- MCAR **-0.002982** [-0.014932,+0.012437].
+- Time/channel MAR **-0.002340** [-0.009533,+0.004730].
+
+The ability to recover a smaller, independently supported source-dictionary subspace is therefore **not evidence of increased predictive accuracy**. In this experiment a shared source-K4 did not outperform either earlier architecture. Adding a logistic task-head prior to the K4 dictionary degraded original AUPRC by approximately 0.069 compared with its source-only V9 counterpart and by 0.084 compared with V7.
+
+These intervals are conditional on one historical development validation and three model initialization seeds; they do not include new patients, source hospitals, centers, an independent discovery sample or adaptive method selection. The unchanged originally accepted PIERE experiment must not be retroactively replaced by these new, post-hoc-developed methods.
