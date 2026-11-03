@@ -10,6 +10,9 @@ protocol:
   one_shot_no_retuning: true
   no_patient_level_export: true
   max_prior_dev_auprc_drift: 0.002
+  original_external_pythonhashseed: "0"
+  after_first_aborted_pre_B_refit_drift: true
+  original_set_b_untouched_through_all_previous_runs: true
   no_outcome_derived_features_or_future_36h_to_48h_b_data: true
 source:
   prior_v11_run: 41689286080
