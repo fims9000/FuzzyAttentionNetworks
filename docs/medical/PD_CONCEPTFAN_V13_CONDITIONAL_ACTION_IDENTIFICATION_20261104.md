@@ -75,3 +75,26 @@ Relevant established theory:
 **Defensible V13 contribution at this stage:** a controlled integration of externally identified action-response coordinates into an exact train-time additive temporal concept bottleneck, together with honest per-concept abstention, randomized-action and confounding negative controls, independently refitted signed-logit audit, and source-oracle evaluation. Novelty relative to existing CRL and concept-bottleneck techniques is **not established** without a matched implementation and performance comparison. The strength of the identification assumption is substantial; it does not solve the user's original stronger objective of automatically identifying concepts from unlabeled observational ICU time series.
 
 Next pre-registered comparator should include an ordinary logistic regression on the **same identified action-response coordinates**, and potentially an established CRL/interventional representation method adapted with equal prior information. All comparison weights and baselines must be frozen before generating a third independent test seed; the two existing generators cannot become fresh validation again.
+
+
+## Third independent synthetic generator: ordinary logistic comparator (20270104)
+
+**CI verification:** [GitHub Actions 41733269434](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41733269434), SUCCESS, downloadable aggregate artifact `conceptfan-v13-third-seed-matched-logistic-1`.
+
+After acknowledging that the intervention cross-covariance identification formula is a classical conditional moment identity, a simple `sklearn.linear_model.LogisticRegression` baseline was specified. On generator seed **20270104**, both the V13 native sigmoid/tanh concept bottleneck and ordinary logistic regression use the **same estimated TRAIN-only randomized-action response matrix/pseudoinverse, same 800-of-1000 training episodes, same action labels and the same 300 untouched validation episodes**. No opportunity to improve source identification is given to one method but not the other; both have exact additive signed contributions. Logistic parameters C=1, lbfgs, 1000 max iterations, without tuning on those validation outcomes. The native head uses its previous 85-epoch recipe and no new hyperparameter search.
+
+| True factors | V13 native mean AUPRC (3 fits) | Ordinary logistic mean AUPRC (3 fits) | Native strictly stable signed effects | Logistic strictly stable signed effects |
+| ---: | ---: | ---: | ---: | ---: |
+| 3 | 0.6490 | 0.6385 | 3 / 3 | 3 / 3 |
+| 5 | 0.6177 | **0.6327** | 5 / 5 | 5 / 5 |
+| 7 | 0.5990 | **0.6276** | 7 / 7 | 7 / 7 |
+
+The ordinary logistic model also had higher AUROC and lower Brier score for K=5/7. **This falsifies a general predictive-accuracy or attribution-stability advantage of the V13 nonlinear concept head over a simple, source-matched linear method.** The successful source recovery is principally explained by known, independently targeted action assignments. The extra nonlinear concept layer does not consistently improve the outcome, and the simple logistic baseline attains the same source-aligned reproducible signed-effect count.
+
+Statistical qualification: only three fits of one additional synthetic generator; reported means and comparisons are descriptive. This is a **frozen third seed**, not patient validation and not an established population-level performance ordering. An official modern causal representation learning baseline with matching data access has not been reproduced.
+
+## Blind spot: falsely declared action identity
+
+A new adversarial test constructs randomized **multi-target** interventions while presenting false metadata that each action targets only its same-index latent source. The covariance response matrix is still correctly estimated, its rank and placebo checks pass, and the resulting action response columns are stable; however their purported one-to-one latent factor names are wrong (same-index true-source similarities below 0.1). This shows an unavoidable distinction: **the data can identify action responses, but cannot authenticate the scientific meaning of an unverified action-to-latent-target map**. External experiment design and metadata are necessary for the stronger concept identity claim. The estimator must not be described as automatically recognizing false treatment target labels.
+
+Overall V13 is a valid **conditional, synthetic, action-signature proof of concept**, not yet a demonstrated new generalizable neural architecture nor a solution to unlabeled observational concept discovery. The comparison favors publishing the negative-vs-positive conditions and identifiability limits, rather than claiming universal superiority.
