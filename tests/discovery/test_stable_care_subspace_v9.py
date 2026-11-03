@@ -6,7 +6,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from conceptfan_discovery.stable_care_subspace_v9 import find_common_mask_subspace
+from conceptfan_discovery.stable_care_subspace_v9 import find_common_mask_subspace,StableCareAnchor
 
 
 def _rotated(basis:np.ndarray,seed:int)->np.ndarray:
@@ -86,3 +86,39 @@ def test_shared_one_dimensional_care_operator_is_not_artificially_inflated():
     assert out.k_common==1
     assert len(out.selected_named_operator_indices)==1
     assert out.signed_sparse_operator_definitions.shape==(1,18)
+
+
+def test_projector_core_anchors_reconstruct_a_training_ready_mask_concept_head():
+    b=np.eye(8)[:,:3]
+    sources={f"fit{i}":_rotated(b,i+3) for i in range(6)}
+    core=find_common_mask_subspace(sources)
+    receipt={
+        "n_pilot_selected_measurement_channels":2,
+        "validation_calibration_test_not_used":True,
+        "cross_environment_common_core":core.receipt(),
+    }
+    # Two measured channels -> 4 signed process operators each -> d=8.
+    anchor=StableCareAnchor.from_v9_status(receipt)
+    assert anchor.chosen_k==3
+    assert anchor.n_observed_sensor_channels==2
+    assert anchor.positive_negative_simplex_anchors.shape==(3,16)
+    assert anchor.identifiable_medical_concept_names is False
+
+
+def test_train_only_core_model_rejects_fabricated_or_inconsistent_k():
+    b=np.eye(8)
+    sources={f"fit{i}":b[:,[0]] if i%2 else b[:,[1]]
+             for i in range(6)}
+    out=find_common_mask_subspace(sources)
+    receipt={
+        "n_pilot_selected_measurement_channels":2,
+        "validation_calibration_test_not_used":True,
+        "cross_environment_common_core":out.receipt(),
+    }
+    with pytest.raises(ValueError,match="abstained"):
+        StableCareAnchor.from_v9_status(receipt)
+    accepted=find_common_mask_subspace({f"fit{i}":b[:,:2] for i in range(6)})
+    receipt["cross_environment_common_core"]=accepted.receipt()
+    receipt["n_pilot_selected_measurement_channels"]=5
+    with pytest.raises(ValueError,match="do not match"):
+        StableCareAnchor.from_v9_status(receipt)
