@@ -45,8 +45,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/frozen_v11"
-          gh run download 41685277605 \
-            --name conceptfan-v11-predictive-groups-3 \
+          gh run download 41689286080 \
+            --name conceptfan-v11-predictive-groups-12 \
             --dir "$RUNNER_TEMP/frozen_v11"
           test -s "$RUNNER_TEMP/frozen_v11/v11_evidence/STATUS.json"
       - name: Apply jointly required empirical axis and effect certificates
