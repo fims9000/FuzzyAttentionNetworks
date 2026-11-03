@@ -259,10 +259,10 @@ def run(a):
             if ia<0 or ib<0:
                 rho=None
             else:
-                a=magnet[sa]["original"][:,ia]
-                b=magnet[sb]["original"][:,ib]
-                rho=float(spearmanr(a,b).statistic) if (
-                    np.std(a)>1e-10 and np.std(b)>1e-10
+                effect_left=magnet[sa]["original"][:,ia]
+                effect_right=magnet[sb]["original"][:,ib]
+                rho=float(spearmanr(effect_left,effect_right).statistic) if (
+                    np.std(effect_left)>1e-10 and np.std(effect_right)>1e-10
                 ) else None
             mags.append({"seed_a":sa,"seed_b":sb,"train_aligned_slot":slot,
                          "train_supported_matching":ia>=0 and ib>=0,
