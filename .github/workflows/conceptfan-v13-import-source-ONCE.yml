@@ -5,7 +5,7 @@ name: V13 import frozen synthetic-only source and regression test
 on:
   push:
     branches: [experiment/conceptfan-v13-conditional-interventions-20261104]
-    paths: ['research/v13_source_frozen_20261104.tar.xz']
+    paths: ['research/v13_import_READY.txt']
 
 permissions:
   contents: write
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   verify-and-commit-readable-source:
-    if: github.event.head_commit.message == 'Stage SHA256-frozen V13 sources for reproducible extraction'
+    if: github.event.head_commit.message == 'Stage V13 frozen source import manifest after all six chunks'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -37,9 +37,12 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
-          import hashlib,tarfile
+          import hashlib,tarfile,base64
           from pathlib import Path
+          chunks=[Path(f"research/v13_part_{i}.b64").read_text().strip() for i in range(6)]
+          payload=base64.b64decode("".join(chunks),validate=True)
           p=Path("research/v13_source_frozen_20261104.tar.xz")
+          p.write_bytes(payload)
           expected="9052d1df52b65e884fc24dab1dc01b325d130fe1eed4af9a08e1d83d1a0f271b"
           digest=hashlib.sha256(p.read_bytes()).hexdigest()
           assert digest==expected,(digest,expected)
