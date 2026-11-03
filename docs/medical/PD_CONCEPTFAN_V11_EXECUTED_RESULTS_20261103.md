@@ -18,6 +18,7 @@ causal discovery theorem. Original accepted PIERE and V10 evidence unchanged.
   artifact `conceptfan-v11-observable-factor-stress-8`.
 - [Joint model-effect certificate run 41687120995 SUCCESS](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41687120995),
   artifact `conceptfan-v11-joint-certificates-2`.
+- [Complete discovery + PhysioNet synthetic test suite 41689404167 SUCCESS](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41689404167), **179 tests passed**, 23 warnings (no test failures; warnings retained for inspection).
 - [First core geometry test run 41683976148 SUCCESS](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41683976148).
   Includes degenerate repeated-eigenvalue rotations, exact group-logit
   accounting, train-only bootstrap reproducibility and projector
@@ -230,3 +231,24 @@ thresholds, then:
 **Honest decision:** retain V11 as a well-specified and partly
 falsified research prototype. Do not rewrite accepted PIERE paper
 or claim a finished clinical concept ontology.
+
+
+## 8. Model-native concept passports (source formulas, no medical labels)
+
+The current V11 branch also implements
+`src/conceptfan_discovery/passports_v11.py`.
+For every trained physiological slot it records the FULL nonzero
+signed sparsemax operator dictionary weights, exact learned
+1/4/12/24-hour scale simplex, activation score threshold and
+transition width, direct logit coefficient, and its empirical
+predictive-group status. Top-8 feature names are display
+summaries ONLY; they cannot replace the full weight list when
+reconstructing the formula. No fictitious single blood-pressure
+or creatinine cutoff is invented for multichannel concepts.
+All source-status and functional-abstention qualifiers remain
+visible; no patient IDs or individual measurements are exported.
+
+The first protocol with passport integration is a distinct
+full-model refit on the same development cohort and must have its
+own completed CI receipt before using those learned formulas as
+an experimentally verified example.
