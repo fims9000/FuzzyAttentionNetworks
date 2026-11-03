@@ -11,7 +11,7 @@ from conceptfan_discovery.lagged_rank import _center,_matrix_from_centered
 
 
 @pytest.mark.parametrize("k",[3,5,7])
-@pytest.mark.parametrize("regime",["distinct","degenerate","time_shuffled"])
+@pytest.mark.parametrize("regime",["distinct","degenerate","time_shuffled","iid_temporal_null"])
 def test_generator_respects_train_history_and_latent_count(k,regime):
     x,m,basis,receipt=simulate_linear_dynamics(
         k=k,regime=regime,seed=730+k,n_patients=180,
