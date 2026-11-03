@@ -245,6 +245,24 @@ def main() -> None:
             # dictionary and the learned temporal scale mixture. Otherwise
             # V10 could look falsely stable even when scale assignments drift.
             physical_evidence=evaluate_discovery(model.physical,dev)
+            # Shared self-supervised quality audit, same seed and hidden
+            # observed cells across every arm. All targets were recorded
+            # in the development cohort; no future observations enter input.
+            with torch.no_grad():
+                original_x=torch.from_numpy(dev.x)
+                recorded_mask=torch.from_numpy(dev.mask)
+                hidden_x,visible_mask,withheld=masked_observation_view(
+                    original_x,recorded_mask,
+                    fraction=float(ref["training"]["main_mask_fraction"]),
+                    generator=torch.Generator().manual_seed(
+                        int(ref["evaluation"]["measurement_mask_seed"])+900
+                    ),
+                )
+                hidden_result=model.physical(hidden_x,visible_mask)
+                denoise_error=(hidden_result.reconstruction-original_x).square()
+                denoise_rmse=float(
+                    ((denoise_error*withheld).sum()/withheld.sum().clamp_min(1.)).sqrt()
+                )
             per_seed[method]["phys"][seed]=replace(
                 physical_evidence,
                 weights=expanded_multiscale_definition(model),
@@ -266,6 +284,13 @@ def main() -> None:
                     "physical_K_is_computational_budget":capacity,
                     "care_K_is_architectural_budget":model.process.n_concepts,
                     "same_300_previously_inspected_development_patients":True,
+                    "physical_future_observed_rmse":float(
+                        physical_evidence.metrics["future_observed_rmse"]
+                    ),
+                    "physical_masked_reconstruction_rmse":denoise_rmse,
+                    "physical_mean_effective_concept_count":float(
+                        physical_evidence.metrics["mean_effective_concept_count"]
+                    ),
                     **metrics,**training,
                 })
             if method!="v7_retrained_baseline" and seed==seeds[0]:
@@ -301,6 +326,15 @@ def main() -> None:
             "auprc_time_mar":float(group[group.development_scenario.eq("time_channel_mar")].auprc_full.mean()),
             "auprc_physical_only":float(source.auprc_physical_only.mean()),
             "auprc_care_only":float(source.auprc_observation_process_only.mean()),
+            "physical_future_observed_rmse":float(
+                source.physical_future_observed_rmse.mean()
+            ),
+            "physical_masked_reconstruction_rmse":float(
+                source.physical_masked_reconstruction_rmse.mean()
+            ),
+            "physical_mean_effective_concept_count":float(
+                source.physical_mean_effective_concept_count.mean()
+            ),
             "physical_case_specific_spearman_excess":
                 float(phys.excess_over_unmatched_episode_null_spearman.mean()),
             "care_case_specific_spearman_excess":
