@@ -1,0 +1,58 @@
+name: V11 complete concept discovery + PhysioNet synthetic regression suite
+
+on:
+  push:
+    branches: [experiment/conceptfan-v11-predictive-identifiability-20261103]
+    paths:
+      - '.github/workflows/conceptfan-v11-full-regression.yml'
+      - 'src/conceptfan_discovery/**'
+      - 'tests/discovery/**'
+      - 'tests/physionet2012/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  full-scientific-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_THREAD_LIMIT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU and project dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Compile every research module and run complete synthetic regressions
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery tests/discovery tests/physionet2012
+          python -m pytest tests/discovery tests/physionet2012 -q
+      - name: Preserve test source evidence
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'Complete discovery + PhysioNet synthetic suite passed; no original patient test accessed' > V11_full_regression_receipt.txt
+          git rev-parse HEAD >> V11_full_regression_receipt.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conceptfan-v11-full-regression-${{ github.run_number }}
+          path: V11_full_regression_receipt.txt
+          retention-days: 21
+          if-no-files-found: warn

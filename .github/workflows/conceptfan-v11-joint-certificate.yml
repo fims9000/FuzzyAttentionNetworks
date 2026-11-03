@@ -1,0 +1,71 @@
+name: V11 joint structural and functional concept certification (frozen evidence)
+
+on:
+  push:
+    branches: [experiment/conceptfan-v11-predictive-identifiability-20261103]
+    paths:
+      - 'src/conceptfan_discovery/effect_certification_v11.py'
+      - 'tests/discovery/test_effect_certification_v11.py'
+      - '.github/workflows/conceptfan-v11-joint-certificate.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  identify-stable-effects-or-abstain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PYTHONPATH: src:.
+      GH_TOKEN: ${{ github.token }}
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install audit-only requirements
+        run: |
+          set -euo pipefail
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test refusal when a spectrally stable axis reverses risk effect
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery/effect_certification_v11.py
+          python -m pytest tests/discovery/test_effect_certification_v11.py -q
+      - name: Reopen immutably pinned completed V11 nine-model evidence
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/frozen_v11"
+          gh run download 41689286080 \
+            --name conceptfan-v11-predictive-groups-12 \
+            --dir "$RUNNER_TEMP/frozen_v11"
+          test -s "$RUNNER_TEMP/frozen_v11/v11_evidence/STATUS.json"
+      - name: Apply jointly required empirical axis and effect certificates
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.effect_certification_v11 \
+            --frozen-v11-artifact "$RUNNER_TEMP/frozen_v11" \
+            --out-dir v11_joint_explanation_audit
+          python - <<'PY'
+          import json
+          s=json.load(open('v11_joint_explanation_audit/V11_JOINT_EXPLANATION_CERTIFICATE.json'))
+          assert not s['statistical_significance_claim']
+          assert s['n_independent_source_initializations']==3
+          PY
+      - name: Publish only aggregate certainty/abstention results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v11-joint-certificates-${{ github.run_number }}
+          path: v11_joint_explanation_audit/
+          retention-days: 21
+          if-no-files-found: warn

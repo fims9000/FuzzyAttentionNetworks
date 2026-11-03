@@ -1,0 +1,38 @@
+protocol:
+  name: pd-conceptfan-v11-observable-predictive-group-identifiability
+  status: exploratory_after_v10_external_benchmark
+  objective: discover_predictive_subspaces_and_abstain_on_nonidentifiable_axes
+  test_and_calibration_sealed: true
+  no_medical_concept_identity_claim: true
+  train_only_predictive_groups: true
+  cross_hospital_generalization_demonstrated: false
+  confirmatory_p_values_prohibited: true
+predictive_certificate:
+  lags: [1, 2, 3]
+  patient_bootstraps: 40
+  seed: 20261103
+  min_subspace_overlap: 0.8
+  gap_noise_quantile: 0.9
+  source_matrix: pairwise_observed_positive_lag_covariance
+  rank_budget: exactly_original_train_only_v10_rank
+  groups: based_on_singular_gaps_and_bootstrap_projector_overlap
+training:
+  methods:
+    - v10_consistency_refit
+    - v11_projector_axis_view
+    - v11_projector_group_view
+  initialization_seeds: [11, 23, 37]
+  same_v10_epochs_and_optimization: true
+  group_projector_weight: 0.035
+  projector_ridge: 0.0001
+  same_v10_feature_and_scale_operations: true
+  same_original_clinician_process_head: true
+  same_v10_future_and_masked_observation_targets: true
+evaluation:
+  scenarios: [original, mcar_thin, time_channel_mar]
+  compare_group_projectors_not_arbitrary_axes: true
+  report_individual_axes_only_when_empirically_certified: true
+  no_discriminative_significance_claim: true
+  n_development_patients_already_inspected: 300
+  all_test_and_calibration_features_unused: true
+  no_raw_patient_predictions_or_checkpoints_in_uploaded_artifacts: true

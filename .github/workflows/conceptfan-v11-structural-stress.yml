@@ -1,0 +1,67 @@
+name: V11 observable predictive groups K3 K5 K7 with negative controls
+
+on:
+  push:
+    branches: [experiment/conceptfan-v11-predictive-identifiability-20261103]
+    paths:
+      - 'src/conceptfan_discovery/identifiability_stress_v11.py'
+      - 'configs/medical/pd_v11_identifiability_stress.yaml'
+      - 'tests/discovery/test_identifiability_stress_v11.py'
+      - '.github/workflows/conceptfan-v11-structural-stress.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  planted-factor-falsification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU research dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Confirm planted dimensions and negative-control legality
+        run: |
+          set -euo pipefail
+          python -m pytest \
+            tests/discovery/test_identifiability_v11.py \
+            tests/discovery/test_identifiability_stress_v11.py -q
+      - name: Fit 9 observable operators and record negative as well as positive outcomes
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.identifiability_stress_v11 \
+            --config configs/medical/pd_v11_identifiability_stress.yaml \
+            --out-dir "$RUNNER_TEMP/factor_stress" \
+            > v11_factor_stress.log 2>&1 || { tail -n 120 v11_factor_stress.log; exit 1; }
+          tail -n 45 v11_factor_stress.log
+          mkdir -p results_v11_stress
+          cp "$RUNNER_TEMP/factor_stress/"* results_v11_stress/
+          cp v11_factor_stress.log results_v11_stress/
+      - name: Archive all outcomes, without latent patient traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v11-observable-factor-stress-${{ github.run_number }}
+          path: |
+            results_v11_stress/
+            v11_factor_stress.log
+          retention-days: 21
+          if-no-files-found: warn

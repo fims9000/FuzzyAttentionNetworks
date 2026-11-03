@@ -1,0 +1,27 @@
+protocol:
+  name: v11_empirical_predictive_identifiability_linear_ar_stress
+  scope: exploratory_structural_falsification
+  oracle_only_after_fit: true
+  no_test_or_clinical_data: true
+  negative_time_shuffle_required: true
+  no_population_identifiability_theorem_claim: true
+data:
+  k_factors: [3, 5, 7]
+  regimes: [distinct, degenerate, time_shuffled, iid_temporal_null]
+  n_train_patients: 900
+  history_hours: 36
+  n_channels: 10
+  observed_fraction: 0.94
+  seed: 20261103
+rank:
+  lags: [1, 2, 3]
+  permutations: 45
+  patient_bootstraps: 18
+  alpha: 0.05
+  seed: 20261123
+  max_computational_slots: 8
+certificate:
+  bootstraps: 40
+  seed: 20261129
+  min_overlap: 0.80
+  gap_noise_quantile: 0.90
