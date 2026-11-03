@@ -1,0 +1,24 @@
+protocol:
+  name: conceptfan-v9-common-observable-care-policy-subspace
+  status: exploratory_no_hospital_generalization
+  old_test_calibration_validation_sealed: true
+  rank_not_medical_ontology: true
+evaluation:
+  measurement_policies: [original, mcar_thin, time_channel_mar]
+  original_train_mask_pilot_600: true
+  independent_train_mask_halves_900_900: true
+  do_not_choose_threshold_after_seeing_outcome: true
+estimator:
+  patient_permutations: 90
+  null_seed: 20271117
+  measurement_seed: 20271117
+  alpha: 0.05
+  max_source_k: 16
+  projector_threshold: 0.95
+  min_source_energy: 0.90
+  threshold_sensitivity: [0.85, 0.90, 0.95, 0.98]
+reporting:
+  stable_core_is_only_observable_subspace_lower_bound: true
+  clinical_concept_names_without_external_reference: false
+  abstain_if_no_common_dimensions: true
+  no_patient_rows_in_artifact: true
