@@ -1,0 +1,54 @@
+name: Preflight ONLY — V11 Set B one-shot protocol with synthetic fake records
+
+on:
+  push:
+    branches: [experiment/conceptfan-v11-one-shot-setb-20261103]
+    paths:
+      - 'src/conceptfan_discovery/holdout_setb_v11.py'
+      - 'src/conceptfan_discovery/effect_certification_v11.py'
+      - 'tests/discovery/test_holdout_setb_v11.py'
+      - 'configs/medical/pd_v11_setb_one_shot_locked_20261103.yaml'
+      - '.github/workflows/conceptfan-v11-setb-PREFLIGHT.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  fake-patient-records-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install local CPU testing stack (no real Set B downloaded)
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Unit-test anti-leakage and frozen historical refit contracts
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery/holdout_setb_v11.py
+          python -m pytest \
+            tests/discovery/test_holdout_setb_v11.py \
+            tests/discovery/test_effect_certification_v11.py \
+            tests/discovery/test_passports_v11.py \
+            tests/discovery/test_group_learning_v11.py -q
+      - name: Full concept-discovery regression preflight without Set B outcomes
+        run: |
+          set -euo pipefail
+          python -m pytest tests/discovery -q
