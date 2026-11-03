@@ -12,7 +12,7 @@ import torch
 
 from conceptfan_discovery.holdout_setb_v11 import (
     load_set_b_strict,predict_fixed_concept,_reference_score,
-    METHODS,ARMS,SCENARIOS,SEEDS,
+    METHODS,ARMS,SCENARIOS,SEEDS,download_set_b_only_after_all_refit_guards_pass,
 )
 from conceptfan_discovery.multiscale_physiology_v10 import MultiScaleDualProcessConceptFAN
 from conceptfan_discovery.effect_certification_v11 import joint_concept_screen
@@ -177,3 +177,24 @@ def test_exact_registry_and_independent_patient_certificate_label():
     )
     assert out["already_repeatedly_inspected_development"] is False
     assert out["methods"]["v11_projector_group_view"]["n_candidate_individual_effects"]==1
+
+
+def test_late_download_accepts_only_frozen_official_urls_and_never_overwrites(tmp_path):
+    b=tmp_path/"set-b.zip"
+    o=tmp_path/"Outcomes-b.txt"
+    with pytest.raises(ValueError,match="exact pre-registered"):
+        download_set_b_only_after_all_refit_guards_pass(
+            destination_zip=b,destination_outcomes=o,
+            source_zip_url="https://other.example/set-b.zip",
+            outcome_url="https://physionet.org/files/challenge-2012/1.0.0/Outcomes-b.txt",
+        )
+    assert not b.exists() and not o.exists()
+    b.write_bytes(b"EXISTING_HOLDOUT_FORBIDDEN")
+    with pytest.raises(FileExistsError,match="absent BEFORE"):
+        download_set_b_only_after_all_refit_guards_pass(
+            destination_zip=b,destination_outcomes=o,
+            source_zip_url="https://physionet.org/files/challenge-2012/1.0.0/set-b.zip",
+            outcome_url="https://physionet.org/files/challenge-2012/1.0.0/Outcomes-b.txt",
+        )
+    assert b.read_bytes()==b"EXISTING_HOLDOUT_FORBIDDEN"
+    assert not o.exists()
