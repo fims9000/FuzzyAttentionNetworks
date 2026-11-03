@@ -7,7 +7,7 @@ protocol:
   no_population_identifiability_theorem_claim: true
 data:
   k_factors: [3, 5, 7]
-  regimes: [distinct, degenerate, time_shuffled]
+  regimes: [distinct, degenerate, time_shuffled, iid_temporal_null]
   n_train_patients: 900
   history_hours: 36
   n_channels: 10
