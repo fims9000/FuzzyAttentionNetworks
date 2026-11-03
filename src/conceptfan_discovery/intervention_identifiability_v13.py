@@ -3,7 +3,8 @@
 Strong scoped assumptions: randomized environments, positive known intervention
 labels, stable additive linear sensor mixing, one independently targeted latent
 factor per environment, NO downstream propagation, and invariant mean noise.
-The experimental provenance must independently verify target exclusivity.
+The experimental provenance must independently verify target exclusivity AND
+absence of downstream propagation (separate required booleans).
 Without that provenance, labels name experimental environments, NOT latent
 causal variables. The estimator cannot infer target exclusivity from data.
 
@@ -34,6 +35,7 @@ class InterventionCertificate:
     rank_estimate: int
     status: str
     target_exclusivity_verified_externally: bool
+    no_downstream_propagation_verified_externally: bool
     receipt: dict
 
     def to_json(self) -> dict:
@@ -48,8 +50,9 @@ class InterventionCertificate:
             "condition_number": self.condition_number,
             "empirical_rank": self.rank_estimate,
             "target_exclusivity_verified_externally": self.target_exclusivity_verified_externally,
+            "no_downstream_propagation_verified_externally": self.no_downstream_propagation_verified_externally,
             "explanation_scope": (
-                "single latent factor observable response, up to intervention scale"
+                "single latent factor observable response given verified exclusive targeting AND verified absence of downstream propagation, up to intervention scale"
                 if self.status == "CERTIFIED_CONDITIONAL_SINGLE_TARGET_RESPONSE"
                 else "environment contrast span only; individual factor identity ABSTAINS"
             ),
@@ -80,6 +83,7 @@ def estimate_intervention_certificate(
     train_environment: np.ndarray,
     *,
     exclusive_single_target_provenance: bool,
+    no_downstream_propagation_provenance: bool,
     bootstraps: int = 80,
     seed: int = 20261104,
     history_window: int = 6,
@@ -97,6 +101,7 @@ def estimate_intervention_certificate(
             or not np.isin(m, [0., 1.]).all()):
         raise ValueError("Observed finite TRAIN [N,T,D] and environment per record required")
     if (not isinstance(exclusive_single_target_provenance, (bool, np.bool_))
+            or not isinstance(no_downstream_propagation_provenance, (bool, np.bool_))
             or bootstraps < 16 or minimum_patients_per_environment < 10
             or not 0 < min_direction_cosine_q10 < 1
             or min_singular_to_bootstrap_noise <= 0 or max_condition <= 1):
@@ -141,13 +146,17 @@ def estimate_intervention_certificate(
         empirical_status = "ABSTAIN_UNRESOLVED_INTERVENTION_RESPONSES"
     else:
         empirical_status = "RESOLVED_OBSERVABLE_ENVIRONMENT_RESPONSES"
-    status = (
-        "ABSTAIN_UNVERIFIED_SINGLE_TARGET_PROVENANCE"
-        if not bool(exclusive_single_target_provenance)
-        else ("CERTIFIED_CONDITIONAL_SINGLE_TARGET_RESPONSE"
-              if empirical_status == "RESOLVED_OBSERVABLE_ENVIRONMENT_RESPONSES"
-              else empirical_status)
-    )
+    # V13b: a direct target can still propagate through downstream latent
+    # mechanisms. Need TWO independent experiment-design proofs, not one.
+    # D=A(I-B)^(-1) diag(delta) otherwise, so D columns may mix factors.
+    if not bool(exclusive_single_target_provenance):
+        status="ABSTAIN_UNVERIFIED_SINGLE_TARGET_PROVENANCE"
+    elif not bool(no_downstream_propagation_provenance):
+        status="ABSTAIN_UNVERIFIED_NO_DOWNSTREAM_PROPAGATION"
+    elif empirical_status == "RESOLVED_OBSERVABLE_ENVIRONMENT_RESPONSES":
+        status="CERTIFIED_CONDITIONAL_SINGLE_TARGET_RESPONSE"
+    else:
+        status=empirical_status
     receipt = {
         "train_patients_per_environment": dict(zip(map(str, ids), sizes)),
         "empirical_response_resolution_independent_of_provenance": empirical_status,
@@ -161,6 +170,7 @@ def estimate_intervention_certificate(
         "source_used": "TRAIN observed histories, observation masks and randomized environment labels only",
         "no_outcome_or_latent_labels_in_contrast_estimation": True,
         "external_exclusivity_is_an_assumption_NOT_testable_from_contrasts": True,
+        "no_downstream_propagation_is_an_assumption_NOT_testable_from_contrasts": True,
         "train_input_and_environment_sha256": sha256(
             np.ascontiguousarray(x, dtype="<f4").tobytes()
             + np.ascontiguousarray(m, dtype="<f4").tobytes()
@@ -173,6 +183,7 @@ def estimate_intervention_certificate(
         q90_bootstrap_spectral_noise=noise, condition_number=condition,
         rank_estimate=rank, status=status,
         target_exclusivity_verified_externally=bool(exclusive_single_target_provenance),
+        no_downstream_propagation_verified_externally=bool(no_downstream_propagation_provenance),
         receipt=receipt,
     )
 
