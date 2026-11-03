@@ -1,0 +1,107 @@
+name: V9 train reproducible common care-process concepts end to end
+
+on:
+  push:
+    branches:
+      - experiment/predictive-dynamics-concept-discovery-v1
+    paths:
+      - 'src/conceptfan_discovery/clinical_common_care_train_v9.py'
+      - 'src/conceptfan_discovery/stable_care_subspace_v9.py'
+      - 'tests/discovery/test_stable_care_subspace_v9.py'
+      - '.github/workflows/discover-train-common-care-v9.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  train-canonical-masked-operator-bottlenecks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU model runtime
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Reject unsupported or non-deterministic source dictionary
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/conceptfan_discovery
+          python -m pytest \
+            tests/discovery/test_stable_care_subspace_v9.py \
+            tests/discovery/test_anchored_care_process_v8.py \
+            tests/discovery/test_observation_process_concepts_v7.py -q
+      - name: Retrieve exact pinned successful independent rank result
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/v9_core"
+          gh run download 41609582143 \
+            --name stable-masked-care-core-v9-2 \
+            --dir "$RUNNER_TEMP/v9_core"
+          test -s "$RUNNER_TEMP/v9_core/published_common_care/STATUS.json"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          path=Path(os.environ["RUNNER_TEMP"])/"v9_core"/"published_common_care"/"STATUS.json"
+          j=json.loads(path.read_text())
+          assert j["status"]=="OBSERVATION_COMMON_SUBSPACE_ONLY"
+          assert j["cross_environment_common_core"]["k_observable_common_core"]>0
+          assert j["validation_calibration_test_not_used"] is True
+          print("Pinned, train-only common mask core",j["cross_environment_common_core"]["k_observable_common_core"])
+          PY
+      - name: Fetch original PhysioNet Set A; preserve sealed test and calibration
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/official"
+          curl -fsSL --retry 3 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o "$RUNNER_TEMP/official/set-a.zip"
+          curl -fsSL --retry 3 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o "$RUNNER_TEMP/official/Outcomes-a.txt"
+          unzip -tq "$RUNNER_TEMP/official/set-a.zip" | tail -n 2
+      - name: Train six clinical dual-concept fits and evaluate four data-derived care slots
+        run: |
+          set -euo pipefail
+          python -m conceptfan_discovery.clinical_common_care_train_v9 \
+            --common-core-status "$RUNNER_TEMP/v9_core/published_common_care/STATUS.json" \
+            --reference-v6-config configs/medical/pd_clinical_unknown_neutral_v6.yaml \
+            --reference-v8-config configs/medical/pd_clinical_anchored_care_v8.yaml \
+            --raw-zip "$RUNNER_TEMP/official/set-a.zip" \
+            --outcomes "$RUNNER_TEMP/official/Outcomes-a.txt" \
+            --out-dir "$RUNNER_TEMP/v9_trained" \
+            > common_care_v9_training.log 2>&1 \
+            || { tail -n 170 common_care_v9_training.log; exit 1; }
+          tail -n 48 common_care_v9_training.log
+          mkdir -p published_v9_trained
+          cp "$RUNNER_TEMP/v9_trained/"*.csv published_v9_trained/
+          cp "$RUNNER_TEMP/v9_trained/"*.json published_v9_trained/
+          cp common_care_v9_training.log published_v9_trained/
+      - name: Persist patient-private complete model and concept evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-stable-mask-care-v9-${{ github.run_number }}
+          path: |
+            published_v9_trained/
+            common_care_v9_training.log
+          retention-days: 21
+          if-no-files-found: warn
