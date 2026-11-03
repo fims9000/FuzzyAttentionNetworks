@@ -62,6 +62,10 @@ SEEDS=(11,23,37)
 NEURAL_EXTERNAL=("gru_d_style","transformer_timeseries")
 TABULAR_EXTERNAL=("logistic_history","hist_gradient_boosting")
 METHODS=ARMS+EXTERNAL_METHODS
+# Historical external benchmark: V10 -> Logistic/HGB -> GRU-D -> Transformer.
+# V11 is trained afterwards. Train exactly that historical order to prevent
+# unrelated ConceptFAN training from influencing the external torch baseline.
+FIT_ORDER=(ARMS[0],)+EXTERNAL_METHODS+ARMS[1:]
 SCENARIOS=("original","mcar_thin","time_channel_mar")
 REFERENCE_V11_RUN=41689286080
 REFERENCE_V10_EXTERNAL_RUN=41626717843
@@ -273,6 +277,8 @@ def main()->None:
                  "frozen-external-artifact","set-a-zip","outcomes-a",
                  "set-b-zip","outcomes-b","out-dir"):
         p.add_argument("--"+name,required=True,type=Path)
+    p.add_argument("--a-only-preflight",action="store_true",
+                   help="Validate every historical refit without accessing Set B")
     a=p.parse_args()
     if a.out_dir.exists():
         p.error("ONE-SHOT experiment refuses any existing output directory")
@@ -361,7 +367,7 @@ def main()->None:
     refit_audit=[]
     timings=[]
     defs={}
-    for method in METHODS:
+    for method in FIT_ORDER:
         seedlist=(0,) if method in TABULAR_EXTERNAL else SEEDS
         model_objects[method]={}
         defs[method]={}
@@ -421,6 +427,32 @@ def main()->None:
             print("Set A train-only verified",method,seed,"dev AUPRC",
                   round(dev_score,6),flush=True)
 
+    # This preflight is an independent repeatable, outcome-free Set A
+    # baseline-identity verification. Not a Set B experiment.
+    if a.a_only_preflight:
+        a.out_dir.mkdir(parents=True,exist_ok=False)
+        pd.DataFrame(refit_audit).to_csv(
+            a.out_dir/"SET_A_REFIT_VERIFICATION.csv",index=False)
+        summary={
+            "status":"A_ONLY_REFIT_PRECHECK_NO_NEW_COHORT_ACCESS",
+            "original_frozen_external_training_order":list(FIT_ORDER),
+            "all_method_seed_refits_match_previous_development":
+                len(refit_audit)==17,
+            "total_frozen_models_verified":len(refit_audit),
+            "previous_source_v11_run":REFERENCE_V11_RUN,
+            "previous_source_external_run":REFERENCE_V10_EXTERNAL_RUN,
+            "PYTHONHASHSEED":os.environ["PYTHONHASHSEED"],
+            "new_set_b_zip_and_outcomes_never_downloaded":True,
+            "original_set_a_test_calibration_never_evaluated":True,
+            "max_development_auprc_drift":max(
+                row["absolute_difference"] for row in refit_audit
+            ),
+        }
+        (a.out_dir/"STATUS.json").write_text(
+            json.dumps(summary,indent=2,allow_nan=False),encoding="utf-8"
+        )
+        print(json.dumps(summary,indent=2,allow_nan=False),flush=True)
+        return
     # Phase 2: ONLY NOW do we DOWNLOAD and open the new Set B cohort.
     # The raw source and outcome bytes were absent during every fit/refit.
     download_set_b_only_after_all_refit_guards_pass(
