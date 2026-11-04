@@ -12,7 +12,7 @@ from conceptfan_discovery.candidate_admission_v17 import (
 from conceptfan_discovery.multiscale_physiology_v10 import MultiScaleDualProcessConceptFAN
 from conceptfan_discovery.risk_screen_v18 import (
     screen_risk_association, configure_native_risk_orientation,
-    begin_native_risk_training, risk_evidence_passport,
+    begin_native_risk_training, risk_evidence_passport, native_observable_grounding_loss,
 )
 
 
@@ -162,3 +162,47 @@ def test_sign_orientation_is_not_independent_cross_seed_evidence():
         "sign_is_fixed_from_train_evidence_NOT_new_cross_seed_discovery"
     ]
     assert not evidence.causal_treatment_effect_certified
+
+
+def test_native_grounding_supervises_actual_v10_concept_not_a_posthoc_head():
+    torch.manual_seed(911)
+    model=MultiScaleDualProcessConceptFAN(
+        observable_loadings=np.eye(5,2,dtype=np.float64),
+        channels=tuple(f"sensor_{i}" for i in range(5)),
+        forecast_horizon=3,n_observation_concepts=2,
+        adaptive_feature_gradients=True,
+    )
+    expanded=admit_candidate_without_prediction_drift(
+        model,_candidate(),expert_decision="approve",
+    )
+    values=torch.randn(5,20,5)
+    mask=torch.ones_like(values)
+    out=expanded(values,mask,process_mask=mask)
+    penalty=native_observable_grounding_loss(
+        out.physical,values,mask,_candidate(),slot=2,window=6,
+    )
+    penalty.backward()
+    assert float(penalty.detach()) > 0
+    assert expanded.physical.feature_logits.grad is not None
+    assert float(expanded.physical.feature_logits.grad[-1].abs().sum()) > 0
+    assert float(out.decomposition_error().detach()) < 1e-6
+
+
+def test_native_grounding_refuses_missing_oracle_and_zero_measurement():
+    model=MultiScaleDualProcessConceptFAN(
+        observable_loadings=np.eye(5,2,dtype=np.float64),
+        channels=tuple(f"sensor_{i}" for i in range(5)),
+        forecast_horizon=3,n_observation_concepts=2,
+    )
+    expanded=admit_candidate_without_prediction_drift(
+        model,_candidate(),expert_decision="approve",
+    )
+    x=torch.randn(4,20,5)
+    absent=torch.zeros_like(x)
+    out=expanded(x,absent,process_mask=absent)
+    val=native_observable_grounding_loss(out.physical,x,absent,_candidate(),slot=2)
+    assert float(val.detach())==0
+    with pytest.raises(ValueError,match="shapes"):
+        native_observable_grounding_loss(
+            out.physical,x[:,:-1],absent[:,:-1],_candidate(),slot=2,
+        )
