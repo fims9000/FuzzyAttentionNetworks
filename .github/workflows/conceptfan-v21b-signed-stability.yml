@@ -1,0 +1,80 @@
+name: ConceptFAN V21b train-only signed-concept contribution stability
+on:
+  push:
+    branches: [experiment/conceptfan-v21-provenance-falsification-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v21b-signed-stability.yml'
+      - 'src/conceptfan_discovery/experiment_signed_effect_v21b.py'
+      - 'src/conceptfan_discovery/clinical_multiscale_v10.py'
+      - 'tests/discovery/test_signed_effect_v21b.py'
+  pull_request:
+    branches: [experiment/conceptfan-v20-native-head-objective-ablation-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v21b-signed-stability.yml'
+      - 'src/conceptfan_discovery/experiment_signed_effect_v21b.py'
+      - 'src/conceptfan_discovery/clinical_multiscale_v10.py'
+      - 'tests/discovery/test_signed_effect_v21b.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  signed-risk-provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install frozen CPU native concept dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify opt-in native sign initial conditions and original inference contracts
+        run: |
+          python -m pytest tests/discovery/test_signed_effect_v21b.py tests/discovery/test_provenance_v21.py tests/discovery/test_expert_feedback_v16.py -q
+      - name: Execute 30 registered sign/oracle opportunities without post-hoc sign alignment
+        run: |
+          python -m conceptfan_discovery.experiment_signed_effect_v21b --out-dir V21B_SIGNED_STABILITY
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('V21B_SIGNED_STABILITY/STATUS.json').read_text())
+          assert x['status']=='V21B_TRAIN_SCREENED_NATIVE_SIGN_INITIALIZATION_STABILITY_CONTROL'
+          assert x['registered_opportunities']==30
+          assert x['n_trained']+x['n_train_screen_abstentions']==30
+          assert len(x['aggregate'])==10
+          assert x['native_risk_sign_initial_condition_only_not_hard_constraint']
+          assert x['risk_initialization_derived_from_disjoint_train_only_labels']
+          assert x['latent_oracle_eval_only_after_training']
+          assert x['no_raw_input_to_risk_bypass']
+          assert x['all_opportunities_recorded']
+          assert all(r['max_native_logit_additive_error']<2e-5 for r in x['all_cases'] if r['status']=='TRAINED')
+          assert all(r['physiological_concept_certified'] is False for r in x['all_cases'])
+          PY
+          git rev-parse HEAD > V21B_SIGNED_STABILITY/COMMIT_SHA.txt
+      - name: Archive all native signed risk source and refusal outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v21b-native-risk-stability-${{ github.run_number }}
+          path: V21B_SIGNED_STABILITY/
+          if-no-files-found: warn
+      - name: Version all risk-screen conditional outcomes in research branch
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v21-provenance-falsification-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v21/signed_stability
+          cp V21B_SIGNED_STABILITY/* docs/medical/evidence_v21/signed_stability/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v21/signed_stability
+          git diff --cached --quiet || git commit -m "V21b: preserve all 30 signed concept and abstention opportunities"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v21-provenance-falsification-20261104
