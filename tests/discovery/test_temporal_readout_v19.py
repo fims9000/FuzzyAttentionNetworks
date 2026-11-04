@@ -62,7 +62,7 @@ def test_new_model_uses_same_native_concepts_and_exact_additive_bottleneck(mode)
     torch.testing.assert_close(changed.physical.reconstruction,native.physical.reconstruction)
     torch.testing.assert_close(changed.observation_contributions,native.observation_contributions)
     assert float(changed.decomposition_error()) < 1e-6
-    assert changed.physical.temporal_readout_logits.requires_grad == (mode=="learned_shape")
+    assert model.physical.temporal_readout_logits.requires_grad == (mode=="learned_shape")
     # The only new learned decision state is a softmax mixture over known
     # native concept shape statistics; there is no direct sensor-to-logit head.
     passport=model.physical.temporal_readout_passport()
