@@ -67,13 +67,12 @@ jobs:
           name: conceptfan-v22c-all-48-risk-factorial-${{ github.run_number }}
           path: V22C_FACTORIAL_RISK/
           if-no-files-found: warn
-      - name: Persist results only from trusted same-repository Draft PR
-        if: success() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'experiment/conceptfan-v22-mixed-source-identifiability-20261104'
+      # Scientific bundles are uploaded above and archived as immutable
+      # repository evidence by the single dedicated v22-backfill workflow.
+      # Never push to the research branch from a pull_request event: a
+      # concurrent contributor may have advanced the branch in the meantime.
+      - name: Verify complete factorial artifact produced
+        if: success()
         run: |
-          mkdir -p docs/medical/evidence_v22/factorial_risk
-          cp V22C_FACTORIAL_RISK/* docs/medical/evidence_v22/factorial_risk/
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/medical/evidence_v22/factorial_risk
-          git diff --cached --quiet || git commit -m "V22c: archive all native risk sign/mask factorial fits and active-only attribution metrics"
-          git push origin HEAD:refs/heads/experiment/conceptfan-v22-mixed-source-identifiability-20261104
+          test -s V22C_FACTORIAL_RISK/STATUS.json
+          test -s V22C_FACTORIAL_RISK/ALL_48_SIGN_AND_MASK_FACTORIAL_OPPORTUNITIES.csv
