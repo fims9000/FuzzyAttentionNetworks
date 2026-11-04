@@ -59,3 +59,36 @@ A valid next V22 study should distinguish slot permutation, source-sign alignmen
 - Accepted IEEE PIERE-2026 camera-ready remains unchanged and PR #18 remains Draft.
 
 The scientifically useful V21 accomplishment is therefore an explicit **semantic verification boundary** around predictive concepts, not a claim that a new physical source was proven.
+
+
+## 6. V21b executed follow-up: train-only signed-risk INITIALIZATION and patient-effect stability
+
+Predeclared BEFORE run in `CONCEPTFAN_V21B_FROZEN_SIGNED_EFFECT_STABILITY_20261104.md`. [GitHub Actions 41849323592 — SUCCESS](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41849323592). Complete `docs/medical/evidence_v21/signed_stability/` contains 30 opportunities: **24 trained full native ConceptFAN K3 networks and six risk-screen abstentions**, 3 initializations per family. All original V21 synthetic generator histories and frozen source/risk/provenance TRAIN cohorts were reused. 240 validation and 240 sealed synthetic test records; test remains sealed. No post-hoc reordering or sign alignment was performed.
+
+Only the K3 native decision **initial raw coefficient** changed (±0.05, direction selected by the disjoint TRAIN-only binary risk screen); the sign is NOT constrained after initialization and the physical source generator/architecture/optimizer remain unchanged.
+
+| Synthetic generator family | Arbitrary original start: AUPRC | TRAIN-screened native signed start: AUPRC | Mean cross-seed Spearman of signed patient-specific effect after signed start |
+|---|---:|---:|---:|
+| Physical source predicts outcome | 0.510179 | **0.699609** | **0.999841** |
+| Physical source independent of outcome | 0.499915 | **ABSTAIN (3/3)** | N/A |
+| Instrument-only colored artifact predicts outcome | 0.539715 | **0.760213** | **0.999946** |
+| Instrument artifact not predictive | 0.498818 | **ABSTAIN (3/3)** | N/A |
+| Common-mode contaminated reference plus predictive artifact | 0.533757 | **0.726691** | **0.999942** |
+
+Without the oriented start, cross-seed Spearman averaged ~−0.333 in all families. The huge rank correlation increase is mostly fixing an arbitrary independent-training **decision-coefficient orientation** on a very simple shared measured direction, NOT proof of learned physical semantic alignment. Raw source matching remained nearly unchanged (physical source abs Spearman ~0.9836→0.9853; instrument artifact ~0.9906→0.9899).
+
+**Critical semantic negative result**: exactly the same method produces very high AUPRC and nearly perfect signed-effect reproducibility for a source that is **known to be an instrument artifact** in the generator. The contaminated second device also passes measurement corroboration. Therefore “intrinsically additive + predictive + cross-seed stable + confirmed by two devices” is STILL NOT logically sufficient to identify a physiological mechanism.
+
+No permanent sign constraint is required for this benefit in the tested setup; the result is consistent with V18b's sign-initialization confound. All five families here were already inspected in V21; interpret the experiment as a controlled diagnostic, not independent confirmatory or clinical generalization evidence. The null risk cases were explicitly recorded as abstentions, not given fabricated zero prediction scores.
+
+## 7. Offline human-ready review instrument (software implemented; NO clinical participants)
+
+`src/conceptfan_discovery/offline_native_review_v21.py` exports a signed and pseudonymous TRAIN-only review packet and a locally openable self-contained HTML view. It asks a plain-language question beside measured historical sensor plots and provides four choices: **Да, Нет, Не уверен, Артефакт измерения**. Answers are JSON and are imported by HMAC-verified pseudonymous TRAIN membership into the EXISTING V16 `PreparedFeedback` object that trains the native risk-mediating concepts. The review page never receives outcomes, original episode IDs, the synthetic oracle or the trained risk predictions. Missing measurement points are not visually interpolated. `unsure` and `artifact` never become false-negative physiological labels.
+
+[GitHub Actions 41848050015 — SUCCESS](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41848050015) covers packet signing, tamper refusal, unauthorized episode refusal, duplicate answer handling, schema validation, native gradient receipt and HTML generation. **No patient-level packet or HMAC secret is exported in CI.** This is research engineering, not a physician usability study, authentication of reviewers, GDPR/HIPAA certification, EHR integration or medical validation. Even pseudonymized normalized measurement curves can remain sensitive; reviewer HTML and decisions must be kept in an authorized private environment. Usage: `docs/medical/CONCEPTFAN_V21_LOCAL_REVIEWER_WORKFLOW.md`.
+
+## Updated research conclusion
+
+V21/V21b show that **observable source extraction**, **TRAIN-only risk relevance**, **independent measurement corroboration**, **native training-time expert feedback** and **independently initialized signed decision stability** are separable components of the existing ConceptFAN graph. They do not magically produce real physical concept identity: the common-mode artifact demonstrates an explicit indistinguishability failure. All feedback in experiments was a deterministic simulated measured-reference rule, not real physician annotation.
+
+The next *genuinely missing evidence* requires independently sourced measured-device provenance, a predeclared real reviewer protocol and matched published intrinsic concept baselines on the same real/synthetic labeled task. It cannot be obtained simply by another seed adjustment on these five reused synthetic modes. Retain Draft PR #18, leave accepted PIERE camera-ready unchanged and do not promote any concept to causal/clinical without external evidence.
