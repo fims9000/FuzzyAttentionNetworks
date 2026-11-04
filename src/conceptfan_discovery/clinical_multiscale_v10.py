@@ -73,6 +73,8 @@ def fit_multiscale(
         forecast_horizon=data.train.future.shape[1],
         n_observation_concepts=int(dual["n_observation_process_concepts"]),
         scales=tuple(int(v) for v in v10_config["architecture"]["scales_hours"]),
+        adaptive_feature_gradients=bool(expert_feedback is not None and
+                                        expert_feedback_weight > 0),
     )
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=float(t["learning_rate"]),
