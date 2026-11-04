@@ -132,19 +132,45 @@ class MultiScaleUnknownNeutralConceptFAN(UnknownNeutralSpectralConceptFAN):
             }
 
 
+class FeedbackAdaptiveMultiScaleUnknownNeutralConceptFAN(MultiScaleUnknownNeutralConceptFAN):
+    """Near-sparse feedback mode: enable gradients from labels to operator mix.
+
+    Plain sparsemax at the exactly-one-hot spectral initialization can have a
+    zero Jacobian: expert feedback changes thresholds but not operator
+    definitions. A fixed 4% softmax bridge makes every measured operator
+    locally trainable while preserving an explicit signed observable formula.
+    This is an architecture ablation, not an identifiability guarantee.
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.register_buffer("expert_exploration_fraction",torch.tensor(.04))
+
+    def feature_weights(self) -> torch.Tensor:
+        base = super().feature_weights()
+        epsilon = self.expert_exploration_fraction.to(
+            dtype=base.dtype,device=base.device
+        )
+        return ((1.0-epsilon)*base
+                +epsilon*torch.softmax(self.feature_logits,dim=-1))
+
+
 class MultiScaleDualProcessConceptFAN(DualProcessConceptFAN):
     """Same mask-only V7 observation process; only physical formation changes."""
     def __init__(
         self, *, observable_loadings: np.ndarray, channels: tuple[str, ...],
         forecast_horizon: int, n_observation_concepts: int = 3,
         scales: tuple[int, ...] = SCALES,
+        adaptive_feature_gradients: bool = False,
     ):
         super().__init__(
             observable_loadings=observable_loadings, channels=channels,
             forecast_horizon=forecast_horizon,
             n_observation_concepts=n_observation_concepts,
         )
-        self.physical = MultiScaleUnknownNeutralConceptFAN(
+        physical_type = (FeedbackAdaptiveMultiScaleUnknownNeutralConceptFAN
+                         if adaptive_feature_gradients
+                         else MultiScaleUnknownNeutralConceptFAN)
+        self.physical = physical_type(
             observable_loadings=observable_loadings, channels=channels,
             forecast_horizon=forecast_horizon,
             scales=scales,
