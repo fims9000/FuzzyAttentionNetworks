@@ -1,0 +1,4 @@
+arm,n_models,mean_val_auprc,mean_new_slot_logit_abs_effect
+continue_k2,3,0.5552710680036147,
+add_new_k3,3,0.6083074975311188,0.02708593035931699
+scratch_k3,3,0.5569354761231883,0.09115313774277335
