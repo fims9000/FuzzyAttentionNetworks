@@ -218,7 +218,11 @@ def run(outdir:Path):
                             "test_brier":None,"test_logloss":None,
                             "physical_source_certified":False,
                         })
-                        n_refusals+=2
+                        # One registered refusal per arm (not two):
+                        # each BSS source refusal produces two distinct
+                        # raw/calibrated scoring cases, already counted by
+                        # this inner loop.
+                        n_refusals+=1
                     continue
                 signed=risk.active_native_raw_decision_initialization
                 descriptive=risk.structurally_descriptive_only_native_slots
