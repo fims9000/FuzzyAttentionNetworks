@@ -118,7 +118,7 @@ def run(output:Path):
         "no_physionet_or_original_PIERE_data_access":True,
         "not_general_clinical_concept_identification":True,
         "n_trials":len(df),
-        "summary":summary.where(pd.notna(summary),None).to_dict("records"),
+        "summary":json.loads(summary.to_json(orient="records")),
     }
     output.mkdir(parents=True,exist_ok=False)
     df.to_csv(output/"ALL_ACCEPT_AND_ABSTAIN.csv",index=False)
