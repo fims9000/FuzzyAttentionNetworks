@@ -267,22 +267,38 @@ const packet=JSON.parse(document.getElementById('packet-data').textContent);
 const container=document.getElementById('examples');
 const labels={'yes':'Да','no':'Нет','unsure':'Не уверен','artifact':'Артефакт измерения'};
 function renderCurve(values,mask) {
-  const pts=values.map((v,i)=>({v:Number(v),i,ok:Boolean(mask[i])})).filter(p=>p.ok);
-  if (pts.length<2) return document.createTextNode('Недостаточно наблюдений');
-  const lo=Math.min(...pts.map(p=>p.v)),hi=Math.max(...pts.map(p=>p.v));
+  const pts=values.map((v,i)=>({v:Number(v),i,ok:Boolean(mask[i])&&Number.isFinite(Number(v))}));
+  const observed=pts.filter(p=>p.ok);
+  if (observed.length<2) return document.createTextNode('Недостаточно наблюдений');
+  const lo=Math.min(...observed.map(p=>p.v)),hi=Math.max(...observed.map(p=>p.v));
   const span=Math.max(hi-lo,1e-9),count=values.length;
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('viewBox','0 0 520 130');
-  const line=document.createElementNS('http://www.w3.org/2000/svg','polyline');
-  line.setAttribute('fill','none');
-  line.setAttribute('stroke','#1767a8');
-  line.setAttribute('stroke-width','2');
-  line.setAttribute('points',pts.map(p=>{
-    const x=20+480*p.i/Math.max(1,count-1);
-    const y=110-90*(p.v-lo)/span;
-    return x.toFixed(2)+','+y.toFixed(2);
-  }).join(' '));
-  svg.appendChild(line);return svg;
+  const segments=[];let current=[];
+  pts.forEach(p=>{
+    if (!p.ok) {if(current.length)segments.push(current);current=[];}
+    else current.push(p);
+  });
+  if(current.length)segments.push(current);
+  segments.forEach(segment=>{
+    const points=segment.map(p=>{
+      const x=20+480*p.i/Math.max(1,count-1);
+      const y=110-90*(p.v-lo)/span;
+      return [x,y];
+    });
+    if(points.length===1){
+      const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('cx',String(points[0][0]));dot.setAttribute('cy',String(points[0][1]));
+      dot.setAttribute('r','2');dot.setAttribute('fill','#1767a8');svg.appendChild(dot);
+    } else {
+      const line=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+      line.setAttribute('fill','none');
+      line.setAttribute('stroke','#1767a8');
+      line.setAttribute('stroke-width','2');
+      line.setAttribute('points',points.map(v=>v[0].toFixed(2)+','+v[1].toFixed(2)).join(' '));
+      svg.appendChild(line);
+    }
+  });return svg;
 }
 packet.cases.forEach((entry,idx)=>{
   const article=document.createElement('article');
