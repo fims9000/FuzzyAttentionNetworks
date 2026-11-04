@@ -168,6 +168,11 @@ def admit_candidate_without_prediction_drift(
         raise ValueError("ABSTAIN: new direction duplicates or corrupts existing basis")
     new_basis = np.column_stack([original_basis, new_direction])
     adaptive = isinstance(old,FeedbackAdaptiveMultiScaleUnknownNeutralConceptFAN)
+    temporal_mode = (
+        "learned_shape" if hasattr(old,"temporal_readout_logits")
+        and old.temporal_shape_trainable else
+        "fixed_shape" if hasattr(old,"temporal_readout_logits") else "legacy"
+    )
     expanded = MultiScaleDualProcessConceptFAN(
         observable_loadings=new_basis,
         channels=old.channels,
@@ -175,6 +180,7 @@ def admit_candidate_without_prediction_drift(
         n_observation_concepts=trained_model.process.n_concepts,
         scales=old.scales,
         adaptive_feature_gradients=adaptive,
+        temporal_readout_mode=temporal_mode,
     )
     # Same process head and all native sensor/threshold/readout parameter
     # values, NOT a frozen copy detached from prediction.
@@ -199,6 +205,10 @@ def admit_candidate_without_prediction_drift(
         b.observation_decoder.bias.copy_(a.observation_decoder.bias)
         if adaptive:
             b.expert_exploration_fraction.copy_(a.expert_exploration_fraction)
+        if hasattr(a,"temporal_readout_logits"):
+            # New concept starts with a default shape mixture, old concepts
+            # retain exactly their previous temporal definition.
+            b.temporal_readout_logits[:k].copy_(a.temporal_readout_logits[:k])
         # Retain existing V18 signed policy when adding another native slot.
         b.signed_risk_policy[:k].copy_(a.signed_risk_policy[:k])
     expanded.train(trained_model.training)
