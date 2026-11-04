@@ -1,0 +1,10 @@
+mode,arm,opportunities,trained,abstentions,mean_heldout_auprc,mean_abs_new_slot_effect,mean_contribution_crossseed_spearman
+latent_predictive_positive,unrestricted_correct_signed_start,3,3,0,0.5878185233055029,0.06182970193098299,0.9999959998999977
+latent_predictive_positive,restricted_correct_signed_start,3,3,0,0.5878185233055029,0.06182970193098299,0.9999959998999977
+latent_predictive_positive,unrestricted_opposite_signed_start,3,3,0,0.5248052916060743,0.010759424532017572,0.9999914997874949
+latent_predictive_negative,unrestricted_correct_signed_start,3,3,0,0.6043462506386608,0.06131582310058851,0.9999919997999952
+latent_predictive_negative,restricted_correct_signed_start,3,3,0,0.6043462506386608,0.06131582310058851,0.9999919997999952
+latent_predictive_negative,unrestricted_opposite_signed_start,3,3,0,0.5275132952545455,0.010346581249496013,0.9999959998999977
+latent_risk_null,unrestricted_correct_signed_start,3,0,3,,,
+latent_risk_null,restricted_correct_signed_start,3,0,3,,,
+latent_risk_null,unrestricted_opposite_signed_start,3,0,3,,,

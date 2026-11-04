@@ -1,0 +1,63 @@
+name: ConceptFAN V18c predictive baseline comparison
+on:
+  push:
+    branches: [experiment/conceptfan-v18-independent-risk-screen-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v18c-predictive-baselines.yml'
+      - 'src/conceptfan_discovery/experiment_external_baselines_v18c.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  external-prediction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONHASHSEED: '0'
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install pinned torch and repo dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Compare 12 external predictive baselines without tuning
+        run: |
+          python -m conceptfan_discovery.experiment_external_baselines_v18c --out-dir V18C_PREDICTIVE_BASELINES
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('V18C_PREDICTIVE_BASELINES/STATUS.json').read_text())
+          assert x['status']=='V18C_SAME_SPLIT_EXTERNAL_PREDICTIVE_BASELINES'
+          assert x['n_fits']==12
+          assert x['test_ids_sealed']
+          assert x['no_hyperparameters_selected_on_validation']
+          assert x['baseline_is_not_a_concept_explanation_architecture']
+          assert all(0<=r['heldout_auprc']<=1 for r in x['all_per_mode_results'])
+          PY
+          git rev-parse HEAD > V18C_PREDICTIVE_BASELINES/COMMIT_SHA.txt
+      - name: Archive complete baseline metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v18c-12-external-predictors-${{ github.run_number }}
+          path: V18C_PREDICTIVE_BASELINES/
+          if-no-files-found: warn
+      - name: Version all executed baseline evidence on trusted branch
+        if: success() && github.ref == 'refs/heads/experiment/conceptfan-v18-independent-risk-screen-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v18c
+          cp V18C_PREDICTIVE_BASELINES/* docs/medical/evidence_v18c/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v18c
+          git diff --cached --quiet || git commit -m "V18c: retain all 12 same-split predictive baseline fits"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v18-independent-risk-screen-20261104

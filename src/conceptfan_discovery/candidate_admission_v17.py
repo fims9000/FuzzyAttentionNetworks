@@ -199,6 +199,8 @@ def admit_candidate_without_prediction_drift(
         b.observation_decoder.bias.copy_(a.observation_decoder.bias)
         if adaptive:
             b.expert_exploration_fraction.copy_(a.expert_exploration_fraction)
+        # Retain existing V18 signed policy when adding another native slot.
+        b.signed_risk_policy[:k].copy_(a.signed_risk_policy[:k])
     expanded.train(trained_model.training)
     return expanded
 

@@ -1,0 +1,7 @@
+mode,n,candidate_proposals,risk_sign_accepted,risk_abstentions,no_candidate_abstentions,causality_verified
+new_source_predictive_positive,3,3,3,0,0,False
+new_source_predictive_negative,3,3,3,0,0,False
+new_source_outcome_irrelevant,3,3,0,3,0,False
+colored_sensor_noise_predictive,3,3,3,0,0,False
+colored_sensor_noise_irrelevant,3,3,0,3,0,False
+white_sensor_noise_irrelevant,3,0,0,0,3,False

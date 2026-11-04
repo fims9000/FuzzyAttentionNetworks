@@ -1,0 +1,67 @@
+name: ConceptFAN V18b matched risk sign initialization falsification
+on:
+  push:
+    branches: [experiment/conceptfan-v18-independent-risk-screen-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v18b-initialization-control.yml'
+      - 'src/conceptfan_discovery/experiment_sign_initialization_v18b.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  signed-risk-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONHASHSEED: '0'
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install frozen scientific CPU environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Run native model and risk-sign safety regressions
+        run: |
+          python -m pytest tests/discovery/test_risk_screen_v18.py tests/discovery/test_candidate_admission_v17.py -q
+      - name: Fit all 27 matched-init opportunities and refusals
+        run: |
+          python -m conceptfan_discovery.experiment_sign_initialization_v18b --out-dir V18B_MATCHED_INIT
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('V18B_MATCHED_INIT/STATUS.json').read_text())
+          assert r['status']=='V18B_SAME_EFFECTIVE_SIGN_INITIALIZATION_CONTROL'
+          assert r['all_opportunities']==27
+          assert r['trained'] + r['abstentions'] == 27
+          assert r['initial_effective_logits_exactly_matched_between_primary_arms']
+          assert r['no_patient_specific_results_exported']
+          assert r['discovery_screen_train_disjoint']
+          assert all(row['max_additive_error']<2e-5 for row in r['all_cases'] if row['status']=='TRAINED')
+          PY
+          git rev-parse HEAD > V18B_MATCHED_INIT/COMMIT_SHA.txt
+      - name: Upload complete matched-initialization results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v18b-signed-init-27-opportunities-${{ github.run_number }}
+          path: V18B_MATCHED_INIT/
+          if-no-files-found: warn
+      - name: Persist all synthetic evidence in research git branch
+        if: success() && github.ref == 'refs/heads/experiment/conceptfan-v18-independent-risk-screen-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v18b
+          cp V18B_MATCHED_INIT/* docs/medical/evidence_v18b/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v18b
+          git diff --cached --quiet || git commit -m "V18b: archive all matched-sign-init fits and scientific refusals"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v18-independent-risk-screen-20261104
