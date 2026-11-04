@@ -74,3 +74,18 @@ def test_fit_disjoint_train_gate_and_test_are_independent(family):
     assert data.receipt["all_normalization_from_core_train_only"]
     assert np.array_equal(train.x[train.mask==0],np.zeros_like(train.x[train.mask==0]))
     assert np.isfinite(train.x).all()
+
+
+@pytest.mark.parametrize("family",FAMILIES)
+def test_fresh_v20d_test_seed_changes_only_test_not_original_training_or_gate(family):
+    (train_old,test_old)=_make_data(family)
+    (train_fresh,test_fresh)=_make_data(family,test_generator_seed=305115)
+    for name in ("train","validation"):
+        old=getattr(train_old,name)
+        fresh=getattr(train_fresh,name)
+        assert np.array_equal(old.x,fresh.x)
+        assert np.array_equal(old.mask,fresh.mask)
+        assert np.array_equal(old.y,fresh.y)
+    assert not np.array_equal(test_old.x,test_fresh.x)
+    assert not np.array_equal(test_old.y,test_fresh.y)
+    assert train_fresh.receipt["test_generator_seed"]==305115
