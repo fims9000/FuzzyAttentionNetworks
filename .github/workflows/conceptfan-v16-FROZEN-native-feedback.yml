@@ -43,7 +43,7 @@ jobs:
       - name: Unit and V10 regression checks
         run: |
           python -m pytest tests/discovery/test_expert_feedback_v16.py tests/discovery/test_multiscale_physiology_v10.py -q
-      - name: Nine V10 native-model fits, including wrong-expert negative control
+      - name: Twelve matched V10 native-model fits including exploration-only and wrong-expert controls
         run: |
           python -m conceptfan_discovery.experiment_expert_feedback_v16 --out-dir V16_FROZEN_SYNTHETIC
           python - <<'PY'
@@ -51,9 +51,9 @@ jobs:
           from pathlib import Path
           r=json.loads(Path('V16_FROZEN_SYNTHETIC/STATUS.json').read_text())
           assert r['status']=='V16_EXPLORATORY_SYNTHETIC_PROXY_EXPERT_ABLATION'
-          assert r['nine_fits_all_counted']
-          assert len(r['per_seed_results'])==9
-          assert len(r['aggregate'])==3
+          assert r['twelve_fits_all_counted']
+          assert len(r['per_seed_results'])==12
+          assert len(r['aggregate'])==4
           assert r['test_ids_sealed']
           assert not r['human_doctor_annotations_provided']
           assert all(x['max_additive_logit_error'] < 2e-5 for x in r['per_seed_results'])
