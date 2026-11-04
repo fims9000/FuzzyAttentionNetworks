@@ -31,7 +31,7 @@ TRUE_K_GENERATOR = 3     # used ONLY to define synthetic data generating process
 INPUT_STEPS = 36
 HORIZON = 6
 SEEDS = (11, 23, 37)
-ARMS = ("no_reviews", "correct_proxy", "inverted_proxy")
+ARMS = ("no_reviews", "exploration_only", "correct_proxy", "inverted_proxy")
 REVIEW_LIMIT_EACH_CLASS = 56
 REVIEW_START = 30
 PROXY_CHANNEL = 0
@@ -170,12 +170,13 @@ def run(out_dir:Path):
     for arm in ARMS:
         signed_by_arm[arm] = []
         for seed in SEEDS:
-            feedback = None if arm == "no_reviews" else (correct if arm == "correct_proxy" else wrong)
+            feedback = (correct if arm == "correct_proxy" else wrong if arm == "inverted_proxy" else None)
             model,train_receipt = fit_multiscale(
                 data, basis, int(seed), reference, dual, multiscale,
                 consistency=True,
                 expert_feedback=feedback,
                 expert_feedback_weight=0.0 if feedback is None else FEEDBACK_WEIGHT,
+                feature_exploration=(arm != "no_reviews"),
             )
             result = evaluate(model,data.validation,chosen_slot)
             record = {"arm":arm,"initialization_seed":seed,
@@ -183,6 +184,7 @@ def run(out_dir:Path):
                       "n_review_intervals":0 if feedback is None else len(feedback.accepted),
                       **result["metrics"],
                       "train_supervised_batches":train_receipt["expert_feedback_supervised_batches"],
+                      "feature_exploration_enabled":train_receipt["expert_operator_gradient_bridge_enabled"],
                       "train_mean_feedback_loss":train_receipt["mean_train_expert_feedback_loss"]}
             if record["max_additive_logit_error"] > 2e-5:
                 raise AssertionError("Bottleneck additive decomposition violated")
@@ -245,7 +247,7 @@ def run(out_dir:Path):
         "one_review_per_selected_train_episode":True,
         "correct_review_aggregate":safe_feedback_manifest(correct),
         "wrong_review_aggregate":safe_feedback_manifest(wrong),
-        "nine_fits_all_counted":len(rows)==9,
+        "twelve_fits_all_counted":len(rows)==12,
         "no_clinical_source_names":True,
         "per_seed_results":rows,
         "aggregate":summary,
