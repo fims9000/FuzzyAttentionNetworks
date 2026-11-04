@@ -104,9 +104,11 @@ def _native_logits(model,split,calibrator=None):
                     float((z-z2).abs().max()),
                     float((z-(bias+phys.sum(dim=-1)+care.sum(dim=-1))).abs().max()),
                 )
-                probs.extend(torch.sigmoid(z).cpu().numpy().tolist())
+                # Use float64 probabilities to avoid float32 saturation
+                # ties after a strongly positive scalar temperature.
+                probs.extend(calibrator.probabilities(original_logits).tolist())
             else:
-                probs.extend(out.probabilities.detach().cpu().numpy().tolist())
+                probs.extend(expit(original_logits).tolist())
             raw=out.physical.raw_activation[:,-6:,:]
             availability=out.physical.availability[:,-6:,:]
             supported=(raw*availability).sum(dim=1)/availability.sum(dim=1).clamp_min(1e-8)
