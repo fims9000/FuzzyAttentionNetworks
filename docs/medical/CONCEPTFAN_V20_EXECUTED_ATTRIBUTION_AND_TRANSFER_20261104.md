@@ -50,3 +50,33 @@ The new generator fixes three known **measured sensor axes** before model traini
 3. Independent clinician/instrument provenance grounding, real ICU missingness/transfer and literature-matched intrinsic concept baselines. Until those exist, do not claim a medically meaningful new physical law or accurate physical interpretation of learned concepts.
 
 Original PIERE camera-ready remains unchanged. The reports retain all positive and negative experiment outcomes.
+
+
+## D. V20c–V20d: independent TRAIN gate and corrected unused TEST seed
+
+**Protocol integrity correction:** V20c reused synthetic TEST seed 305013 previously seen in V20b. This was an oversight in *claiming the TEST was novel*, not leakage into the gate: original model TRAIN (seed 305011, 800 episodes), gate (305014, 300 independently generated episodes) and test (305013, 300 episodes) were distinct *within V20c*, and no test labels informed its trained head or gate decisions. Nevertheless, the TEST had been inspected in the prior experiment. **We must not cite V20c's TEST as fresh confirmatory evidence.** V20c all-case evidence remains unchanged and available in `evidence_v20/refit_gate/`.
+
+Frozen corrective protocol `CONCEPTFAN_V20D_FROZEN_FRESH_TEST_SEED_20261104.md` was written **before viewing V20d TEST metrics**. It keeps training, gate and the predeclared acceptance thresholds unchanged, but scores a genuinely unused synthetic TEST seed **305115**. GitHub Actions [41840551546 — SUCCESS](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41840551546), all 12 gate decisions and all 36 TEST arm evaluations completed, verified in `evidence_v20/fresh_test_305115/`.
+
+Train-only acceptance: independent fit-disjoint 300-episode GATE; one-sided candidate risk permutation p<=0.01 on 499 permutations, mean per-patient gate logloss improvement >=0.005, bootstrap 90% CI lower >0 across 499 resamples. If the gate refuses, the deployed choice remains EXACTLY the original native ConceptFAN. This is a conservative *predictive improvement selector*, not a clinical concept validation.
+
+### Full TEST results after the unchanged gate (AUPRC, 3 neural initializations)
+
+| Structural generator | Gate acceptances | Original V10 | Ungated native refit candidate | **Gated selected native model** |
+|---|---:|---:|---:|---:|
+| Nonlinear delayed | 2/3 | 0.559604 | 0.617174 | **0.618430** |
+| Regime switch | 3/3 | 0.546188 | 0.696175 | **0.696175** |
+| Informative state-dependent missingness | 2/3 | 0.558358 | 0.609861 | **0.611266** |
+| Independent null target | **0/3** | 0.575557 | **0.552238 (worse)** | **0.575557 (original preserved)** |
+
+For the null generator, the gate rejected all three refit candidates despite them reaching lower core TRAIN losses; on the freshly unused synthetic TEST seed they indeed decreased both AUPRC and Brier (Brier rose from 0.25010 original to 0.25382 candidate). The policy retained the original predictions exactly, preventing that degradation in this controlled study. It also rejected 2/9 non-null refits, underlining the false-refusal cost of conservative criteria.
+
+Although V20d uses a previously unevaluated **TEST random draw**, its simulator families and acceptance policy had already been inspected and modified during prior V20 research. It is therefore independent test-seed evidence **within the same known simulation families**, **not a prospective clinical or new-family confirmation**, and not grounds for a population-level false-positive guarantee. All three neural models per family are evaluated on the same test episodes, hence initialization results are dependent.
+
+### Decision and non-claims
+
+- **Retain as optional train-native capability:** V20 native head-only reoptimization on full TRAIN observations, followed by a fit-disjoint, TRAIN-only ACCEPT/KEEP_ORIGINAL policy; no raw-input bypass or extra inference head.
+- **Do not enable automatically for arbitrary tasks** without independent gate data, since label-null control and weakly prognostic tasks may be harmed.
+- **Do not cite class-weighting irrelevance generally:** current TRAIN prevalence was near balanced and V20a was conducted on a narrow family.
+- **Do not claim physiological source identity, expert-validated semantics or real-world safety:** the gate tests only risk-prediction improvement. Earlier V18 showed predictive instrument artifacts survive a task association check.
+- **Outstanding scientific research:** isolate joint-training epoch/optimizer budget under more balanced budgets, official intrinsic-concept baselines, negative controls with colored sensor artifacts on the new generator, a real clinician feedback trial, and independent clinical cohort external validation. None is solved by V20.
