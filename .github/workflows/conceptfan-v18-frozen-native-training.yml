@@ -16,7 +16,7 @@ on:
       - 'tests/discovery/test_risk_screen_v18.py'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   native-model-risk:
     runs-on: ubuntu-latest
@@ -65,3 +65,27 @@ jobs:
           name: conceptfan-v18-all-native-fits-${{ github.run_number }}
           path: V18_NATIVE_RISK_TRAINING/
           if-no-files-found: warn
+      - name: Version all predeclared synthetic evidence in the research branch
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v18-independent-risk-screen-20261104'
+        run: |
+          python -m conceptfan_discovery.experiment_risk_screen_v18 --out-dir V18_FROZEN_RISK_SCREEN_ARCHIVE
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          screen=json.loads(Path('V18_FROZEN_RISK_SCREEN_ARCHIVE/STATUS.json').read_text())
+          native=json.loads(Path('V18_NATIVE_RISK_TRAINING/STATUS.json').read_text())
+          assert screen['number_cases']==18
+          assert native['all_cases']==45
+          assert len(native['all_fits_and_abstentions'])==45
+          assert all(r['max_additive_error']<2e-5 for r in native['all_fits_and_abstentions'] if r['status']=='TRAINED')
+          assert all(r['estimated_physical_cause_certified'] is False for r in screen['per_case'])
+          PY
+          git rev-parse HEAD > V18_FROZEN_RISK_SCREEN_ARCHIVE/COMMIT_SHA.txt
+          mkdir -p docs/medical/evidence_v18/screen docs/medical/evidence_v18/native
+          cp V18_FROZEN_RISK_SCREEN_ARCHIVE/* docs/medical/evidence_v18/screen/
+          cp V18_NATIVE_RISK_TRAINING/* docs/medical/evidence_v18/native/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v18/screen docs/medical/evidence_v18/native
+          git diff --cached --quiet || git commit -m "V18: record all 18 risk controls and 45 native ablation opportunities"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v18-independent-risk-screen-20261104
