@@ -7,6 +7,7 @@ on:
       - 'src/conceptfan_discovery/experiment_signed_effect_v21b.py'
       - 'src/conceptfan_discovery/clinical_multiscale_v10.py'
       - 'tests/discovery/test_signed_effect_v21b.py'
+      - 'tests/discovery/test_sign_stability_v21b.py'
   pull_request:
     branches: [experiment/conceptfan-v20-native-head-objective-ablation-20261104]
     paths:
@@ -14,6 +15,7 @@ on:
       - 'src/conceptfan_discovery/experiment_signed_effect_v21b.py'
       - 'src/conceptfan_discovery/clinical_multiscale_v10.py'
       - 'tests/discovery/test_signed_effect_v21b.py'
+      - 'tests/discovery/test_sign_stability_v21b.py'
   workflow_dispatch:
 permissions:
   contents: write
@@ -40,7 +42,7 @@ jobs:
           python -m pip install -e .
       - name: Verify opt-in native sign initial conditions and original inference contracts
         run: |
-          python -m pytest tests/discovery/test_signed_effect_v21b.py tests/discovery/test_provenance_v21.py tests/discovery/test_expert_feedback_v16.py -q
+          python -m pytest tests/discovery/test_signed_effect_v21b.py tests/discovery/test_sign_stability_v21b.py tests/discovery/test_provenance_v21.py tests/discovery/test_expert_feedback_v16.py -q
       - name: Execute 30 registered sign/oracle opportunities without post-hoc sign alignment
         run: |
           python -m conceptfan_discovery.experiment_signed_effect_v21b --out-dir V21B_SIGNED_STABILITY
@@ -50,6 +52,8 @@ jobs:
           x=json.loads(Path('V21B_SIGNED_STABILITY/STATUS.json').read_text())
           assert x['status']=='V21B_TRAIN_SCREENED_NATIVE_SIGN_INITIALIZATION_STABILITY_CONTROL'
           assert x['registered_opportunities']==30
+          assert x['n_trained']==24
+          assert x['n_train_screen_abstentions']==6
           assert x['n_trained']+x['n_train_screen_abstentions']==30
           assert len(x['aggregate'])==10
           assert x['native_risk_sign_initial_condition_only_not_hard_constraint']
