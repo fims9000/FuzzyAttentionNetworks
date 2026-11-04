@@ -1,0 +1,63 @@
+name: V15 conditional dynamic versus measurement noise falsification
+on:
+  push:
+    branches: [experiment/conceptfan-v15-temporal-noise-controls-20261104]
+    paths:
+      - 'src/conceptfan_discovery/lag_contrast_v15.py'
+      - 'src/conceptfan_discovery/lag_synthetic_v15.py'
+      - 'src/conceptfan_discovery/crossview_v15.py'
+      - 'src/conceptfan_discovery/crossview_synthetic_v15.py'
+      - 'tests/discovery/test_noise_separation_v15.py'
+      - '.github/workflows/conceptfan-v15-sensor-noise-falsification.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: v15-noise-falsification-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-vs-noise-falsification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install established CPU research dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Inspect and falsify all sensor measurement assumptions
+        run: |
+          set -euo pipefail
+          python -m compileall -q \
+            src/conceptfan_discovery/lag_contrast_v15.py \
+            src/conceptfan_discovery/lag_synthetic_v15.py \
+            src/conceptfan_discovery/crossview_v15.py \
+            src/conceptfan_discovery/crossview_synthetic_v15.py
+          python -m pytest tests/discovery/test_noise_separation_v15.py -q \
+            --junitxml=V15_UNIT_FALSIFICATION.xml
+      - name: Record exact frozen code commit
+        if: always()
+        run: |
+          git rev-parse HEAD > V15_SOURCE_COMMIT_SHA.txt
+      - name: Upload no-patient synthetic validation receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v15-noise-falsification-${{ github.run_number }}
+          path: |
+            V15_UNIT_FALSIFICATION.xml
+            V15_SOURCE_COMMIT_SHA.txt
+          retention-days: 30
+          if-no-files-found: warn

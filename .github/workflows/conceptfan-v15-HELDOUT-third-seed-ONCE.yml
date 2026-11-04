@@ -1,0 +1,55 @@
+name: V15 true heldout third generator audit
+on:
+  push:
+    branches: [experiment/conceptfan-v15-temporal-noise-controls-20261104]
+    paths: ['.github/workflows/conceptfan-v15-HELDOUT-third-seed-ONCE.yml']
+permissions:
+  contents: read
+jobs:
+  heldout-falsification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install research packages
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Compile and exercise constructive counterexamples
+        run: |
+          python -m compileall -q src/conceptfan_discovery/experiment_v15_holdout.py
+          python -m pytest tests/discovery/test_noise_separation_v15.py -q
+      - name: Complete distinct-sample third-generator holdout
+        run: |
+          python -m conceptfan_discovery.experiment_v15_holdout --out-dir V15_HELDOUT_20280105 > heldout.log 2>&1 || { tail -n 100 heldout.log; exit 1; }
+          tail -n 20 heldout.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('V15_HELDOUT_20280105/STATUS.json').read_text())
+          assert x['status']=='V15_INDEPENDENT_GENERATOR_HELDOUT_AUDIT_COMPLETE'
+          assert x['n_trials']==36
+          assert x['generator_seeds']==[20280105]
+          assert x['oracle_scored_only_on_distinct_heldout_episode_ids']
+          PY
+          git rev-parse HEAD > V15_HELDOUT_20280105/COMMIT_SHA.txt
+      - name: Export synthetic aggregate results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: V15-holdout-third-generator-${{ github.run_number }}
+          path: |
+            V15_HELDOUT_20280105/
+            heldout.log
+          if-no-files-found: warn
