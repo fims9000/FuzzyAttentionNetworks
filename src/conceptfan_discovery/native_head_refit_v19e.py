@@ -33,7 +33,10 @@ class NativeHeadRefitReceipt:
 def _native_betas(raw: torch.Tensor, policy: torch.Tensor) -> torch.Tensor:
     basic=3.0*torch.tanh(raw)
     orientation=policy.to(device=basic.device,dtype=basic.dtype)
-    return torch.where(orientation==0,basic,orientation*basic.abs())
+    signed=torch.where(orientation==0,basic,orientation*basic.abs())
+    # Native descriptive-only slot policy 2 is a structural zero:
+    # even separate TRAIN head refits cannot convert it to a risk signal.
+    return torch.where(orientation==2,torch.zeros_like(basic),signed)
 
 
 def fit_train_only_native_risk_head(
