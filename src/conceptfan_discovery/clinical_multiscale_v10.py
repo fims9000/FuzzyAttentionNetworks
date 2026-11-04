@@ -25,6 +25,8 @@ import torch
 import yaml
 
 from .clinical_dual_process_experiment_v7 import fit_dual, evaluate_dual
+from torch.utils.data import DataLoader, TensorDataset
+from .expert_feedback_v16 import PreparedFeedback, native_expert_loss
 from .clinical_unknown_neutral_experiment_v6 import subset_discovery_split
 from .data import DiscoveryData
 from .dual_process_stability_v7 import collect_observation_process_evidence
@@ -58,6 +60,9 @@ def fit_multiscale(
     v10_config: dict,
     *,
     consistency: bool,
+    expert_feedback: PreparedFeedback | None = None,
+    expert_feedback_weight: float = 0.0,
+    feature_exploration: bool = False,
 ) -> tuple[MultiScaleDualProcessConceptFAN, dict]:
     _seed_everything(seed)
     t = base_config["training"]
@@ -69,6 +74,9 @@ def fit_multiscale(
         forecast_horizon=data.train.future.shape[1],
         n_observation_concepts=int(dual["n_observation_process_concepts"]),
         scales=tuple(int(v) for v in v10_config["architecture"]["scales_hours"]),
+        adaptive_feature_gradients=bool(feature_exploration or
+                                        (expert_feedback is not None and
+                                         expert_feedback_weight > 0)),
     )
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=float(t["learning_rate"]),
@@ -78,17 +86,47 @@ def fit_multiscale(
     pos_weight = torch.tensor(
         (len(data.train.y)-positives)/max(positives,1.), dtype=torch.float32,
     )
-    loader = data.train.loader(
-        int(t["batch_size"]),True,int(t["batch_order_seed"]),
-    )
+    if not 0 <= expert_feedback_weight <= 5.0:
+        raise ValueError("Expert feedback coefficient must be in [0,5]")
+    if expert_feedback is not None:
+        if (expert_feedback.n_slots != model.physical.n_slots
+                or expert_feedback.n_steps != data.train.x.shape[1]):
+            raise ValueError("Feedback dimensions differ from native V10 model")
+        original_ids = set(map(int, data.train.episode_ids.tolist()))
+        if any(review[0] not in original_ids for review in expert_feedback.accepted):
+            raise ValueError("ABSTAIN: feedback includes non-training IDs")
+        # Preserve original data-loader RNG and shuffle policy; add ONLY
+        # the ID column needed to align expert feedback to shuffled batches.
+        train = data.train
+        dataset = TensorDataset(*(
+            torch.from_numpy(a) for a in (
+                train.x, train.mask, train.future, train.future_mask,
+                train.y, train.episode_ids.astype(np.int64),
+            )
+        ))
+        loader = DataLoader(dataset, batch_size=int(t["batch_size"]),
+                            shuffle=True,
+                            generator=torch.Generator().manual_seed(int(t["batch_order_seed"])),
+                            num_workers=0)
+    else:
+        loader = data.train.loader(
+            int(t["batch_size"]),True,int(t["batch_order_seed"]),
+        )
     main_mask_rng=torch.Generator().manual_seed(seed+71021)
     second_mask_rng=torch.Generator().manual_seed(seed+71022)
     steps=0
     accumulation={"consistency":0., "joint_reliability":0.,
                   "scale_entropy":0.}
+    feedback_accumulated = 0.0
+    feedback_supervised_batches = 0
     for epoch in range(int(t["epochs"])):
         model.train()
-        for x,original_mask,future,future_mask,y in loader:
+        for record in loader:
+            if expert_feedback is None:
+                x,original_mask,future,future_mask,y = record
+                batch_episode_ids = None
+            else:
+                x,original_mask,future,future_mask,y,batch_episode_ids = record
             optimizer.zero_grad(set_to_none=True)
             corrupted,visible,heldout = masked_observation_view(
                 x,original_mask,
@@ -131,6 +169,16 @@ def fit_multiscale(
                     minimum_joint_reliability=float(extra["minimum_joint_reliability"]),
                 )
                 objective=objective+float(extra["consistency_weight"])*consistency_value
+            if expert_feedback is not None and expert_feedback_weight > 0:
+                # Feedback acts on exactly the concepts used by risk and
+                # observation forecasts; there is no separate explanation head.
+                feedback_loss, feedback_receipt = native_expert_loss(
+                    out.physical, batch_episode_ids, expert_feedback,
+                )
+                objective = objective + expert_feedback_weight * feedback_loss
+                feedback_accumulated += feedback_receipt["feedback_loss"]
+                feedback_supervised_batches += int(
+                    feedback_receipt["supervised_slots"] > 0)
             if not torch.isfinite(objective):
                 raise FloatingPointError(f"Nonfinite V10 loss at seed {seed} epoch {epoch}")
             objective.backward()
@@ -149,6 +197,13 @@ def fit_multiscale(
         "mean_training_joint_measurement_reliability":
             accumulation["joint_reliability"]/max(steps,1),
         "mean_train_scale_entropy":accumulation["scale_entropy"]/max(steps,1),
+        "expert_feedback_training_enabled": bool(
+            expert_feedback is not None and expert_feedback_weight > 0),
+        "expert_operator_gradient_bridge_enabled": bool(feature_exploration or
+            (expert_feedback is not None and expert_feedback_weight > 0)),
+        "expert_feedback_supervised_batches": feedback_supervised_batches,
+        "mean_train_expert_feedback_loss": feedback_accumulated / max(steps, 1),
+        "feedback_is_not_clinical_semantics_certification": True,
     }
 
 
