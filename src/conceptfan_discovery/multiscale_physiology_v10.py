@@ -68,7 +68,10 @@ class MultiScaleUnknownNeutralConceptFAN(UnknownNeutralSpectralConceptFAN):
         # transfer mass to 4, 12, or 24-hour contexts.
         with torch.no_grad():
             self.scale_logits[:, 0] = 1.5
-        # V18: 0=unrestricted V10; +/-1=TRAIN-screened signed association.
+        # 0=unrestricted; +/-1=TRAIN-screened signed association;
+        # V21d: 2=structural veto of direct RISK contribution for a
+        # descriptive-only measured slot, while allowing its other native
+        # measurement and forecast operators to remain trainable.
         # Reproducible sign by construction is NOT evidence of independent
         # signed-effect stability or medical cause.
         self.register_buffer("signed_risk_policy", torch.zeros(self.n_slots, dtype=torch.int8))
@@ -79,7 +82,12 @@ class MultiScaleUnknownNeutralConceptFAN(UnknownNeutralSpectralConceptFAN):
     def decision_weights(self) -> torch.Tensor:
         weights = super().decision_weights()
         orientation = self.signed_risk_policy.to(dtype=weights.dtype)
-        return torch.where(orientation == 0, weights, orientation * weights.abs())
+        signed = torch.where(orientation == 0, weights, orientation * weights.abs())
+        # V21d: the numerical source may be a valid descriptive finding
+        # even when it has NO independent outcome-risk association. Policy
+        # value 2 is a hard risk-exclusion gate inside the native graph.
+        # It survives serialization, model retraining and weight decay.
+        return torch.where(orientation == 2, torch.zeros_like(weights), signed)
 
     def concept_formula(self) -> str:
         return (
