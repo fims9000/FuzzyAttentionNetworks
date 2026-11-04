@@ -1,0 +1,17 @@
+both_arms_consumed_800_labeled_train_subjects,compute_budget_strictly_matched,family,fitted_and_test_evaluated,identifiability_abstentions,label_budget_arm,mean_new_test_auprc,mean_new_test_brier,mean_new_test_source_alignment_only,physiological_causality_claimed,registered_opportunities,source_method
+True,False,mixed_distinct_variance,3,0,joint_800_labels,0.6716916344499348,0.23969537769250548,0.67257680640896,False,3,pooled_pca_basis
+True,False,mixed_distinct_variance,3,0,screened_600_fit_200_gate,0.8467748060167292,0.2350544463361606,0.6726443627151412,False,3,pooled_pca_basis
+True,False,mixed_distinct_variance,3,0,joint_800_labels,0.6909446881941372,0.23779319268628418,0.9767307044152341,False,3,environment_contrast_basis
+True,False,mixed_distinct_variance,3,0,screened_600_fit_200_gate,0.8515985927366195,0.24139444119788775,0.9781199050359818,False,3,environment_contrast_basis
+True,False,mixed_proportional_variance,3,0,joint_800_labels,0.7062541431455934,0.2383757075591115,0.6770050778341982,False,3,pooled_pca_basis
+True,False,mixed_proportional_variance,3,0,screened_600_fit_200_gate,0.8771188576201984,0.23377353754716337,0.6767139634884831,False,3,pooled_pca_basis
+True,False,mixed_proportional_variance,0,3,joint_800_labels,,,,False,3,environment_contrast_basis
+True,False,mixed_proportional_variance,0,3,screened_600_fit_200_gate,,,,False,3,environment_contrast_basis
+True,False,mixed_sensor_gain_drift,3,0,joint_800_labels,0.6968683802435924,0.23739903345555766,0.7344665311096049,False,3,pooled_pca_basis
+True,False,mixed_sensor_gain_drift,3,0,screened_600_fit_200_gate,0.864220738020216,0.23372791577744087,0.7341574165638877,False,3,pooled_pca_basis
+True,False,mixed_sensor_gain_drift,0,3,joint_800_labels,,,,False,3,environment_contrast_basis
+True,False,mixed_sensor_gain_drift,0,3,screened_600_fit_200_gate,,,,False,3,environment_contrast_basis
+True,False,mixed_artifact_only_variance,3,0,joint_800_labels,0.7084433916652181,0.23665723805667324,0.7324615458690281,False,3,pooled_pca_basis
+True,False,mixed_artifact_only_variance,3,0,screened_600_fit_200_gate,0.862555006944389,0.23318503760135104,0.732379619032804,False,3,pooled_pca_basis
+True,False,mixed_artifact_only_variance,3,0,joint_800_labels,0.5223981633355713,0.2525953726031825,0.9754031341088975,False,3,environment_contrast_basis
+True,False,mixed_artifact_only_variance,3,0,screened_600_fit_200_gate,0.8660543314877818,0.24016255881888857,0.9759703996711074,False,3,environment_contrast_basis
