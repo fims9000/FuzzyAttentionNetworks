@@ -12,6 +12,7 @@ must not be conflated with whole-source provenance.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import torch
 
 from .candidate_admission_v17 import (
     ProposedObservableConcept,
@@ -122,14 +123,25 @@ def expand_original_native_model_if_provisionally_measured(
         raise ValueError("ABSTAIN: insufficient measured-source evidence or artifact veto")
     if decision.is_physically_certified or decision.is_clinically_certified:
         raise ValueError("Unsupported auto-physical certification assertion")
+    if (not decision.independent_device_measurement_corroborated
+            or not decision.controlled_instrument_reset_repeatable
+            or decision.reviewer_source_provenance_choice=="instrument_artifact"
+            or decision.can_train_native_risk_after_insertion!=(decision.status==ALLOW_RISK)):
+        raise ValueError("ABSTAIN: inconsistent evidence passport or instrument artifact veto")
     expanded=admit_candidate_without_prediction_drift(
         trained_model,candidate,expert_decision="approve",
     )
     # The original V17 primitive creates a zero-effect slot. This is an
-    # *experimental source insertion*, not a risk-oracle sign promotion.
+    # *experimental source insertion*, not an oracle risk promotion.
     new=expanded.physical
+    if decision.status==ALLOW_NO_RISK:
+        # Native V21d policy 2 is a *structural* zero in decision_weights(),
+        # not a training-time promise vulnerable to later optimization.
+        with torch.no_grad():
+            new.signed_risk_policy[-1]=2
+    expected_policy=2 if decision.status==ALLOW_NO_RISK else 0
     if (float(new.decision_weights()[-1].detach())!=0
-            or int(new.signed_risk_policy[-1].detach())!=0):
+            or int(new.signed_risk_policy[-1].detach())!=expected_policy):
         raise AssertionError("Source insertion changed native risk before training")
     return expanded
 
