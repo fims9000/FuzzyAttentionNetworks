@@ -103,3 +103,30 @@ def test_hyperparameter_and_label_contracts_fail_closed():
         fit_train_only_native_risk_head(
             model,data,declared_train_episode_ids=data.episode_ids,
         )
+
+
+def test_standard_v10_trainer_exposes_native_refit_without_new_head():
+    from conceptfan_discovery.experiment_native_risk_v18 import make_data,_config
+    from conceptfan_discovery.clinical_multiscale_v10 import fit_multiscale
+    data=make_data("latent_predictive_positive")
+    base,dual,v10=_config()
+    base["training"]["epochs"]=1
+    base["training"]["batch_size"]=256
+    model,receipt=fit_multiscale(
+        data,np.eye(5,3,dtype=np.float64),seed=19,
+        base_config=base,v7_config=dual,v10_config=v10,
+        consistency=False,feature_exploration=True,
+        temporal_readout_mode="learned_shape",
+        native_head_refit=True,
+        native_head_refit_max_iter=50,
+    )
+    assert receipt["native_head_refit_enabled"]
+    assert receipt["native_head_refit_changes_only_decision_parameters"]
+    assert receipt["native_head_train_bce_after"] <= receipt["native_head_train_bce_before"]+1e-6
+    assert model.temporal_readout_mode=="learned_shape"
+    x=torch.from_numpy(data.validation.x[:8])
+    mask=torch.from_numpy(data.validation.mask[:8])
+    model.eval()
+    with torch.no_grad():
+        out=model(x,mask,process_mask=mask)
+    assert float(out.decomposition_error())<1e-6
