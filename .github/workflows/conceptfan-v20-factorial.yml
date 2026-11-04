@@ -1,0 +1,74 @@
+name: ConceptFAN V20 native risk optimizer and class-weight factorial
+on:
+  push:
+    branches: [experiment/conceptfan-v20-native-head-objective-ablation-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v20-factorial.yml'
+      - 'src/conceptfan_discovery/native_head_factorial_v20.py'
+      - 'src/conceptfan_discovery/experiment_head_factorial_v20.py'
+      - 'tests/discovery/test_head_factorial_v20.py'
+  pull_request:
+    branches: [experiment/conceptfan-v19-temporal-concept-readout-20261104]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  factorial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install unchanged research environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify optimizer and original native graph contracts
+        run: |
+          python -m pytest tests/discovery/test_head_factorial_v20.py tests/discovery/test_native_head_refit_v19e.py tests/discovery/test_temporal_readout_v19.py -q
+      - name: Execute all 45 preregistered risk head variants
+        run: |
+          python -m conceptfan_discovery.experiment_head_factorial_v20 --out-dir V20_HEAD_ABLATION
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          x=json.loads(Path('V20_HEAD_ABLATION/STATUS.json').read_text())
+          assert x['status']=='V20_MATCHED_NATIVE_HEAD_OBJECTIVE_AND_OPTIMIZER_FACTORIAL'
+          assert x['n_train_only_native_head_evaluations']==45
+          assert x['n_distinct_pretrained_models']==9
+          assert x['n_extra_optimizer_refits']==36
+          assert len(x['aggregate'])==15
+          assert x['same_concept_trajectories_and_init_per_arm']
+          assert x['only_original_native_decision_coefficients_updated']
+          assert x['no_validation_labels_ever_read_by_optimizer']
+          assert x['test_and_external_real_data_sealed']
+          assert all(r['max_native_additive_logit_error']<2e-5 for r in x['records'])
+          PY
+          git rev-parse HEAD > V20_HEAD_ABLATION/COMMIT_SHA.txt
+      - name: Archive every result and full denominator
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v20-all-45-risk-optimizer-fits-${{ github.run_number }}
+          path: V20_HEAD_ABLATION/
+          if-no-files-found: warn
+      - name: Version executed results on trusted research branch
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v20-native-head-objective-ablation-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v20/head_factorial
+          cp V20_HEAD_ABLATION/* docs/medical/evidence_v20/head_factorial/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v20/head_factorial
+          git diff --cached --quiet || git commit -m "V20: archive all 45 native risk head class weight and optimizer controls"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v20-native-head-objective-ablation-20261104

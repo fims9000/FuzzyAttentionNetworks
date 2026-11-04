@@ -1,0 +1,5 @@
+family,train_positive_rate,validation_positive_rate,test_positive_rate,train_observed_fraction,validation_observed_fraction,test_observed_fraction,fixed_predeclared_measurement_directions_not_physical_labels
+nonlinear_delayed,0.49900001287460327,0.4866666793823242,0.4466666579246521,1.0,1.0,1.0,True
+regime_switch,0.5210000276565552,0.5233333110809326,0.4633333384990692,1.0,1.0,1.0,True
+informative_sampling,0.49900001287460327,0.4866666793823242,0.4466666579246521,0.6600916385650635,0.6578611135482788,0.6568333506584167,True
+outcome_null,0.4819999933242798,0.5433333516120911,0.44333332777023315,1.0,1.0,1.0,True

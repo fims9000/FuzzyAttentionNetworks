@@ -1,0 +1,75 @@
+name: ConceptFAN V20b distinct generator native-head generalization
+on:
+  push:
+    branches: [experiment/conceptfan-v20-native-head-objective-ablation-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v20b-distinct-families.yml'
+      - 'src/conceptfan_discovery/distinct_synthetic_v20b.py'
+      - 'src/conceptfan_discovery/experiment_distinct_families_v20b.py'
+      - 'tests/discovery/test_distinct_generators_v20b.py'
+  pull_request:
+    branches: [experiment/conceptfan-v19-temporal-concept-readout-20261104]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  distinct-families:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install same CPU research runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify new generators, native head and missingness safety
+        run: |
+          python -m pytest tests/discovery/test_distinct_generators_v20b.py tests/discovery/test_head_factorial_v20.py tests/discovery/test_native_head_refit_v19e.py -q
+      - name: Train and report all 36 new-family native models and 4 logistic controls
+        run: |
+          python -m conceptfan_discovery.experiment_distinct_families_v20b --out-dir V20B_DISTINCT_FAMILIES
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('V20B_DISTINCT_FAMILIES/STATUS.json').read_text())
+          assert r['status']=='V20B_NEW_NONLINEAR_REGIME_MASK_AND_NULL_GENERATOR_FAMILIES'
+          assert r['n_native_test_evaluations']==36
+          assert r['n_jointly_trained_native_models']==12
+          assert r['n_additional_native_head_refits']==24
+          assert r['n_generator_families']==4
+          assert r['n_raw_feature_external_logistic_controls']==4
+          assert r['only_train_normalization_and_refit']
+          assert r['all_test_arms_fixed_before_test_labels_read']
+          assert r['no_unobserved_latent_states_in_training_or_inference']
+          assert r['all_36_outcomes_reported']
+          assert all(x['max_exact_additive_error']<2e-5 for x in r['full_rows'])
+          PY
+          git rev-parse HEAD > V20B_DISTINCT_FAMILIES/COMMIT_SHA.txt
+      - name: Archive all synthetic TEST results and negative controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v20b-distinct-test-all-36-${{ github.run_number }}
+          path: V20B_DISTINCT_FAMILIES/
+          if-no-files-found: warn
+      - name: Version complete test set outcomes on research branch
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v20-native-head-objective-ablation-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v20/distinct_generators
+          cp V20B_DISTINCT_FAMILIES/* docs/medical/evidence_v20/distinct_generators/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v20/distinct_generators
+          git diff --cached --quiet || git commit -m "V20b: retain all 36 independent synthetic family stress outcomes"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v20-native-head-objective-ablation-20261104

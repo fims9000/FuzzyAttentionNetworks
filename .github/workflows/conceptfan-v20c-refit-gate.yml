@@ -1,0 +1,75 @@
+name: ConceptFAN V20c independent train-only native refit gate
+on:
+  push:
+    branches: [experiment/conceptfan-v20-native-head-objective-ablation-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v20c-refit-gate.yml'
+      - 'src/conceptfan_discovery/native_head_refit_gate_v20c.py'
+      - 'src/conceptfan_discovery/experiment_refit_gate_v20c.py'
+      - 'tests/discovery/test_native_refit_gate_v20c.py'
+  pull_request:
+    branches: [experiment/conceptfan-v19-temporal-concept-readout-20261104]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  risk-refit-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install research CPU environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify null rejection and native decision safety
+        run: |
+          python -m pytest tests/discovery/test_native_refit_gate_v20c.py tests/discovery/test_head_factorial_v20.py tests/discovery/test_distinct_generators_v20b.py -q
+      - name: Execute all 12 independent gate decisions and 36 TEST evaluations
+        run: |
+          python -m conceptfan_discovery.experiment_refit_gate_v20c --out-dir V20C_INDEPENDENT_GATE
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          x=json.loads(Path('V20C_INDEPENDENT_GATE/STATUS.json').read_text())
+          assert x['status']=='V20C_INDEPENDENT_TRAIN_GATE_SELECTS_OR_REFUSES_NATIVE_RISK_REFIT'
+          assert x['number_original_models']==12
+          assert x['number_train_only_head_refit_candidates']==12
+          assert x['number_independent_train_holdout_decisions']==12
+          assert x['number_predeclared_test_arm_evaluations']==36
+          assert x['all_test_labels_scored_only_after_gate_decisions']
+          assert x['train_and_gate_independently_generated']
+          assert x['normalization_fit_on_train_core_only']
+          assert x['no_raw_input_prediction_shortcut']
+          assert x['all_predeclared_cases_reported']
+          assert all(row['max_exact_additive_error']<2e-5 for row in x['test_cases'])
+          PY
+          git rev-parse HEAD > V20C_INDEPENDENT_GATE/COMMIT_SHA.txt
+      - name: Archive complete fit-disjoint gate and TEST controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v20c-train-gate-all-12-${{ github.run_number }}
+          path: V20C_INDEPENDENT_GATE/
+          if-no-files-found: warn
+      - name: Version all gate decisions and independent synthetic TEST evidence
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v20-native-head-objective-ablation-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v20/refit_gate
+          cp V20C_INDEPENDENT_GATE/* docs/medical/evidence_v20/refit_gate/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v20/refit_gate/
+          git diff --cached --quiet || git commit -m "V20c: retain all independent gate accept/reject decisions and TEST results"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v20-native-head-objective-ablation-20261104
