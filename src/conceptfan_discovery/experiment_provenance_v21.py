@@ -224,7 +224,7 @@ def run(outdir:Path):
                     consistency=False,
                     expert_feedback=reviews,
                     expert_feedback_weight=(
-                        FEEDBACK_WEIGHT if reviews is not None else 0.,
+                        FEEDBACK_WEIGHT if reviews is not None else 0.
                     ),
                     feature_exploration=True,
                     temporal_readout_mode="legacy",
