@@ -178,6 +178,19 @@ def test_native_measured_descriptive_slot_is_permanently_zero_for_risk_after_ref
     assert int(reloaded.physical.signed_risk_policy[2])==2
     assert float(reloaded.physical.decision_weights()[2])==0
     assert float(reloaded(x,mask,process_mask=mask).decomposition_error())<1e-6
+    passport=reloaded.physical.multiscale_passport()
+    assert passport["native_risk_policy_code_legend"]["2"]=="descriptive_only_exact_zero_risk"
+    assert passport["native_descriptive_only_risk_exclusion_serialized"]
+    # V20's alternative optimizer must also respect the serialized native
+    # descriptive-only gate; it cannot turn that slot into risk signal.
+    from conceptfan_discovery.native_head_factorial_v20 import fit_native_head_factorial_v20
+    extra=fit_native_head_factorial_v20(
+        reloaded,train,declared_train_episode_ids=train.episode_ids,
+        method="adamw",pos_weighted=True,adamw_steps=45,
+    )
+    assert extra.final_objective<=extra.initial_objective+1e-6
+    assert float(reloaded.physical.decision_weights()[2])==0
+    assert int(reloaded.physical.signed_risk_policy[2])==2
 
 
 def test_experimental_predictive_source_enters_with_zero_weight_until_native_training():
