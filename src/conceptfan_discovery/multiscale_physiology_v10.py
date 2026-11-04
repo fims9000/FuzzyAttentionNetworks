@@ -172,20 +172,37 @@ class MultiScaleDualProcessConceptFAN(DualProcessConceptFAN):
         forecast_horizon: int, n_observation_concepts: int = 3,
         scales: tuple[int, ...] = SCALES,
         adaptive_feature_gradients: bool = False,
+        temporal_readout_mode: str = "legacy",
     ):
         super().__init__(
             observable_loadings=observable_loadings, channels=channels,
             forecast_horizon=forecast_horizon,
             n_observation_concepts=n_observation_concepts,
         )
-        physical_type = (FeedbackAdaptiveMultiScaleUnknownNeutralConceptFAN
-                         if adaptive_feature_gradients
-                         else MultiScaleUnknownNeutralConceptFAN)
+        if temporal_readout_mode not in ("legacy", "fixed_shape", "learned_shape"):
+            raise ValueError("V19 temporal readout mode must be legacy/fixed_shape/learned_shape")
+        extra = {}
+        if temporal_readout_mode == "legacy":
+            physical_type = (FeedbackAdaptiveMultiScaleUnknownNeutralConceptFAN
+                             if adaptive_feature_gradients
+                             else MultiScaleUnknownNeutralConceptFAN)
+        else:
+            # Import lazily: the shape module subclasses the already defined
+            # V10 physical classes, avoiding a circular module import.
+            from .temporal_readout_v19 import (
+                TemporalReadoutMultiScaleConceptFAN,
+                AdaptiveTemporalReadoutMultiScaleConceptFAN,
+            )
+            physical_type = (AdaptiveTemporalReadoutMultiScaleConceptFAN
+                             if adaptive_feature_gradients
+                             else TemporalReadoutMultiScaleConceptFAN)
+            extra["temporal_shape_trainable"] = temporal_readout_mode == "learned_shape"
         self.physical = physical_type(
             observable_loadings=observable_loadings, channels=channels,
             forecast_horizon=forecast_horizon,
-            scales=scales,
+            scales=scales, **extra,
         )
+        self.temporal_readout_mode = temporal_readout_mode
 
 
 def physiological_scale_entropy(

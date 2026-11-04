@@ -1,0 +1,74 @@
+name: ConceptFAN V19 native temporal-shape readout
+on:
+  push:
+    branches: [experiment/conceptfan-v19-temporal-concept-readout-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v19-temporal-readout.yml'
+      - 'src/conceptfan_discovery/temporal_readout_v19.py'
+      - 'src/conceptfan_discovery/experiment_temporal_readout_v19.py'
+      - 'src/conceptfan_discovery/multiscale_physiology_v10.py'
+      - 'src/conceptfan_discovery/clinical_multiscale_v10.py'
+      - 'src/conceptfan_discovery/candidate_admission_v17.py'
+      - 'tests/discovery/test_temporal_readout_v19.py'
+  pull_request:
+    branches: [experiment/conceptfan-v18-independent-risk-screen-20261104]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  native-shape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install fixed CPU V10 research environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify V19 native exact-additive contracts and prior regressions
+        run: |
+          python -m pytest tests/discovery/test_temporal_readout_v19.py tests/discovery/test_risk_screen_v18.py tests/discovery/test_candidate_admission_v17.py tests/discovery/test_expert_feedback_v16.py tests/discovery/test_multiscale_physiology_v10.py -q
+      - name: Run all 27 native V10 vs V19 fits on same synthetic split
+        run: |
+          python -m conceptfan_discovery.experiment_temporal_readout_v19 --out-dir V19_TEMPORAL
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('V19_TEMPORAL/STATUS.json').read_text())
+          assert r['status']=='V19_NATIVE_TEMPORAL_POOLING_FIXED_VERSUS_LEARNED'
+          assert r['number_independent_model_fits']==27
+          assert len(r['aggregate'])==9
+          assert r['all_scenario_and_seed_fits_reported']
+          assert r['test_cohort_sealed']==80
+          assert r['raw_patient_effects_not_exported']
+          assert all(row['max_additive_logit_error']<2e-5 for row in r['results'])
+          PY
+          git rev-parse HEAD > V19_TEMPORAL/COMMIT_SHA.txt
+      - name: Archive all native results and abstentions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v19-temporal-all-27-fits-${{ github.run_number }}
+          path: V19_TEMPORAL/
+          if-no-files-found: warn
+      - name: Version complete model evidence on research branch
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v19-temporal-concept-readout-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v19/temporal
+          cp V19_TEMPORAL/* docs/medical/evidence_v19/temporal/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v19/temporal/
+          git diff --cached --quiet || git commit -m "V19: version all 27 native temporal readout ablation fits"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v19-temporal-concept-readout-20261104

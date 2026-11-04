@@ -1,0 +1,73 @@
+name: ConceptFAN V19b signed-initialization temporal pooling control
+on:
+  push:
+    branches: [experiment/conceptfan-v19-temporal-concept-readout-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v19b-signmatched-temporal.yml'
+      - 'src/conceptfan_discovery/experiment_signmatched_temporal_v19b.py'
+  pull_request:
+    branches: [experiment/conceptfan-v18-independent-risk-screen-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v19b-signmatched-temporal.yml'
+      - 'src/conceptfan_discovery/experiment_signmatched_temporal_v19b.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  signed-shape-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      PYTHONHASHSEED: '0'
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install frozen CPU research environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Regress all native temporal, risk-gate and V17 capacity invariants
+        run: |
+          python -m pytest tests/discovery/test_temporal_readout_v19.py tests/discovery/test_risk_screen_v18.py tests/discovery/test_candidate_admission_v17.py -q
+      - name: Execute all 27 matched-sign opportunities
+        run: |
+          python -m conceptfan_discovery.experiment_signmatched_temporal_v19b --out-dir V19B_SIGN_MATCHED
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          x=json.loads(Path('V19B_SIGN_MATCHED/STATUS.json').read_text())
+          assert x['status']=='V19B_TRAIN_RISK_SIGN_MATCHED_TEMPORAL_READOUT_CONTROL'
+          assert x['opportunities']==27
+          assert x['trained']+x['abstentions']==27
+          assert len(x['summary'])==9
+          assert x['all_opportunities_reported']
+          assert x['same_initial_native_risk_sign_all_arms']
+          assert x['fixed_and_learned_shape_readouts_identical_before_training']
+          assert all(r['max_additive_error']<2e-5 for r in x['per_seed'] if r['status']=='TRAINED')
+          PY
+          git rev-parse HEAD > V19B_SIGN_MATCHED/COMMIT_SHA.txt
+      - name: Archive all comparable outcome observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v19b-signmatched-complete-${{ github.run_number }}
+          path: V19B_SIGN_MATCHED/
+          if-no-files-found: warn
+      - name: Persist full evidence in research git branch
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v19-temporal-concept-readout-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v19/signmatched
+          cp V19B_SIGN_MATCHED/* docs/medical/evidence_v19/signmatched/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v19/signmatched
+          git diff --cached --quiet || git commit -m "V19b: retain all 27 signmatched fits and risk-screen refusals"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v19-temporal-concept-readout-20261104

@@ -1,0 +1,74 @@
+name: ConceptFAN V19d native concept sufficiency probe
+on:
+  push:
+    branches: [experiment/conceptfan-v19-temporal-concept-readout-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v19d-sufficiency-probe.yml'
+      - 'src/conceptfan_discovery/experiment_native_probe_v19d.py'
+  pull_request:
+    branches: [experiment/conceptfan-v18-independent-risk-screen-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v19d-sufficiency-probe.yml'
+      - 'src/conceptfan_discovery/experiment_native_probe_v19d.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  frozen-concept-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install pinned scientific CPU environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify native task computation remains concept-only
+        run: |
+          python -m pytest tests/discovery/test_temporal_readout_v19.py tests/discovery/test_multiscale_physiology_v10.py -q
+      - name: Train 18 native models and fit 18 train-only concept sufficiency probes
+        run: |
+          python -m conceptfan_discovery.experiment_native_probe_v19d --out-dir V19D_SUFFICIENCY
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('V19D_SUFFICIENCY/STATUS.json').read_text())
+          assert x['status']=='V19D_K3_NATIVE_CONCEPT_SUFFICIENCY_LOGISTIC_PROBE'
+          assert x['n_native_fits']==18
+          assert x['n_logistic_probes']==18
+          assert len(x['summary'])==6
+          assert x['same_frozen_concepts_for_native_and_probe']
+          assert x['no_raw_sensor_features_in_probe']
+          assert x['validation_not_used_for_training_or_tuning']
+          assert x['sealed_test_episodes']==80
+          assert all(r['max_additive_native_error']<2e-5 for r in x['results'])
+          PY
+          git rev-parse HEAD > V19D_SUFFICIENCY/COMMIT_SHA.txt
+      - name: Publish the full diagnostic denominator
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v19d-18-native-versus-probe-${{ github.run_number }}
+          path: V19D_SUFFICIENCY/
+          if-no-files-found: warn
+      - name: Retain all scientific probe evidence in the research branch
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v19-temporal-concept-readout-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v19/probe
+          cp V19D_SUFFICIENCY/* docs/medical/evidence_v19/probe/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v19/probe
+          git diff --cached --quiet || git commit -m "V19d: preserve all 18 native and readout-probe outcomes"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v19-temporal-concept-readout-20261104
