@@ -1,0 +1,62 @@
+name: ConceptFAN V18 independent risk evidence and noise falsification
+on:
+  push:
+    branches: [experiment/conceptfan-v18-independent-risk-screen-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v18-frozen-risk-screen.yml'
+      - 'src/conceptfan_discovery/risk_screen_v18.py'
+      - 'src/conceptfan_discovery/experiment_risk_screen_v18.py'
+      - 'src/conceptfan_discovery/multiscale_physiology_v10.py'
+      - 'src/conceptfan_discovery/candidate_admission_v17.py'
+      - 'tests/discovery/test_risk_screen_v18.py'
+  pull_request:
+    branches: [experiment/conceptfan-v17-dynamic-concept-admission-20261104]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  risk-screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONHASHSEED: '0'
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install fixed CPU research environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test V18 native signed policy and V16–V17 regressions
+        run: |
+          python -m pytest tests/discovery/test_risk_screen_v18.py tests/discovery/test_candidate_admission_v17.py tests/discovery/test_expert_feedback_v16.py tests/discovery/test_multiscale_physiology_v10.py -q
+      - name: Run all 18 predeclared source and sensor-risk cases
+        run: |
+          python -m conceptfan_discovery.experiment_risk_screen_v18 --out-dir V18_FROZEN_RISK_SCREEN
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('V18_FROZEN_RISK_SCREEN/STATUS.json').read_text())
+          assert r['status']=='V18_TRAIN_ONLY_INDEPENDENT_RISK_ASSOCIATION_SCREEN'
+          assert r['number_cases']==18
+          assert len(r['summary'])==6
+          assert r['discovery_and_risk_screen_disjoint']
+          assert r['complete_case_reporting']
+          assert r['source_and_sensor_noise_causality_not_identifiable']
+          PY
+          git rev-parse HEAD > V18_FROZEN_RISK_SCREEN/COMMIT_SHA.txt
+      - name: Upload all acceptance and abstention evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v18-all-risk-screen-cases-${{ github.run_number }}
+          path: V18_FROZEN_RISK_SCREEN/
+          if-no-files-found: warn
