@@ -33,9 +33,11 @@ MODEL_SEEDS=(11,23,37)
 ARMS=("original","refit_candidate","selected_by_train_gate")
 
 
-def _make_data(family):
+def _make_data(family, *, test_generator_seed: int = SEEDS["test"]):
+    if not isinstance(test_generator_seed,int) or test_generator_seed in (SEEDS["train"],SEEDS["gate"]):
+        raise ValueError("Independent synthetic TEST must use its own seed")
     partitions={
-        name:_raw_episodes(family,SEEDS[name],N[name])
+        name:_raw_episodes(family,test_generator_seed if name=="test" else SEEDS[name],N[name])
         for name in ("train","gate","test")
     }
     observed_train,mask_train,_=partitions["train"]
@@ -74,7 +76,7 @@ def _make_data(family):
             "gate_is_fit_disjoint_train_holdout":True,
             "all_normalization_from_core_train_only":True,
             "latent_generator_states_not_returned":True,
-            "test_generator_seed":SEEDS["test"],
+            "test_generator_seed":test_generator_seed,
         },
         medians=medians,scales=scales,
     )
@@ -107,14 +109,14 @@ def _metrics(labels,p):
     }
 
 
-def run(outdir:Path):
+def run(outdir:Path, *, test_generator_seed: int = SEEDS["test"]):
     if outdir.exists():
         raise FileExistsError("V20c must not overwrite committed scientific evidence")
     torch.set_num_threads(1)
     screening=[]
     test_rows=[]
     for family in FAMILIES:
-        data,test=_make_data(family)
+        data,test=_make_data(family,test_generator_seed=test_generator_seed)
         config,dual,v10=_config()
         config["training"]["epochs"]=12
         config["training"]["batch_size"]=64
@@ -233,7 +235,9 @@ def run(outdir:Path):
         "no_physical_causal_or_clinical_claim":True,
         "gate_claims_predictive_improvement_only":True,
         "all_predeclared_cases_reported":True,
-        "random_seeds":SEEDS,
+        "random_seeds":{**SEEDS,"test":test_generator_seed},
+        "test_seed_was_previously_inspected_in_v20b":test_generator_seed==305013,
+        "fresh_test_seed_v20d":test_generator_seed==305115,
         "gate_decisions":screening,
         "test_cases":test_rows,
         "aggregate":aggregate,
@@ -246,5 +250,6 @@ if __name__=="__main__":
     import argparse
     p=argparse.ArgumentParser()
     p.add_argument("--out-dir",required=True,type=Path)
+    p.add_argument("--independent-test-seed",type=int,default=SEEDS["test"])
     args=p.parse_args()
-    run(args.out_dir)
+    run(args.out_dir,test_generator_seed=args.independent_test_seed)
