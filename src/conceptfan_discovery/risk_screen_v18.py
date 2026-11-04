@@ -195,3 +195,46 @@ def risk_evidence_passport(evidence: RiskAssociationEvidence) -> dict:
         "clinical_semantic_ground_truth":False,
         "sign_is_fixed_from_train_evidence_NOT_new_cross_seed_discovery":True,
     }
+
+
+def native_observable_grounding_loss(
+    physical_output,
+    observed_input: torch.Tensor,
+    observed_mask: torch.Tensor,
+    candidate: ProposedObservableConcept,
+    *,
+    slot: int,
+    window: int = 6,
+) -> torch.Tensor:
+    """Optional V18 training constraint that ties the actual native activation
+    to a measured signed source direction, NOT to an oracle hidden variable.
+
+    The target is computed from *the same masked history the model sees*.
+    This is a bounded monotonic observable score, not a physical truth label.
+    """
+    a=physical_output.raw_activation
+    rel=physical_output.availability
+    if (observed_input.ndim != 3 or observed_input.shape != observed_mask.shape
+        or a.ndim != 3 or a.shape != rel.shape
+        or a.shape[:2] != observed_input.shape[:2]
+        or not 0 <= slot < a.shape[2]
+        or candidate.direction.shape != (observed_input.shape[2],)
+        or not 2 <= window <= observed_input.shape[1]):
+        raise ValueError("Native and observable concept grounding shapes disagree")
+    if not torch.isfinite(observed_input).all() or not torch.isfinite(observed_mask).all():
+        raise ValueError("Nonfinite observed training history")
+    if torch.any(observed_mask < 0) or torch.any(observed_mask > 1):
+        raise ValueError("Invalid observation support")
+    direction=torch.as_tensor(candidate.direction,device=observed_input.device,
+                              dtype=observed_input.dtype)
+    support=observed_mask[:,-window:,:]@direction.abs()
+    projected=(observed_input[:,-window:,:] * observed_mask[:,-window:,:])@direction
+    score=projected.sum(dim=1) / support.sum(dim=1).clamp_min(1e-8)
+    target=(.5 + .40*torch.tanh(score / 2.0)).detach()
+    evidence=rel[:,-window:,slot].detach().clamp(0,1)
+    predicted=(a[:,-window:,slot]*evidence).sum(dim=1) / evidence.sum(dim=1).clamp_min(1e-8)
+    sufficient=(support.sum(dim=1)>1e-8) & (evidence.sum(dim=1)>1e-8)
+    if not bool(sufficient.any()):
+        return a.sum()*0.0
+    # MSE on predicted temporal evidence, not on per-patient risk logit.
+    return ((predicted[sufficient]-target[sufficient])**2).mean()
