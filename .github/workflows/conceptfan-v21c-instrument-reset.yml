@@ -1,0 +1,86 @@
+name: ConceptFAN V21c paired instrument-reset source falsification
+on:
+  push:
+    branches: [experiment/conceptfan-v21-provenance-falsification-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v21c-instrument-reset.yml'
+      - 'src/conceptfan_discovery/instrument_reset_data_v21c.py'
+      - 'src/conceptfan_discovery/instrument_repeatability_v21c.py'
+      - 'src/conceptfan_discovery/experiment_reset_falsification_v21c.py'
+      - 'tests/discovery/test_instrument_reset_v21c.py'
+  pull_request:
+    branches: [experiment/conceptfan-v20-native-head-objective-ablation-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v21c-instrument-reset.yml'
+      - 'src/conceptfan_discovery/instrument_reset_data_v21c.py'
+      - 'src/conceptfan_discovery/instrument_repeatability_v21c.py'
+      - 'src/conceptfan_discovery/experiment_reset_falsification_v21c.py'
+      - 'tests/discovery/test_instrument_reset_v21c.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  paired-repeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install unchanged scientific CPU runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify known calibration interventions, provenance and negative controls
+        run: |
+          python -m pytest tests/discovery/test_instrument_reset_v21c.py tests/discovery/test_provenance_v21.py tests/discovery/test_sign_stability_v21b.py -q
+      - name: Execute all six independent measured paired calibration scenarios
+        run: |
+          python -m conceptfan_discovery.experiment_reset_falsification_v21c --out-dir V21C_PAIRED_CALIBRATION
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V21C_PAIRED_CALIBRATION/STATUS.json').read_text())
+          assert d['status']=='V21C_DISJOINT_INSTRUMENT_RESET_PAIRED_SOURCE_AUDIT'
+          assert d['n_predeclared_calibration_scenarios']==6
+          assert d['n_observed_paired_calibration_episodes_each']==240
+          assert d['external_calibration_seed']==405111
+          assert d['instrument_reset_seed']==405112
+          assert d['source_risk_reference_calibration_cohorts_all_disjoint']
+          assert d['persistent_commonmode_negative_case_retained']
+          assert not d['real_clinical_or_physical_identity_claimed']
+          assert d['all_six_scenarios_reported']
+          assert len(d['results'])==6
+          assert set(x['scenario'] for x in d['results'])=={
+            'physical_predictive','physical_nontask','artifact_predictive',
+            'artifact_nontask','artifact_common_mode_reference',
+            'artifact_environmental_persistent'}
+          assert all(x['actual_patient_diagnosis_or_causation_proven'] is False for x in d['results'])
+          PY
+          git rev-parse HEAD > V21C_PAIRED_CALIBRATION/COMMIT_SHA.txt
+      - name: Archive full paired calibration evidence and false positive
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v21c-all-six-acquisition-controls-${{ github.run_number }}
+          path: V21C_PAIRED_CALIBRATION/
+          if-no-files-found: warn
+      - name: Persist all scientific calibration outcomes
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v21-provenance-falsification-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v21/instrument_reset
+          cp V21C_PAIRED_CALIBRATION/* docs/medical/evidence_v21/instrument_reset/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v21/instrument_reset
+          git diff --cached --quiet || git commit -m "V21c: retain all six controlled acquisition resets and persistent-artifact failure"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v21-provenance-falsification-20261104
