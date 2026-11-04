@@ -6,6 +6,12 @@ on:
       - '.github/workflows/conceptfan-v22e-external-predictors.yml'
       - 'src/conceptfan_discovery/experiment_external_predictors_v22e.py'
       - 'tests/discovery/test_external_predictors_v22e.py'
+  pull_request:
+    branches: [experiment/conceptfan-v21-provenance-falsification-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v22e-external-predictors.yml'
+      - 'src/conceptfan_discovery/experiment_external_predictors_v22e.py'
+      - 'tests/discovery/test_external_predictors_v22e.py'
   workflow_dispatch:
 permissions:
   contents: write
