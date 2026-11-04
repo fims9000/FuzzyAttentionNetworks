@@ -63,6 +63,7 @@ def fit_multiscale(
     expert_feedback: PreparedFeedback | None = None,
     expert_feedback_weight: float = 0.0,
     feature_exploration: bool = False,
+    temporal_readout_mode: str = "legacy",
 ) -> tuple[MultiScaleDualProcessConceptFAN, dict]:
     _seed_everything(seed)
     t = base_config["training"]
@@ -77,6 +78,7 @@ def fit_multiscale(
         adaptive_feature_gradients=bool(feature_exploration or
                                         (expert_feedback is not None and
                                          expert_feedback_weight > 0)),
+        temporal_readout_mode=temporal_readout_mode,
     )
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=float(t["learning_rate"]),
@@ -201,6 +203,7 @@ def fit_multiscale(
             expert_feedback is not None and expert_feedback_weight > 0),
         "expert_operator_gradient_bridge_enabled": bool(feature_exploration or
             (expert_feedback is not None and expert_feedback_weight > 0)),
+        "temporal_readout_mode": temporal_readout_mode,
         "expert_feedback_supervised_batches": feedback_supervised_batches,
         "mean_train_expert_feedback_loss": feedback_accumulated / max(steps, 1),
         "feedback_is_not_clinical_semantics_certification": True,
