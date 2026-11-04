@@ -1,0 +1,79 @@
+name: ConceptFAN V22 multisensor source identifiability and native concept comparison
+on:
+  push:
+    branches: [experiment/conceptfan-v22-mixed-source-identifiability-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v22-mixed-sources.yml'
+      - 'src/conceptfan_discovery/mixed_source_data_v22.py'
+      - 'src/conceptfan_discovery/environmental_unmixing_v22.py'
+      - 'src/conceptfan_discovery/experiment_mixed_source_v22.py'
+      - 'tests/discovery/test_mixed_source_v22.py'
+  pull_request:
+    branches: [experiment/conceptfan-v21-provenance-falsification-20261104]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  source-identifiability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install unchanged CPU research environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify source identifiability and native risk bottleneck controls
+        run: |
+          python -m pytest tests/discovery/test_mixed_source_v22.py tests/discovery/test_concept_evidence_policy_v21d.py tests/discovery/test_sign_stability_v21b.py -q
+      - name: Execute all 24 frozen mixed-source opportunity registrations
+        run: |
+          python -m conceptfan_discovery.experiment_mixed_source_v22 --out-dir V22_MIXED_SOURCES
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('V22_MIXED_SOURCES/STATUS.json').read_text())
+          assert r['status']=='V22_MIXED_SOURCE_ENVIRONMENT_IDENTIFIABILITY_AND_NATIVE_CONCEPT_COMPARISON'
+          assert r['n_registered_native_opportunities']==24
+          assert r['n_trained_native_models']+r['n_observational_identifiability_abstentions']==24
+          assert r['n_source_generator_families']==4
+          assert r['n_model_initialization_seeds']==3
+          assert len(r['aggregate'])==8
+          assert r['no_latent_oracle_used_in_train_or_source_proposal']
+          assert r['validation_truth_loaded_only_after_model_fit']
+          assert r['synthetic_test_seed_522203_sealed']
+          assert not r['no_raw_feature_to_logit_bypass_or_posthoc_classifier'] is False
+          assert r['not_a_novel_BSS_identification_theorem']
+          assert r['all_predeclared_opportunities_reported']
+          assert all(x['max_native_logit_decomposition_error']<2e-5
+                     for x in r['per_fit_or_abstention'] if x['trained'])
+          PY
+          git rev-parse HEAD > V22_MIXED_SOURCES/COMMIT_SHA.txt
+      - name: Archive all trained and abstained source identification cases
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v22-all-24-multisensor-source-cases-${{ github.run_number }}
+          path: V22_MIXED_SOURCES/
+          if-no-files-found: warn
+      - name: Version complete synthetic source evidence under Draft PR
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v22-mixed-source-identifiability-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v22/mixed_sources
+          cp V22_MIXED_SOURCES/* docs/medical/evidence_v22/mixed_sources/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v22/mixed_sources
+          git diff --cached --quiet || git commit -m "V22: retain all 24 mixed-source native-model and abstention outcomes"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v22-mixed-source-identifiability-20261104

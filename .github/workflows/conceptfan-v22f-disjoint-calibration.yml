@@ -1,0 +1,108 @@
+name: ConceptFAN V22f disjoint native risk calibration vs logistic
+on:
+  push:
+    branches: [experiment/conceptfan-v22-mixed-source-identifiability-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v22f-disjoint-calibration.yml'
+      - 'src/conceptfan_discovery/train_only_native_calibration_v22f.py'
+      - 'src/conceptfan_discovery/experiment_disjoint_calibration_v22f.py'
+      - 'tests/discovery/test_disjoint_calibration_v22f.py'
+  pull_request:
+    branches: [experiment/conceptfan-v21-provenance-falsification-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v22f-disjoint-calibration.yml'
+      - 'src/conceptfan_discovery/train_only_native_calibration_v22f.py'
+      - 'src/conceptfan_discovery/experiment_disjoint_calibration_v22f.py'
+      - 'tests/discovery/test_disjoint_calibration_v22f.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: conceptfan-v22f-train-disjoint-calibration
+  cancel-in-progress: false
+jobs:
+  calibrate-native-risk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install same original native CPU research dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify independent labels, exact native contribution decomposition and rank monotonicity
+        run: |
+          python -m pytest tests/discovery/test_disjoint_calibration_v22f.py tests/discovery/test_external_predictors_v22e.py tests/discovery/test_risk_screened_sources_v22b.py -q
+      - name: Fit 18 native models, 18 scalars and 4 logistic controls before TEST seed 522333
+        run: |
+          python -m conceptfan_discovery.experiment_disjoint_calibration_v22f --out-dir V22F_DISJOINT_CALIBRATION
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          x=json.loads(Path('V22F_DISJOINT_CALIBRATION/STATUS.json').read_text())
+          assert x['status']=='V22F_DISJOINT_TRAIN_NATIVE_POSITIVE_AFFINE_CALIBRATION'
+          assert x['n_registered_total_score_cases']==52
+          assert x['n_native_models_fit']==18
+          assert x['n_train_only_affine_calibrators_fit']==18
+          assert x['n_external_logistic_models_fit']==4
+          assert x['n_native_score_opportunities']==48
+          assert x['n_native_calibration_method_abstentions']==12
+          assert x['n_total_frozen_test_scores']==40
+          assert x['new_test_seed']==522333
+          assert x['native_gradient_train_patients']==450
+          assert x['disjoint_train_calibration_patients']==150
+          assert x['disjoint_native_task_screen_patients']==200
+          assert x['calibration_patient_histories_used_in_unsupervised_source_formation']
+          assert not x['calibration_patient_labels_used_in_source_formation']
+          assert x['test_data_first_generated_after_all_fits_and_calibrators']
+          assert x['no_test_fitting_tuning_or_selection']
+          assert x['original_native_risk_model_unchanged_after_calibration_and_test']
+          assert x['native_exact_concept_decomposition_preserved_after_calibration']
+          assert x['all_probability_scaling_slopes_positive']
+          assert x['all_AUPRC_AUROC_native_pairs_unchanged_by_calibration']
+          assert x['all_negative_cases_and_abstentions_retained']
+          assert len(x['aggregate'])==20
+          assert all(row['native_exact_additive_logit_error']<2e-5
+                     for row in x['per_case'] if row['trained'] and row['method'].startswith('native'))
+          assert all(row['native_model_sha256_before_test']==row['native_model_sha256_after_test']
+                     for row in x['per_case'] if row['trained'] and row['method'].startswith('native'))
+          PY
+          git rev-parse HEAD > V22F_DISJOINT_CALIBRATION/COMMIT_SHA.txt
+      - name: Archive all 52 predeclared prediction calibration cases
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v22f-52-disjoint-calibration-cases-${{ github.run_number }}
+          path: V22F_DISJOINT_CALIBRATION/
+          if-no-files-found: warn
+      - name: Persist TEST case evidence with non-force concurrent-safe push
+        if: success() && github.event_name == 'push'
+        run: |
+          mkdir -p docs/medical/evidence_v22/native_calibration
+          cp V22F_DISJOINT_CALIBRATION/* docs/medical/evidence_v22/native_calibration/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v22/native_calibration
+          git diff --cached --quiet || git commit -m "V22f: preserve all untouched TEST native affine calibration comparisons and negative controls"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:refs/heads/experiment/conceptfan-v22-mixed-source-identifiability-20261104; then
+              exit 0
+            fi
+            git fetch origin experiment/conceptfan-v22-mixed-source-identifiability-20261104
+            git rebase origin/experiment/conceptfan-v22-mixed-source-identifiability-20261104
+          done
+          echo "Concurrent branch modification not overwritten"
+          exit 1

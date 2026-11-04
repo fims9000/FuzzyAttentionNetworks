@@ -1,0 +1,17 @@
+family,genuine_new_random_test_cohort_but_inspected_generator_families,mean_new_seed_test_auprc,mean_new_seed_test_brier,mean_test_oracle_concept_alignment_postfit,n_abstained,n_registered,n_test_evaluated,physical_or_clinical_source_identity_certified,risk_init_arm,source_method
+mixed_distinct_variance,True,0.6392276842460474,0.24177125622018733,0.664054119119842,0,3,3,False,arbitrary_native_start,pooled_pca_basis
+mixed_distinct_variance,True,0.8008393885269852,0.23718120886325286,0.6635517431675167,0,3,3,False,independently_screened_risk,pooled_pca_basis
+mixed_distinct_variance,True,0.6413825542002525,0.24201386533924754,0.9685375022685436,0,3,3,False,arbitrary_native_start,environment_contrast_basis
+mixed_distinct_variance,True,0.8036747272276908,0.24283147128066174,0.9693766967781124,0,3,3,False,independently_screened_risk,environment_contrast_basis
+mixed_proportional_variance,True,0.6652601911525244,0.24084003478627325,0.6699018877987534,0,3,3,False,arbitrary_native_start,pooled_pca_basis
+mixed_proportional_variance,True,0.8105657490386141,0.23694350609090967,0.669040470820046,0,3,3,False,independently_screened_risk,pooled_pca_basis
+mixed_proportional_variance,True,,,,3,3,0,False,arbitrary_native_start,environment_contrast_basis
+mixed_proportional_variance,True,,,,3,3,0,False,independently_screened_risk,environment_contrast_basis
+mixed_sensor_gain_drift,True,0.6752165850727342,0.23987883655370448,0.7185912436064105,0,3,3,False,arbitrary_native_start,pooled_pca_basis
+mixed_sensor_gain_drift,True,0.8318895806414325,0.23617364728990184,0.7179507179709405,0,3,3,False,independently_screened_risk,pooled_pca_basis
+mixed_sensor_gain_drift,True,,,,3,3,0,False,arbitrary_native_start,environment_contrast_basis
+mixed_sensor_gain_drift,True,,,,3,3,0,False,independently_screened_risk,environment_contrast_basis
+mixed_artifact_only_variance,True,0.6879980768745867,0.23931505451684618,0.7102725585839842,0,3,3,False,arbitrary_native_start,pooled_pca_basis
+mixed_artifact_only_variance,True,0.8255111150317535,0.2359099469864313,0.7096373663411074,0,3,3,False,independently_screened_risk,pooled_pca_basis
+mixed_artifact_only_variance,True,0.5210247578491565,0.25265907065859217,0.9730260706600443,0,3,3,False,arbitrary_native_start,environment_contrast_basis
+mixed_artifact_only_variance,True,0.834679398560375,0.24160099910109453,0.9724869535587432,0,3,3,False,independently_screened_risk,environment_contrast_basis

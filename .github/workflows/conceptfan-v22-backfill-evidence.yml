@@ -1,0 +1,94 @@
+name: ConceptFAN V22 archive executed evidence without rerunning models
+on:
+  push:
+    branches: [experiment/conceptfan-v22-mixed-source-identifiability-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v22-backfill-evidence.yml'
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: conceptfan-v22-evidence-backfill
+  cancel-in-progress: false
+jobs:
+  preserve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download unchanged V22b 48-case source risk evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: conceptfan-v22b-all-48-source-risk-2
+          run-id: 41859101641
+          repository: fims9000/FuzzyAttentionNetworks
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: docs/medical/evidence_v22/disjoint_source_risk
+      - name: Download unchanged V22c separate sign-mask factorial evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: conceptfan-v22c-all-48-risk-factorial-5
+          run-id: 41861657332
+          repository: fims9000/FuzzyAttentionNetworks
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: docs/medical/evidence_v22/factorial_risk
+      - name: Download unchanged V22c new independent TEST seed evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: conceptfan-v22c-fresh-test-522203-all-48-2
+          run-id: 41861657354
+          repository: fims9000/FuzzyAttentionNetworks
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: docs/medical/evidence_v22/fresh_test_522203
+      - name: Verify downloaded scientific denominators and prior model signatures
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          base=Path('docs/medical/evidence_v22')
+          v22b=json.loads((base/'disjoint_source_risk/STATUS.json').read_text())
+          factorial=json.loads((base/'factorial_risk/STATUS.json').read_text())
+          fresh=json.loads((base/'fresh_test_522203/STATUS.json').read_text())
+          assert v22b['number_registered_opportunities']==48
+          assert v22b['number_fitted_native_models']==36
+          assert v22b['number_identifiability_abstentions']==12
+          assert factorial['n_registered_factorial_opportunities']==48
+          assert factorial['n_native_fits']==24
+          assert factorial['n_statistical_source_refusals']==24
+          assert factorial['test_seed_522203_still_sealed']
+          assert fresh['registered_opportunities']==48
+          assert fresh['fitted_models']==36
+          assert fresh['predeclared_identifiability_refusals']==12
+          assert fresh['test_evaluated_frozen_models']==36
+          assert fresh['test_seed']==522203
+          assert fresh['frozen_test_instantiated_only_after_every_model_fit']
+          assert fresh['no_test_retraining_threshold_tuning_or_model_selection']
+          assert all(x['native_model_sha256_before_any_test_data']==x['native_model_sha256_after_test']
+                     for x in fresh['per_fit_and_abstention'] if x['trained'])
+          assert (base/'disjoint_source_risk/ALL_48_TRAIN_SIGNED_SOURCE_OPPORTUNITIES.csv').exists()
+          assert (base/'factorial_risk/ALL_48_SIGN_AND_MASK_FACTORIAL_OPPORTUNITIES.csv').exists()
+          assert (base/'fresh_test_522203/ALL_48_FROZEN_TEST_CASES.csv').exists()
+          print('PASS: archived 48+48+48 registered cases with 36 fresh TEST evaluations')
+          PY
+      - name: Commit results onto latest branch without overwriting another author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v22/disjoint_source_risk docs/medical/evidence_v22/factorial_risk docs/medical/evidence_v22/fresh_test_522203
+          if git diff --cached --quiet; then
+            echo "Evidence already present in GitHub; no mutation needed"
+            exit 0
+          fi
+          git commit -m "V22: preserve all frozen source risk, factorial and uninspected TEST scientific evidence"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:refs/heads/experiment/conceptfan-v22-mixed-source-identifiability-20261104; then
+              exit 0
+            fi
+            git fetch origin experiment/conceptfan-v22-mixed-source-identifiability-20261104
+            git rebase origin/experiment/conceptfan-v22-mixed-source-identifiability-20261104
+          done
+          echo "Conflict after three non-force attempts; never overwrite remote work"
+          exit 1

@@ -1,0 +1,102 @@
+name: ConceptFAN V22e external predictive baselines versus native concepts
+on:
+  push:
+    branches: [experiment/conceptfan-v22-mixed-source-identifiability-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v22e-external-predictors.yml'
+      - 'src/conceptfan_discovery/experiment_external_predictors_v22e.py'
+      - 'tests/discovery/test_external_predictors_v22e.py'
+  pull_request:
+    branches: [experiment/conceptfan-v21-provenance-falsification-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v22e-external-predictors.yml'
+      - 'src/conceptfan_discovery/experiment_external_predictors_v22e.py'
+      - 'tests/discovery/test_external_predictors_v22e.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: conceptfan-v22e-external-predictors
+  cancel-in-progress: false
+jobs:
+  prediction-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install pinned native CPU research dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Validate fixed external predictors and TEST boundary
+        run: |
+          python -m pytest tests/discovery/test_external_predictors_v22e.py tests/discovery/test_equal_label_budget_v22d.py tests/discovery/test_risk_screened_sources_v22b.py -q
+      - name: Fit all 18 concept models and 8 predictors before new TEST 522323
+        run: |
+          python -m conceptfan_discovery.experiment_external_predictors_v22e --out-dir V22E_EXTERNAL_BASELINES
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          x=json.loads(Path('V22E_EXTERNAL_BASELINES/STATUS.json').read_text())
+          assert x['status']=='V22E_FROZEN_EXTERNAL_PREDICTION_BASELINES_VS_NATIVE_CONCEPTFAN'
+          assert x['n_predeclared_native_opportunities']==24
+          assert x['n_native_fits']==18
+          assert x['n_native_identifiability_abstentions']==6
+          assert x['n_external_training_fits']==8
+          assert x['n_total_registered_opportunities']==32
+          assert x['n_total_test_model_evaluations']==26
+          assert x['fresh_test_seed']==522323
+          assert x['fresh_test_patients_per_family']==300
+          assert x['all_native_and_external_fitted_before_any_fresh_test']
+          assert x['no_test_hyperparameter_selection_or_optimizer_updates']
+          assert x['no_latent_oracle_or_environment_in_external_features']
+          assert x['known_source_truth_loaded_only_during_postfit_evaluation']
+          assert x['native_bottleneck_is_train_native_not_posthoc_probe']
+          assert x['all_negative_and_nonidentifiable_cases_retained']
+          assert len(x['summary'])==16
+          assert all(r['max_native_logit_decomposition_error']<2e-5
+                     for r in x['per_case'] if r['trained'] and r['method'].startswith('native'))
+          assert all(r['native_model_sha256_before_test']==r['native_model_sha256_after_test']
+                     for r in x['per_case'] if r['trained'] and r['method'].startswith('native'))
+          assert all(r['predictor_sha256_before_test']==r['predictor_sha256_after_test']
+                     for r in x['per_case'] if r['method'].endswith('temporal_summaries'))
+          PY
+          git rev-parse HEAD > V22E_EXTERNAL_BASELINES/COMMIT_SHA.txt
+      - name: Archive all source and external predictive comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v22e-all-32-external-prediction-cases-${{ github.run_number }}
+          path: V22E_EXTERNAL_BASELINES/
+          if-no-files-found: warn
+      - name: Version all scientific evidence without overwriting other commits
+        if: success() && github.event_name == 'push'
+        run: |
+          mkdir -p docs/medical/evidence_v22/external_predictors
+          cp V22E_EXTERNAL_BASELINES/* docs/medical/evidence_v22/external_predictors/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v22/external_predictors
+          git diff --cached --quiet || git commit -m "V22e: preserve 18 native and 8 external prediction TEST evaluations"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:refs/heads/experiment/conceptfan-v22-mixed-source-identifiability-20261104; then
+              exit 0
+            fi
+            git fetch origin experiment/conceptfan-v22-mixed-source-identifiability-20261104
+            git rebase origin/experiment/conceptfan-v22-mixed-source-identifiability-20261104
+          done
+          echo "Concurrent changes were not overwritten"
+          exit 1
