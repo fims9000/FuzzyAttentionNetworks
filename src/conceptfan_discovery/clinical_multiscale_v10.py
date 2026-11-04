@@ -68,6 +68,7 @@ def fit_multiscale(
     native_head_refit_weight_l2: float = .001,
     native_head_refit_max_iter: int = 120,
     initial_native_raw_decision_weights: dict[int, float] | None = None,
+    initial_native_descriptive_only_slots: tuple[int, ...] | None = None,
 ) -> tuple[MultiScaleDualProcessConceptFAN, dict]:
     _seed_everything(seed)
     t = base_config["training"]
@@ -100,6 +101,23 @@ def fit_multiscale(
         with torch.no_grad():
             for slot,value in initial_native_raw_decision_weights.items():
                 model.physical.decision_raw_weight[slot]=float(value)
+    # V22b: an independent TRAIN risk screen may find a strong MEASURED
+    # source with no supported outcome association. Such a source remains
+    # in the native concept bank for forecast/reconstruction but is denied
+    # a task prediction contribution, persistently, by V21d policy code 2.
+    if initial_native_descriptive_only_slots is not None:
+        slots=initial_native_descriptive_only_slots
+        if (not isinstance(slots,tuple) or len(slots)==0
+                or len(set(slots))!=len(slots)
+                or any(isinstance(slot,bool) or not isinstance(slot,int)
+                       or not 0<=slot<model.physical.n_slots for slot in slots)):
+            raise ValueError("Invalid native descriptive-only source policy slots")
+        if (initial_native_raw_decision_weights is not None
+                and any(slot in initial_native_raw_decision_weights for slot in slots)):
+            raise ValueError("Native risk-initialized and descriptive-only slots must be disjoint")
+        with torch.no_grad():
+            for slot in slots:
+                model.physical.signed_risk_policy[slot]=2
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=float(t["learning_rate"]),
         weight_decay=float(t["weight_decay"]),
@@ -229,6 +247,11 @@ def fit_multiscale(
             {str(slot):float(value) for slot,value in initial_native_raw_decision_weights.items()}
             if initial_native_raw_decision_weights is not None else None
         ),
+        "train_initial_native_descriptive_only_slot_policy":(
+            list(initial_native_descriptive_only_slots)
+            if initial_native_descriptive_only_slots is not None else None
+        ),
+        "descriptive_only_policy_means_zero_risk_not_nonphysical":True,
         "train_risk_initialization_is_not_physical_source_certification":True,
         "native_head_refit_enabled":bool(native_head_refit),
         "native_head_train_bce_before":(
