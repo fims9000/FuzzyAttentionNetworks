@@ -1,0 +1,37 @@
+{
+  "scenario": "artifact_environmental_persistent",
+  "without_independent_source_veto": {
+    "candidate_id": "observable-residual-77a631f6990c7725",
+    "status": "ALLOW_EXPERIMENTAL_MEASURED_RISK_CANDIDATE",
+    "source_reviewer_provenance_claim": "unknown",
+    "native_candidate_slot_admissible": true,
+    "native_outcome_risk_training_eligible": true,
+    "independent_outcome_task_association": true,
+    "disjoint_device_measurement_corroboration": true,
+    "controlled_paired_instrument_repeatability": true,
+    "physical_causal_meaning_certified": false,
+    "clinically_validated_by_doctor": false,
+    "persistent_environmental_instrument_interference_excluded": false,
+    "external_reviewer_identity_verified": false,
+    "automatic_known_physiological_mechanism_label_assigned": false,
+    "no_patient_level_evidence_exported": true
+  },
+  "with_explicit_instrument_artifact_veto": {
+    "candidate_id": "observable-residual-77a631f6990c7725",
+    "status": "BLOCK_DOCUMENTED_INSTRUMENT_ARTIFACT",
+    "source_reviewer_provenance_claim": "instrument_artifact",
+    "native_candidate_slot_admissible": false,
+    "native_outcome_risk_training_eligible": false,
+    "independent_outcome_task_association": true,
+    "disjoint_device_measurement_corroboration": true,
+    "controlled_paired_instrument_repeatability": true,
+    "physical_causal_meaning_certified": false,
+    "clinically_validated_by_doctor": false,
+    "persistent_environmental_instrument_interference_excluded": false,
+    "external_reviewer_identity_verified": false,
+    "automatic_known_physiological_mechanism_label_assigned": false,
+    "no_patient_level_evidence_exported": true
+  },
+  "synthetic_manual_veto_not_an_actual_human_or_doctor": true,
+  "physical_cause_still_not_certified": true
+}
