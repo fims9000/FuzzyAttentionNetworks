@@ -10,7 +10,7 @@ from conceptfan_discovery.provenance_data_v21 import (
 )
 from conceptfan_discovery.clinical_multiscale_v10 import fit_multiscale
 from conceptfan_discovery.experiment_native_risk_v18 import _config
-from conceptfan_discovery.experiment_sign_stability_v21b import _rho
+from conceptfan_discovery.experiment_signed_effect_v21b import _safe_spearman as _rho
 
 
 def _make_original_and_signed():
