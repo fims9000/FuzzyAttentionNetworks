@@ -67,6 +67,7 @@ def fit_multiscale(
     native_head_refit: bool = False,
     native_head_refit_weight_l2: float = .001,
     native_head_refit_max_iter: int = 120,
+    initial_native_raw_decision_weights: dict[int, float] | None = None,
 ) -> tuple[MultiScaleDualProcessConceptFAN, dict]:
     _seed_everything(seed)
     t = base_config["training"]
@@ -83,6 +84,22 @@ def fit_multiscale(
                                          expert_feedback_weight > 0)),
         temporal_readout_mode=temporal_readout_mode,
     )
+    # V21b: optional INITIAL CONDITION from a separately verified TRAIN-only
+    # source-risk screen, not a hard sign constraint or physical semantics.
+    # Defaults to None, preserving all original V10/V19/V20 fits exactly.
+    if initial_native_raw_decision_weights is not None:
+        if (not isinstance(initial_native_raw_decision_weights, dict)
+                or not initial_native_raw_decision_weights):
+            raise ValueError("Invalid native risk initialization map")
+        for slot,value in initial_native_raw_decision_weights.items():
+            if (isinstance(slot,bool) or not isinstance(slot,int)
+                    or not 0<=slot<model.physical.n_slots
+                    or isinstance(value,bool) or not isinstance(value,(int,float))
+                    or not np.isfinite(value) or abs(float(value))>.5):
+                raise ValueError("Invalid native concept risk initialization")
+        with torch.no_grad():
+            for slot,value in initial_native_raw_decision_weights.items():
+                model.physical.decision_raw_weight[slot]=float(value)
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=float(t["learning_rate"]),
         weight_decay=float(t["weight_decay"]),
@@ -208,6 +225,11 @@ def fit_multiscale(
             max_iter=native_head_refit_max_iter,
         )
     return model,{
+        "train_initial_native_raw_decision_weight_overrides":(
+            {str(slot):float(value) for slot,value in initial_native_raw_decision_weights.items()}
+            if initial_native_raw_decision_weights is not None else None
+        ),
+        "train_risk_initialization_is_not_physical_source_certification":True,
         "native_head_refit_enabled":bool(native_head_refit),
         "native_head_train_bce_before":(
             native_head_report.original_train_bce if native_head_report else None),
