@@ -1,0 +1,60 @@
+name: ConceptFAN V17 native post-admission training
+on:
+  push:
+    branches: [experiment/conceptfan-v17-dynamic-concept-admission-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v17-FROZEN-postadmission.yml'
+      - 'src/conceptfan_discovery/experiment_postadmission_v17.py'
+  pull_request:
+    branches: [experiment/conceptfan-v16-expert-feedback-native-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v17-FROZEN-postadmission.yml'
+      - 'src/conceptfan_discovery/experiment_postadmission_v17.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-growth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install frozen CPU research environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Guard exact native bottleneck and candidate controls
+        run: |
+          python -m pytest tests/discovery/test_candidate_admission_v17.py tests/discovery/test_expert_feedback_v16.py tests/discovery/test_multiscale_physiology_v10.py -q
+      - name: All three-arm post-admission training fits
+        run: |
+          python -m conceptfan_discovery.experiment_postadmission_v17 --out-dir V17_POSTADMISSION_TRAINING
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          a=json.loads(Path('V17_POSTADMISSION_TRAINING/STATUS.json').read_text())
+          assert a['status']=='V17_POSITIVE_CONTROL_NATIVE_POST_ADMISSION_RETRAINING'
+          assert a['n_models']==9
+          assert len(a['summary'])==3
+          assert a['all_models_reported'] and a['test_ids_remain_sealed']
+          assert all(r['max_exact_additive_error']<2e-5 for r in a['results'])
+          PY
+          git rev-parse HEAD > V17_POSTADMISSION_TRAINING/COMMIT_SHA.txt
+      - name: Archive full model comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v17-postadmission-native-${{ github.run_number }}
+          path: V17_POSTADMISSION_TRAINING/
+          if-no-files-found: warn

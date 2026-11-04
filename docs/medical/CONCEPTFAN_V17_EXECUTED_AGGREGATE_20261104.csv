@@ -1,0 +1,4 @@
+mode,total,proposals,abstentions,semantics_confirmed
+new_dynamic_factor,3,3,0,False
+white_sensor_only,3,0,3,False
+colored_sensor_only,3,3,0,False
