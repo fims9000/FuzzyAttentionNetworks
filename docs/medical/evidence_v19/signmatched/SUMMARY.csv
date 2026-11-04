@@ -1,0 +1,10 @@
+mode,arm,opportunities,trained,abstentions,mean_heldout_auprc,mean_heldout_brier,mean_abs_new_slot_effect,mean_nonrecent_shape_weight_slot3,signed_contribution_crossseed_spearman_3_dependent_pairs
+latent_predictive_positive,legacy_signinit,3,3,0,0.5878185233055029,0.2471326614378979,0.06182970193098299,0.0,0.9999959998999977
+latent_predictive_positive,fixed_shape_signinit,3,3,0,0.587597934559206,0.2474040504726157,0.05386608384277982,0.1136399507522583,0.9999924998124955
+latent_predictive_positive,learned_shape_signinit,3,3,0,0.5880822464254402,0.2472969982029024,0.055038503362787504,0.1008000373840332,0.9999959998999977
+latent_predictive_negative,legacy_signinit,3,3,0,0.6043462506386608,0.24741656035145473,0.06131582310058851,0.0,0.9999919997999952
+latent_predictive_negative,fixed_shape_signinit,3,3,0,0.6032972414252887,0.24765033218231022,0.05342735590100953,0.1136399507522583,0.9999839995999902
+latent_predictive_negative,learned_shape_signinit,3,3,0,0.604965333965823,0.2475238422971607,0.05458750899446992,0.10088789463043213,0.9999949998749971
+latent_risk_null,legacy_signinit,3,0,3,,,,,
+latent_risk_null,fixed_shape_signinit,3,0,3,,,,,
+latent_risk_null,learned_shape_signinit,3,0,3,,,,,
