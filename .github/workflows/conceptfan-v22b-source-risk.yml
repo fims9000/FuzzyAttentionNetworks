@@ -25,6 +25,11 @@ jobs:
       OMP_NUM_THREADS: '1'
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The audited source and persisted evidence must come from exactly
+          # the branch head under test, never the temporary PR merge commit.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12.15'
@@ -66,7 +71,7 @@ jobs:
           path: V22B_NATIVE_RISK/
           if-no-files-found: warn
       - name: Version complete screening and native task evidence
-        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v22-mixed-source-identifiability-20261104'
+        if: success() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'experiment/conceptfan-v22-mixed-source-identifiability-20261104'
         run: |
           mkdir -p docs/medical/evidence_v22/disjoint_source_risk
           cp V22B_NATIVE_RISK/* docs/medical/evidence_v22/disjoint_source_risk/
