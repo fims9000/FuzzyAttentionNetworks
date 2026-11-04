@@ -1,0 +1,2045 @@
+{
+  "status": "V22C_NATIVE_RISK_SIGN_VERSUS_DESCRIPTIVE_EXCLUSION_FACTORIAL",
+  "n_registered_factorial_opportunities": 48,
+  "n_native_fits": 24,
+  "n_statistical_source_refusals": 24,
+  "source_core_train_episode_count": 600,
+  "risk_screen_train_episode_count": 200,
+  "no_oracle_used_in_source_or_task_training": true,
+  "true_sources_consulted_only_after_all_family_fits": true,
+  "all_model_native_code_and_source_axes_same_across_arms": true,
+  "masked_constant_sources_not_counted_as_zero_stability": true,
+  "test_seed_522203_still_sealed": true,
+  "all_four_factorial_arms_and_negative_cases_reported": true,
+  "not_real_medical_concept_certification": true,
+  "per_opportunity": [
+    {
+      "family": "mixed_distinct_variance",
+      "seed": 11,
+      "arm": "random_original",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {},
+      "descriptive_source_zero_risk_slots": [],
+      "native_task_coefficient_after_training": [
+        0.10371366143226624,
+        0.3600602447986603
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9680474227491416,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9608693429926999,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9713996177607894,
+        "environment_1_oracle_alignment_eval_only": 0.9693248588826171
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.5949273274461906,
+      "validation_auroc": 0.6047741820768137,
+      "validation_brier": 0.2476263952454793,
+      "max_native_logit_decomposition_error": 5.587935447692871e-09,
+      "average_absolute_native_concept_effect": 0.027883420146439068
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "seed": 11,
+      "arm": "signed_start_only",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {
+        "0": 0.05
+      },
+      "descriptive_source_zero_risk_slots": [],
+      "native_task_coefficient_after_training": [
+        0.35504698753356934,
+        0.365677148103714
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9671829686996521,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9594182157579528,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9699702208987067,
+        "environment_1_oracle_alignment_eval_only": 0.9673372149873328
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.7105436997947201,
+      "validation_auroc": 0.7222617354196301,
+      "validation_brier": 0.24247342767054922,
+      "max_native_logit_decomposition_error": 1.30385160446167e-08,
+      "average_absolute_native_concept_effect": 0.04498144868351498
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "seed": 11,
+      "arm": "descriptive_mask_only",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {},
+      "descriptive_source_zero_risk_slots": [
+        1
+      ],
+      "native_task_coefficient_after_training": [
+        0.10383908450603485,
+        0.0
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        2
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9668189646551628,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9579973110812342,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9687950575581137,
+        "environment_1_oracle_alignment_eval_only": 0.9720556469176409
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8007408187525846,
+      "validation_auroc": 0.7892958748221907,
+      "validation_brier": 0.24797919838405538,
+      "max_native_logit_decomposition_error": 1.862645149230957e-09,
+      "average_absolute_native_concept_effect": 0.006361003392764057
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "seed": 11,
+      "arm": "signed_start_and_mask",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {
+        "0": 0.05
+      },
+      "descriptive_source_zero_risk_slots": [
+        1
+      ],
+      "native_task_coefficient_after_training": [
+        0.3552395701408386,
+        0.0
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        2
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9671218569095212,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9579604217824642,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9690564025067782,
+        "environment_1_oracle_alignment_eval_only": 0.9725658918174142
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8021069241894433,
+      "validation_auroc": 0.7903627311522049,
+      "validation_brier": 0.24291582885864402,
+      "max_native_logit_decomposition_error": 1.30385160446167e-08,
+      "average_absolute_native_concept_effect": 0.023045526448113376
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "seed": 23,
+      "arm": "random_original",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {},
+      "descriptive_source_zero_risk_slots": [],
+      "native_task_coefficient_after_training": [
+        1.015536904335022,
+        -0.8148159384727478
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9666678518650207,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9592719919110212,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9673425485577136,
+        "environment_1_oracle_alignment_eval_only": 0.9679825770034225
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.7463438317258361,
+      "validation_auroc": 0.7342638691322901,
+      "validation_brier": 0.23127803094498964,
+      "max_native_logit_decomposition_error": 2.3603206500411034e-08,
+      "average_absolute_native_concept_effect": 0.11494193451741012
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "seed": 23,
+      "arm": "signed_start_only",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {
+        "0": 0.05
+      },
+      "descriptive_source_zero_risk_slots": [],
+      "native_task_coefficient_after_training": [
+        0.3534810245037079,
+        -0.8146061897277832
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.967314303492261,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9597484416493517,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9693568603049025,
+        "environment_1_oracle_alignment_eval_only": 0.9684074847771013
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.6267143949705654,
+      "validation_auroc": 0.6401137980085349,
+      "validation_brier": 0.2433138288336776,
+      "max_native_logit_decomposition_error": 9.313225746154785e-09,
+      "average_absolute_native_concept_effect": 0.07194372362069165
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "seed": 23,
+      "arm": "descriptive_mask_only",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {},
+      "descriptive_source_zero_risk_slots": [
+        1
+      ],
+      "native_task_coefficient_after_training": [
+        1.015901803970337,
+        0.0
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        2
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9677951977244191,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9583142034911499,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.969948886617183,
+        "environment_1_oracle_alignment_eval_only": 0.973293035246011
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8024119738590948,
+      "validation_auroc": 0.7904071834992887,
+      "validation_brier": 0.23102511803432071,
+      "max_native_logit_decomposition_error": 1.4726538211107254e-08,
+      "average_absolute_native_concept_effect": 0.0656175647500398
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "seed": 23,
+      "arm": "signed_start_and_mask",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {
+        "0": 0.05
+      },
+      "descriptive_source_zero_risk_slots": [
+        1
+      ],
+      "native_task_coefficient_after_training": [
+        0.353863388299942,
+        0.0
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        2
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.967620915698565,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9583909774987535,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9701071158718164,
+        "environment_1_oracle_alignment_eval_only": 0.9729570203120139
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8021132963570234,
+      "validation_auroc": 0.790273826458037,
+      "validation_brier": 0.2429687170997288,
+      "max_native_logit_decomposition_error": 7.334165275096893e-09,
+      "average_absolute_native_concept_effect": 0.02292655263053746
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "seed": 37,
+      "arm": "random_original",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {},
+      "descriptive_source_zero_risk_slots": [],
+      "native_task_coefficient_after_training": [
+        0.1557273417711258,
+        -0.38208436965942383
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9682314247936088,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9616520183557595,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.971294724209965,
+        "environment_1_oracle_alignment_eval_only": 0.9714351748966621
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.6116134302528073,
+      "validation_auroc": 0.6240665007112376,
+      "validation_brier": 0.24715856217078647,
+      "max_native_logit_decomposition_error": 1.4901161193847656e-08,
+      "average_absolute_native_concept_effect": 0.03248071308738872
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "seed": 37,
+      "arm": "signed_start_only",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {
+        "0": 0.05
+      },
+      "descriptive_source_zero_risk_slots": [],
+      "native_task_coefficient_after_training": [
+        0.3546273708343506,
+        -0.37332582473754883
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9694145490505449,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9626506961188457,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9717943019689763,
+        "environment_1_oracle_alignment_eval_only": 0.9735081559180409
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.7050384536530097,
+      "validation_auroc": 0.7043918918918919,
+      "validation_brier": 0.24326976101793163,
+      "max_native_logit_decomposition_error": 7.450580596923828e-09,
+      "average_absolute_native_concept_effect": 0.04516575438132956
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "seed": 37,
+      "arm": "descriptive_mask_only",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {},
+      "descriptive_source_zero_risk_slots": [
+        1
+      ],
+      "native_task_coefficient_after_training": [
+        0.15503719449043274,
+        0.0
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        2
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9662582917587972,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9577248636095956,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9684519311969422,
+        "environment_1_oracle_alignment_eval_only": 0.9716182941464065
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8004554605353733,
+      "validation_auroc": 0.789073613086771,
+      "validation_brier": 0.24703785252047464,
+      "max_native_logit_decomposition_error": 7.450580596923828e-09,
+      "average_absolute_native_concept_effect": 0.009654893343395088
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "seed": 37,
+      "arm": "signed_start_and_mask",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {
+        "0": 0.05
+      },
+      "descriptive_source_zero_risk_slots": [
+        1
+      ],
+      "native_task_coefficient_after_training": [
+        0.3546023964881897,
+        0.0
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        2
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.966950521672463,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9576688629873664,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9693479710209343,
+        "environment_1_oracle_alignment_eval_only": 0.9724503311258279
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8014954547623326,
+      "validation_auroc": 0.7901404694167853,
+      "validation_brier": 0.24300309202425532,
+      "max_native_logit_decomposition_error": 7.450580596923828e-09,
+      "average_absolute_native_concept_effect": 0.022920621910792156
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "seed": 11,
+      "arm": "random_original",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "seed": 11,
+      "arm": "signed_start_only",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "seed": 11,
+      "arm": "descriptive_mask_only",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "seed": 11,
+      "arm": "signed_start_and_mask",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "seed": 23,
+      "arm": "random_original",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "seed": 23,
+      "arm": "signed_start_only",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "seed": 23,
+      "arm": "descriptive_mask_only",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "seed": 23,
+      "arm": "signed_start_and_mask",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "seed": 37,
+      "arm": "random_original",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "seed": 37,
+      "arm": "signed_start_only",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "seed": 37,
+      "arm": "descriptive_mask_only",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "seed": 37,
+      "arm": "signed_start_and_mask",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "seed": 11,
+      "arm": "random_original",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "seed": 11,
+      "arm": "signed_start_only",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "seed": 11,
+      "arm": "descriptive_mask_only",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "seed": 11,
+      "arm": "signed_start_and_mask",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "seed": 23,
+      "arm": "random_original",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "seed": 23,
+      "arm": "signed_start_only",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "seed": 23,
+      "arm": "descriptive_mask_only",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "seed": 23,
+      "arm": "signed_start_and_mask",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "seed": 37,
+      "arm": "random_original",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "seed": 37,
+      "arm": "signed_start_only",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "seed": 37,
+      "arm": "descriptive_mask_only",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "seed": 37,
+      "arm": "signed_start_and_mask",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "validation_auprc": null,
+      "validation_auroc": null,
+      "validation_brier": null,
+      "max_native_logit_decomposition_error": null,
+      "active_native_signed_effect_rank_crossseed": null,
+      "oracle_alignment_eval_only": null,
+      "physical_meaning_certified": false
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "seed": 11,
+      "arm": "random_original",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {},
+      "descriptive_source_zero_risk_slots": [],
+      "native_task_coefficient_after_training": [
+        -0.05669998750090599,
+        0.54897141456604
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9719639107101189,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9635467060745118,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9661993866394063,
+        "environment_1_oracle_alignment_eval_only": 0.9735401573403263
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8433282899140085,
+      "validation_auroc": 0.8205014224751066,
+      "validation_brier": 0.23687035301112944,
+      "max_native_logit_decomposition_error": 9.313225746154785e-09,
+      "average_absolute_native_concept_effect": 0.0449109162268663
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "seed": 11,
+      "arm": "signed_start_only",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {
+        "1": 0.05
+      },
+      "descriptive_source_zero_risk_slots": [],
+      "native_task_coefficient_after_training": [
+        -0.057166554033756256,
+        0.3560512065887451
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9715941288236536,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9633395926621406,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9656375838926174,
+        "environment_1_oracle_alignment_eval_only": 0.9728859060402686
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8436850612684653,
+      "validation_auroc": 0.8201458036984353,
+      "validation_brier": 0.24128466002834373,
+      "max_native_logit_decomposition_error": 1.1175870895385742e-08,
+      "average_absolute_native_concept_effect": 0.0304235770248791
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "seed": 11,
+      "arm": "descriptive_mask_only",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {},
+      "descriptive_source_zero_risk_slots": [
+        0
+      ],
+      "native_task_coefficient_after_training": [
+        0.0,
+        0.5489747524261475
+      ],
+      "native_source_risk_policy_after_training": [
+        2,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.971529905887843,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9626000288892098,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9661318280812481,
+        "environment_1_oracle_alignment_eval_only": 0.9732396995422019
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8386219647661923,
+      "validation_auroc": 0.8194790184921763,
+      "validation_brier": 0.23692913803632584,
+      "max_native_logit_decomposition_error": 7.450580596923828e-09,
+      "average_absolute_native_concept_effect": 0.04153623154636686
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "seed": 11,
+      "arm": "signed_start_and_mask",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {
+        "1": 0.05
+      },
+      "descriptive_source_zero_risk_slots": [
+        0
+      ],
+      "native_task_coefficient_after_training": [
+        0.0,
+        0.35603979229927063
+      ],
+      "native_source_risk_policy_after_training": [
+        2,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.971307236747075,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9625755841731574,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9659451531179164,
+        "environment_1_oracle_alignment_eval_only": 0.9728379039068404
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8382303982089843,
+      "validation_auroc": 0.8192567567567568,
+      "validation_brier": 0.2413493415890875,
+      "max_native_logit_decomposition_error": 7.450580596923828e-09,
+      "average_absolute_native_concept_effect": 0.027005796880706232
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "seed": 23,
+      "arm": "random_original",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {},
+      "descriptive_source_zero_risk_slots": [],
+      "native_task_coefficient_after_training": [
+        0.828503429889679,
+        -0.7116303443908691
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9726714741274902,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9635391504350048,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9668660829370195,
+        "environment_1_oracle_alignment_eval_only": 0.9757784790435131
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.39148591224896895,
+      "validation_auroc": 0.29214082503556194,
+      "validation_brier": 0.2672218272767544,
+      "max_native_logit_decomposition_error": 1.0128132998943329e-08,
+      "average_absolute_native_concept_effect": 0.10006316577933225
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "seed": 23,
+      "arm": "signed_start_only",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {
+        "1": 0.05
+      },
+      "descriptive_source_zero_risk_slots": [],
+      "native_task_coefficient_after_training": [
+        0.8176897764205933,
+        0.3542565107345581
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9730436429874154,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9650448299475419,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9678852174530084,
+        "environment_1_oracle_alignment_eval_only": 0.9754922440997378
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.6285084093660256,
+      "validation_auroc": 0.6659850640113798,
+      "validation_brier": 0.24166627719258973,
+      "max_native_logit_decomposition_error": 1.1030351743102074e-08,
+      "average_absolute_native_concept_effect": 0.07593235027845367
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "seed": 23,
+      "arm": "descriptive_mask_only",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {},
+      "descriptive_source_zero_risk_slots": [
+        0
+      ],
+      "native_task_coefficient_after_training": [
+        0.0,
+        -0.7114459276199341
+      ],
+      "native_source_risk_policy_after_training": [
+        2,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9722985810953455,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9631667018522427,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9676163385039336,
+        "environment_1_oracle_alignment_eval_only": 0.9738477265656251
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.345955645297805,
+      "validation_auroc": 0.18060988620199148,
+      "validation_brier": 0.2674961521165343,
+      "max_native_logit_decomposition_error": 1.4842953532934189e-08,
+      "average_absolute_native_concept_effect": 0.050255383967305535
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "seed": 23,
+      "arm": "signed_start_and_mask",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {
+        "1": 0.05
+      },
+      "descriptive_source_zero_risk_slots": [
+        0
+      ],
+      "native_task_coefficient_after_training": [
+        0.0,
+        0.354457288980484
+      ],
+      "native_source_risk_policy_after_training": [
+        2,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9716245736063733,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9630258113979043,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9664696208720387,
+        "environment_1_oracle_alignment_eval_only": 0.973044135294902
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8383303983808976,
+      "validation_auroc": 0.8193456614509246,
+      "validation_brier": 0.24142110164719094,
+      "max_native_logit_decomposition_error": 4.598405212163925e-09,
+      "average_absolute_native_concept_effect": 0.026854406310982692
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "seed": 37,
+      "arm": "random_original",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {},
+      "descriptive_source_zero_risk_slots": [],
+      "native_task_coefficient_after_training": [
+        -0.01677321083843708,
+        -0.25177472829818726
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9760397337748197,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.97147968310759,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9716947419885329,
+        "environment_1_oracle_alignment_eval_only": 0.9763029467976355
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.3464284043207744,
+      "validation_auroc": 0.1808321479374111,
+      "validation_brier": 0.2560120545983395,
+      "max_native_logit_decomposition_error": 7.450580596923828e-09,
+      "average_absolute_native_concept_effect": 0.01885897622727043
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "seed": 37,
+      "arm": "signed_start_only",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {
+        "1": 0.05
+      },
+      "descriptive_source_zero_risk_slots": [],
+      "native_task_coefficient_after_training": [
+        -0.01571858674287796,
+        0.35472390055656433
+      ],
+      "native_source_risk_policy_after_training": [
+        0,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9755917287969866,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9713827931421459,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9709675985599361,
+        "environment_1_oracle_alignment_eval_only": 0.9758922618783058
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8411745644491596,
+      "validation_auroc": 0.8205458748221905,
+      "validation_brier": 0.24143464381003837,
+      "max_native_logit_decomposition_error": 3.725290298461914e-09,
+      "average_absolute_native_concept_effect": 0.027752425263746924
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "seed": 37,
+      "arm": "descriptive_mask_only",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {},
+      "descriptive_source_zero_risk_slots": [
+        0
+      ],
+      "native_task_coefficient_after_training": [
+        0.0,
+        -0.2517654299736023
+      ],
+      "native_source_risk_policy_after_training": [
+        2,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9766324070267447,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.972630362559584,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9723632161429397,
+        "environment_1_oracle_alignment_eval_only": 0.9767047424329971
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.3460393418219493,
+      "validation_auroc": 0.18098773115220482,
+      "validation_brier": 0.25602722688902296,
+      "max_native_logit_decomposition_error": 3.725290298461914e-09,
+      "average_absolute_native_concept_effect": 0.017865154782193714
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "seed": 37,
+      "arm": "signed_start_and_mask",
+      "status": "TRAINED",
+      "trained": true,
+      "source_identifiability_status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "original_core_train_episodes": 600,
+      "independent_risk_screen_episodes": 200,
+      "screen_signed_initial_weights": {
+        "1": 0.05
+      },
+      "descriptive_source_zero_risk_slots": [
+        0
+      ],
+      "native_task_coefficient_after_training": [
+        0.0,
+        0.35472404956817627
+      ],
+      "native_source_risk_policy_after_training": [
+        2,
+        0
+      ],
+      "source_filters_identical_across_four_factorial_arms": true,
+      "source_oracle_used_only_after_all_fits": true,
+      "oracle_alignment_eval_only": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9762746252736141,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9726014733497038,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9720289790657363,
+        "environment_1_oracle_alignment_eval_only": 0.9762940575136674
+      },
+      "physical_meaning_certified": false,
+      "validation_auprc": 0.8381333752396618,
+      "validation_auroc": 0.819123399715505,
+      "validation_brier": 0.2414514057026149,
+      "max_native_logit_decomposition_error": 7.450580596923828e-09,
+      "average_absolute_native_concept_effect": 0.02681209397912729
+    }
+  ],
+  "aggregate": [
+    {
+      "family": "mixed_distinct_variance",
+      "arm": "random_original",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_validation_auprc": 0.6509615298082779,
+      "mean_validation_brier": 0.24202099612041847,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": 0.33483520187261334,
+      "number_actual_risk_eligible_pairwise_contributions": 6,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": 0.9676488998025903,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "arm": "signed_start_only",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_validation_auprc": 0.6807655161394317,
+      "mean_validation_brier": 0.24301900584071948,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": 0.33472408952692057,
+      "number_actual_risk_eligible_pairwise_contributions": 6,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": 0.9679706070808193,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "arm": "descriptive_mask_only",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_validation_auprc": 0.8012027510490176,
+      "mean_validation_brier": 0.24201405631295025,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": 0.9997565898880358,
+      "number_actual_risk_eligible_pairwise_contributions": 3,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": 0.966957484712793,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "arm": "signed_start_and_mask",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_validation_auprc": 0.8019052251029332,
+      "mean_validation_brier": 0.24296254599420938,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": 0.9999034063341444,
+      "number_actual_risk_eligible_pairwise_contributions": 3,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": 0.9672310980935164,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "arm": "random_original",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 0,
+      "n_source_identifiability_abstentions": 3,
+      "mean_validation_auprc": null,
+      "mean_validation_brier": null,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": null,
+      "number_actual_risk_eligible_pairwise_contributions": 0,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": null,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "arm": "signed_start_only",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 0,
+      "n_source_identifiability_abstentions": 3,
+      "mean_validation_auprc": null,
+      "mean_validation_brier": null,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": null,
+      "number_actual_risk_eligible_pairwise_contributions": 0,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": null,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "arm": "descriptive_mask_only",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 0,
+      "n_source_identifiability_abstentions": 3,
+      "mean_validation_auprc": null,
+      "mean_validation_brier": null,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": null,
+      "number_actual_risk_eligible_pairwise_contributions": 0,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": null,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "arm": "signed_start_and_mask",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 0,
+      "n_source_identifiability_abstentions": 3,
+      "mean_validation_auprc": null,
+      "mean_validation_brier": null,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": null,
+      "number_actual_risk_eligible_pairwise_contributions": 0,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": null,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "arm": "random_original",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 0,
+      "n_source_identifiability_abstentions": 3,
+      "mean_validation_auprc": null,
+      "mean_validation_brier": null,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": null,
+      "number_actual_risk_eligible_pairwise_contributions": 0,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": null,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "arm": "signed_start_only",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 0,
+      "n_source_identifiability_abstentions": 3,
+      "mean_validation_auprc": null,
+      "mean_validation_brier": null,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": null,
+      "number_actual_risk_eligible_pairwise_contributions": 0,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": null,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "arm": "descriptive_mask_only",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 0,
+      "n_source_identifiability_abstentions": 3,
+      "mean_validation_auprc": null,
+      "mean_validation_brier": null,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": null,
+      "number_actual_risk_eligible_pairwise_contributions": 0,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": null,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "arm": "signed_start_and_mask",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 0,
+      "n_source_identifiability_abstentions": 3,
+      "mean_validation_auprc": null,
+      "mean_validation_brier": null,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": null,
+      "number_actual_risk_eligible_pairwise_contributions": 0,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": null,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "arm": "random_original",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_validation_auprc": 0.5270808688279173,
+      "mean_validation_brier": 0.25336807829540775,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": -0.32902165579617554,
+      "number_actual_risk_eligible_pairwise_contributions": 6,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": 0.9735583728708096,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "arm": "signed_start_only",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_validation_auprc": 0.7711226783612167,
+      "mean_validation_brier": 0.24146186034365727,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": 0.33652744289751363,
+      "number_actual_risk_eligible_pairwise_contributions": 6,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": 0.9734098335360185,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "arm": "descriptive_mask_only",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_validation_auprc": 0.5102056506286489,
+      "mean_validation_brier": 0.2534841723472944,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": -0.3332557028411426,
+      "number_actual_risk_eligible_pairwise_contributions": 3,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": 0.9734869646699776,
+      "causal_source_identity_certified": false
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "arm": "signed_start_and_mask",
+      "n_registered_opportunities": 3,
+      "n_fitted_models": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_validation_auprc": 0.838231390609848,
+      "mean_validation_brier": 0.2414072829796311,
+      "mean_crossseed_risk_eligible_signed_effect_spearman": 0.9999714070897084,
+      "number_actual_risk_eligible_pairwise_contributions": 3,
+      "masked_zero_concept_spearman_was_excluded_not_forced_zero": true,
+      "mean_source_oracle_alignment_only_postfit": 0.9730688118756875,
+      "causal_source_identity_certified": false
+    }
+  ],
+  "source_risk_passports": {
+    "mixed_distinct_variance": {
+      "source": {
+        "candidate_id": "mixed-observable-environments-bfa247e23cb8648f",
+        "status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+        "source_vectors_whitened": [
+          [
+            -0.7125833186702055,
+            0.701587495579102
+          ],
+          [
+            -0.701587495579102,
+            -0.7125833186702055
+          ]
+        ],
+        "source_filters_original_sensor_space": [
+          [
+            0.39663891707003734,
+            -0.24921550703595208
+          ],
+          [
+            0.10559435816818989,
+            -0.5803671158636519
+          ],
+          [
+            0.6634465923757733,
+            0.733446903716316
+          ],
+          [
+            0.4386840572130922,
+            0.049020871520519156
+          ],
+          [
+            0.6037666303350282,
+            0.49646417430516177
+          ]
+        ],
+        "environment_contrast_eigenvalues": [
+          1.5271361187517498,
+          -1.4995615149898465
+        ],
+        "contrast_eigen_gap_standardized": 1.513754616805344,
+        "environment_permutation_p": 0.005,
+        "bootstrap_min_direction_cosine_q10": 0.9999605225218969,
+        "environment_sensor_subspace_min_cosine": 0.9999975569265726,
+        "train_sample_count": 600,
+        "environment_counts": [
+          302,
+          298
+        ],
+        "source_whitener": {
+          "train_centered_sensor_means": [
+            -0.028722255239418803,
+            -0.026819365130668554,
+            -0.00433376319788724,
+            -0.019383662221530484,
+            -0.010833860604180833
+          ],
+          "train_rank_two_projection": [
+            [
+              -0.45748475928035326,
+              -0.10069009140861793
+            ],
+            [
+              -0.4824230895115851,
+              0.33947624417467365
+            ],
+            [
+              0.041816201763009354,
+              -0.9881078619139672
+            ],
+            [
+              -0.2782065108554296,
+              -0.34270670436281014
+            ],
+            [
+              -0.08192097245095635,
+              -0.7773672070182214
+            ]
+          ],
+          "pooled_train_eigenvalues": [
+            1.894359721480465,
+            0.5483997247588371
+          ],
+          "train_only": true
+        },
+        "source_origin_known_physically": false,
+        "oracle_latent_states_used_for_fit": false,
+        "task_labels_used_for_source_fit": false,
+        "external_source_identity_verified": false,
+        "source_identification_up_to_sign_and_permutation_only": true,
+        "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+        "source_task_outcome_predictive_status_known": false,
+        "declared_environment_mixing_change_can_escape_detection": true
+      },
+      "risk_screen": {
+        "initial_native_raw_risk_weights": {
+          "0": 0.05
+        },
+        "permanent_native_descriptive_no_risk_slots": [
+          1
+        ],
+        "source_screens": [
+          {
+            "slot": 0,
+            "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+            "n_disjoint_screen_episodes": 200,
+            "observed_point_biserial_r": 0.5411701906515618,
+            "permutation_p_two_sided": 0.005,
+            "bootstrap_95pct_ci": [
+              0.47812639038132304,
+              0.6183090409457618
+            ],
+            "two_split_correlations": [
+              0.5441014327744853,
+              0.5427168026309721
+            ],
+            "train_only_signed_orientation": 1,
+            "physical_source_or_clinical_cause_certified": false
+          },
+          {
+            "slot": 1,
+            "status": "ABSTAIN_NO_STABLE_PREDICTIVE_ASSOCIATION",
+            "n_disjoint_screen_episodes": 200,
+            "observed_point_biserial_r": -0.034752028049170755,
+            "permutation_p_two_sided": 0.585,
+            "bootstrap_95pct_ci": [
+              -0.17511564356131804,
+              0.10070872914143597
+            ],
+            "two_split_correlations": [
+              0.05625188071639642,
+              -0.1131830734097797
+            ],
+            "train_only_signed_orientation": 0,
+            "physical_source_or_clinical_cause_certified": false
+          }
+        ],
+        "outcome_cohort_disjoint_from_unmixing_and_model_fit": true,
+        "artifact_cannot_be_identified_by_risk_screen": true,
+        "risk_screen_negative_is_not_nonphysical_label": true,
+        "neural_inference_uses_only_existing_native_concept_weights": true,
+        "no_clinical_or_causal_source_label_proven": true
+      }
+    },
+    "mixed_proportional_variance": {
+      "source": {
+        "candidate_id": "mixed-observable-environments-69cb0274a64ef427",
+        "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+        "source_vectors_whitened": [
+          [
+            -0.8505291241541786,
+            0.5259279503558694
+          ],
+          [
+            -0.5259279503558694,
+            -0.8505291241541786
+          ]
+        ],
+        "source_filters_original_sensor_space": [
+          [
+            0.43595257459714387,
+            -0.15899627798633598
+          ],
+          [
+            0.22336054846461473,
+            -0.5463660806848907
+          ],
+          [
+            0.4890399390198427,
+            0.8616844528873835
+          ],
+          [
+            0.41434946646429477,
+            0.1425218740957821
+          ],
+          [
+            0.48053628809789645,
+            0.6160996703713526
+          ]
+        ],
+        "environment_contrast_eigenvalues": [
+          1.0108122004101723,
+          0.9316019663744952
+        ],
+        "contrast_eigen_gap_standardized": 0.03948395188051635,
+        "environment_permutation_p": 0.405,
+        "bootstrap_min_direction_cosine_q10": 0.7931980518955726,
+        "environment_sensor_subspace_min_cosine": 0.999998560397747,
+        "train_sample_count": 600,
+        "environment_counts": [
+          302,
+          298
+        ],
+        "source_whitener": {
+          "train_centered_sensor_means": [
+            -0.02375762524618848,
+            -0.019944953252783712,
+            -0.008465750524452838,
+            -0.017405042358172473,
+            -0.012741611074520228
+          ],
+          "train_rank_two_projection": [
+            [
+              -0.45441094804043375,
+              -0.09404867895074749
+            ],
+            [
+              -0.47732384461477984,
+              0.3472287086281137
+            ],
+            [
+              0.037241227149620575,
+              -0.9900874957824441
+            ],
+            [
+              -0.2774600516815559,
+              -0.3391369703761123
+            ],
+            [
+              -0.0846860713868717,
+              -0.7767381781035689
+            ]
+          ],
+          "pooled_train_eigenvalues": [
+            1.9235575080046212,
+            0.5470392900070381
+          ],
+          "train_only": true
+        },
+        "source_origin_known_physically": false,
+        "oracle_latent_states_used_for_fit": false,
+        "task_labels_used_for_source_fit": false,
+        "external_source_identity_verified": false,
+        "source_identification_up_to_sign_and_permutation_only": true,
+        "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+        "source_task_outcome_predictive_status_known": false,
+        "declared_environment_mixing_change_can_escape_detection": true
+      },
+      "risk_screen": null
+    },
+    "mixed_sensor_gain_drift": {
+      "source": {
+        "candidate_id": "mixed-observable-environments-d8eb4557926b24cf",
+        "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+        "source_vectors_whitened": [
+          [
+            -0.9635420845020615,
+            -0.26755681900004363
+          ],
+          [
+            0.26755681900004363,
+            -0.9635420845020615
+          ]
+        ],
+        "source_filters_original_sensor_space": [
+          [
+            0.28543320908259173,
+            0.327364948850019
+          ],
+          [
+            0.6050806078940225,
+            -0.1782460187626363
+          ],
+          [
+            -0.32348210366216884,
+            0.9860040096064405
+          ],
+          [
+            0.0896510550890383,
+            0.48554495698087935
+          ],
+          [
+            -0.1751196676286233,
+            0.8314088465721422
+          ]
+        ],
+        "environment_contrast_eigenvalues": [
+          0.6496862312898921,
+          -0.0003414821688184286
+        ],
+        "contrast_eigen_gap_standardized": 0.3246790577966996,
+        "environment_permutation_p": 0.005,
+        "bootstrap_min_direction_cosine_q10": 0.9987904867805366,
+        "environment_sensor_subspace_min_cosine": 0.9711041631959056,
+        "train_sample_count": 600,
+        "environment_counts": [
+          302,
+          298
+        ],
+        "source_whitener": {
+          "train_centered_sensor_means": [
+            -0.0224133925669499,
+            -0.024676341534258357,
+            -0.005534069133832417,
+            -0.015727240335144946,
+            -0.010177480273320133
+          ],
+          "train_rank_two_projection": [
+            [
+              -0.3626156336319763,
+              -0.23906030374874546
+            ],
+            [
+              -0.535329692442428,
+              0.33364098315948154
+            ],
+            [
+              0.0478765241301704,
+              -1.0366062014028727
+            ],
+            [
+              -0.21629342866961826,
+              -0.44385624884919955
+            ],
+            [
+              -0.05371393669314583,
+              -0.8479518743146359
+            ]
+          ],
+          "pooled_train_eigenvalues": [
+            2.12753204382227,
+            0.4631668202519153
+          ],
+          "train_only": true
+        },
+        "source_origin_known_physically": false,
+        "oracle_latent_states_used_for_fit": false,
+        "task_labels_used_for_source_fit": false,
+        "external_source_identity_verified": false,
+        "source_identification_up_to_sign_and_permutation_only": true,
+        "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+        "source_task_outcome_predictive_status_known": false,
+        "declared_environment_mixing_change_can_escape_detection": true
+      },
+      "risk_screen": null
+    },
+    "mixed_artifact_only_variance": {
+      "source": {
+        "candidate_id": "mixed-observable-environments-4bc89e16cf8d6f50",
+        "status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+        "source_vectors_whitened": [
+          [
+            0.7728186395355215,
+            -0.63462693796156
+          ],
+          [
+            -0.63462693796156,
+            -0.7728186395355215
+          ]
+        ],
+        "source_filters_original_sensor_space": [
+          [
+            -0.25339035426664985,
+            0.4339616075589044
+          ],
+          [
+            -0.5807262241392049,
+            0.10570661335939724
+          ],
+          [
+            0.72460075100675,
+            0.7479211734498483
+          ],
+          [
+            0.04400090257737872,
+            0.4860808702782365
+          ],
+          [
+            0.4880703831968628,
+            0.676691419774408
+          ]
+        ],
+        "environment_contrast_eigenvalues": [
+          1.5924523586403034,
+          0.05974927762995402
+        ],
+        "contrast_eigen_gap_standardized": 0.7642736187298644,
+        "environment_permutation_p": 0.005,
+        "bootstrap_min_direction_cosine_q10": 0.9996158532627305,
+        "environment_sensor_subspace_min_cosine": 0.9999979988939107,
+        "train_sample_count": 600,
+        "environment_counts": [
+          302,
+          298
+        ],
+        "source_whitener": {
+          "train_centered_sensor_means": [
+            -0.018614197730506325,
+            -0.01472943621477662,
+            -0.008473068742507684,
+            -0.014150216414897032,
+            -0.01146777285179013
+          ],
+          "train_rank_two_projection": [
+            [
+              -0.4712285150537598,
+              -0.17456527452708145
+            ],
+            [
+              -0.5158803148404214,
+              0.2868524642931254
+            ],
+            [
+              0.08533404245635967,
+              -1.037858579601383
+            ],
+            [
+              -0.2744752966381826,
+              -0.40357651494289576
+            ],
+            [
+              -0.05225671413651305,
+              -0.8327023552133688
+            ]
+          ],
+          "pooled_train_eigenvalues": [
+            1.7435631360410686,
+            0.4887167475972468
+          ],
+          "train_only": true
+        },
+        "source_origin_known_physically": false,
+        "oracle_latent_states_used_for_fit": false,
+        "task_labels_used_for_source_fit": false,
+        "external_source_identity_verified": false,
+        "source_identification_up_to_sign_and_permutation_only": true,
+        "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+        "source_task_outcome_predictive_status_known": false,
+        "declared_environment_mixing_change_can_escape_detection": true
+      },
+      "risk_screen": {
+        "initial_native_raw_risk_weights": {
+          "1": 0.05
+        },
+        "permanent_native_descriptive_no_risk_slots": [
+          0
+        ],
+        "source_screens": [
+          {
+            "slot": 0,
+            "status": "ABSTAIN_NO_STABLE_PREDICTIVE_ASSOCIATION",
+            "n_disjoint_screen_episodes": 200,
+            "observed_point_biserial_r": -0.09668290745648508,
+            "permutation_p_two_sided": 0.145,
+            "bootstrap_95pct_ci": [
+              -0.25361604412254773,
+              0.02357935944708699
+            ],
+            "two_split_correlations": [
+              -0.12438352704085524,
+              -0.06820499223951682
+            ],
+            "train_only_signed_orientation": 0,
+            "physical_source_or_clinical_cause_certified": false
+          },
+          {
+            "slot": 1,
+            "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+            "n_disjoint_screen_episodes": 200,
+            "observed_point_biserial_r": 0.5597597889025518,
+            "permutation_p_two_sided": 0.005,
+            "bootstrap_95pct_ci": [
+              0.4758980531928571,
+              0.6397014538815887
+            ],
+            "two_split_correlations": [
+              0.5810757195306243,
+              0.5352199365903816
+            ],
+            "train_only_signed_orientation": 1,
+            "physical_source_or_clinical_cause_certified": false
+          }
+        ],
+        "outcome_cohort_disjoint_from_unmixing_and_model_fit": true,
+        "artifact_cannot_be_identified_by_risk_screen": true,
+        "risk_screen_negative_is_not_nonphysical_label": true,
+        "neural_inference_uses_only_existing_native_concept_weights": true,
+        "no_clinical_or_causal_source_label_proven": true
+      }
+    }
+  }
+}

@@ -1,0 +1,482 @@
+{
+  "mixed_distinct_variance": {
+    "source": {
+      "candidate_id": "mixed-observable-environments-bfa247e23cb8648f",
+      "status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "source_vectors_whitened": [
+        [
+          -0.7125833186702055,
+          0.701587495579102
+        ],
+        [
+          -0.701587495579102,
+          -0.7125833186702055
+        ]
+      ],
+      "source_filters_original_sensor_space": [
+        [
+          0.39663891707003734,
+          -0.24921550703595208
+        ],
+        [
+          0.10559435816818989,
+          -0.5803671158636519
+        ],
+        [
+          0.6634465923757733,
+          0.733446903716316
+        ],
+        [
+          0.4386840572130922,
+          0.049020871520519156
+        ],
+        [
+          0.6037666303350282,
+          0.49646417430516177
+        ]
+      ],
+      "environment_contrast_eigenvalues": [
+        1.5271361187517498,
+        -1.4995615149898465
+      ],
+      "contrast_eigen_gap_standardized": 1.513754616805344,
+      "environment_permutation_p": 0.005,
+      "bootstrap_min_direction_cosine_q10": 0.9999605225218969,
+      "environment_sensor_subspace_min_cosine": 0.9999975569265726,
+      "train_sample_count": 600,
+      "environment_counts": [
+        302,
+        298
+      ],
+      "source_whitener": {
+        "train_centered_sensor_means": [
+          -0.028722255239418803,
+          -0.026819365130668554,
+          -0.00433376319788724,
+          -0.019383662221530484,
+          -0.010833860604180833
+        ],
+        "train_rank_two_projection": [
+          [
+            -0.45748475928035326,
+            -0.10069009140861793
+          ],
+          [
+            -0.4824230895115851,
+            0.33947624417467365
+          ],
+          [
+            0.041816201763009354,
+            -0.9881078619139672
+          ],
+          [
+            -0.2782065108554296,
+            -0.34270670436281014
+          ],
+          [
+            -0.08192097245095635,
+            -0.7773672070182214
+          ]
+        ],
+        "pooled_train_eigenvalues": [
+          1.894359721480465,
+          0.5483997247588371
+        ],
+        "train_only": true
+      },
+      "source_origin_known_physically": false,
+      "oracle_latent_states_used_for_fit": false,
+      "task_labels_used_for_source_fit": false,
+      "external_source_identity_verified": false,
+      "source_identification_up_to_sign_and_permutation_only": true,
+      "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+      "source_task_outcome_predictive_status_known": false,
+      "declared_environment_mixing_change_can_escape_detection": true
+    },
+    "risk_screen": {
+      "initial_native_raw_risk_weights": {
+        "0": 0.05
+      },
+      "permanent_native_descriptive_no_risk_slots": [
+        1
+      ],
+      "source_screens": [
+        {
+          "slot": 0,
+          "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": 0.5411701906515618,
+          "permutation_p_two_sided": 0.005,
+          "bootstrap_95pct_ci": [
+            0.47812639038132304,
+            0.6183090409457618
+          ],
+          "two_split_correlations": [
+            0.5441014327744853,
+            0.5427168026309721
+          ],
+          "train_only_signed_orientation": 1,
+          "physical_source_or_clinical_cause_certified": false
+        },
+        {
+          "slot": 1,
+          "status": "ABSTAIN_NO_STABLE_PREDICTIVE_ASSOCIATION",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": -0.034752028049170755,
+          "permutation_p_two_sided": 0.585,
+          "bootstrap_95pct_ci": [
+            -0.17511564356131804,
+            0.10070872914143597
+          ],
+          "two_split_correlations": [
+            0.05625188071639642,
+            -0.1131830734097797
+          ],
+          "train_only_signed_orientation": 0,
+          "physical_source_or_clinical_cause_certified": false
+        }
+      ],
+      "outcome_cohort_disjoint_from_unmixing_and_model_fit": true,
+      "artifact_cannot_be_identified_by_risk_screen": true,
+      "risk_screen_negative_is_not_nonphysical_label": true,
+      "neural_inference_uses_only_existing_native_concept_weights": true,
+      "no_clinical_or_causal_source_label_proven": true
+    }
+  },
+  "mixed_proportional_variance": {
+    "source": {
+      "candidate_id": "mixed-observable-environments-69cb0274a64ef427",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "source_vectors_whitened": [
+        [
+          -0.8505291241541786,
+          0.5259279503558694
+        ],
+        [
+          -0.5259279503558694,
+          -0.8505291241541786
+        ]
+      ],
+      "source_filters_original_sensor_space": [
+        [
+          0.43595257459714387,
+          -0.15899627798633598
+        ],
+        [
+          0.22336054846461473,
+          -0.5463660806848907
+        ],
+        [
+          0.4890399390198427,
+          0.8616844528873835
+        ],
+        [
+          0.41434946646429477,
+          0.1425218740957821
+        ],
+        [
+          0.48053628809789645,
+          0.6160996703713526
+        ]
+      ],
+      "environment_contrast_eigenvalues": [
+        1.0108122004101723,
+        0.9316019663744952
+      ],
+      "contrast_eigen_gap_standardized": 0.03948395188051635,
+      "environment_permutation_p": 0.405,
+      "bootstrap_min_direction_cosine_q10": 0.7931980518955726,
+      "environment_sensor_subspace_min_cosine": 0.999998560397747,
+      "train_sample_count": 600,
+      "environment_counts": [
+        302,
+        298
+      ],
+      "source_whitener": {
+        "train_centered_sensor_means": [
+          -0.02375762524618848,
+          -0.019944953252783712,
+          -0.008465750524452838,
+          -0.017405042358172473,
+          -0.012741611074520228
+        ],
+        "train_rank_two_projection": [
+          [
+            -0.45441094804043375,
+            -0.09404867895074749
+          ],
+          [
+            -0.47732384461477984,
+            0.3472287086281137
+          ],
+          [
+            0.037241227149620575,
+            -0.9900874957824441
+          ],
+          [
+            -0.2774600516815559,
+            -0.3391369703761123
+          ],
+          [
+            -0.0846860713868717,
+            -0.7767381781035689
+          ]
+        ],
+        "pooled_train_eigenvalues": [
+          1.9235575080046212,
+          0.5470392900070381
+        ],
+        "train_only": true
+      },
+      "source_origin_known_physically": false,
+      "oracle_latent_states_used_for_fit": false,
+      "task_labels_used_for_source_fit": false,
+      "external_source_identity_verified": false,
+      "source_identification_up_to_sign_and_permutation_only": true,
+      "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+      "source_task_outcome_predictive_status_known": false,
+      "declared_environment_mixing_change_can_escape_detection": true
+    },
+    "risk_screen": null
+  },
+  "mixed_sensor_gain_drift": {
+    "source": {
+      "candidate_id": "mixed-observable-environments-d8eb4557926b24cf",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "source_vectors_whitened": [
+        [
+          -0.9635420845020615,
+          -0.26755681900004363
+        ],
+        [
+          0.26755681900004363,
+          -0.9635420845020615
+        ]
+      ],
+      "source_filters_original_sensor_space": [
+        [
+          0.28543320908259173,
+          0.327364948850019
+        ],
+        [
+          0.6050806078940225,
+          -0.1782460187626363
+        ],
+        [
+          -0.32348210366216884,
+          0.9860040096064405
+        ],
+        [
+          0.0896510550890383,
+          0.48554495698087935
+        ],
+        [
+          -0.1751196676286233,
+          0.8314088465721422
+        ]
+      ],
+      "environment_contrast_eigenvalues": [
+        0.6496862312898921,
+        -0.0003414821688184286
+      ],
+      "contrast_eigen_gap_standardized": 0.3246790577966996,
+      "environment_permutation_p": 0.005,
+      "bootstrap_min_direction_cosine_q10": 0.9987904867805366,
+      "environment_sensor_subspace_min_cosine": 0.9711041631959056,
+      "train_sample_count": 600,
+      "environment_counts": [
+        302,
+        298
+      ],
+      "source_whitener": {
+        "train_centered_sensor_means": [
+          -0.0224133925669499,
+          -0.024676341534258357,
+          -0.005534069133832417,
+          -0.015727240335144946,
+          -0.010177480273320133
+        ],
+        "train_rank_two_projection": [
+          [
+            -0.3626156336319763,
+            -0.23906030374874546
+          ],
+          [
+            -0.535329692442428,
+            0.33364098315948154
+          ],
+          [
+            0.0478765241301704,
+            -1.0366062014028727
+          ],
+          [
+            -0.21629342866961826,
+            -0.44385624884919955
+          ],
+          [
+            -0.05371393669314583,
+            -0.8479518743146359
+          ]
+        ],
+        "pooled_train_eigenvalues": [
+          2.12753204382227,
+          0.4631668202519153
+        ],
+        "train_only": true
+      },
+      "source_origin_known_physically": false,
+      "oracle_latent_states_used_for_fit": false,
+      "task_labels_used_for_source_fit": false,
+      "external_source_identity_verified": false,
+      "source_identification_up_to_sign_and_permutation_only": true,
+      "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+      "source_task_outcome_predictive_status_known": false,
+      "declared_environment_mixing_change_can_escape_detection": true
+    },
+    "risk_screen": null
+  },
+  "mixed_artifact_only_variance": {
+    "source": {
+      "candidate_id": "mixed-observable-environments-4bc89e16cf8d6f50",
+      "status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "source_vectors_whitened": [
+        [
+          0.7728186395355215,
+          -0.63462693796156
+        ],
+        [
+          -0.63462693796156,
+          -0.7728186395355215
+        ]
+      ],
+      "source_filters_original_sensor_space": [
+        [
+          -0.25339035426664985,
+          0.4339616075589044
+        ],
+        [
+          -0.5807262241392049,
+          0.10570661335939724
+        ],
+        [
+          0.72460075100675,
+          0.7479211734498483
+        ],
+        [
+          0.04400090257737872,
+          0.4860808702782365
+        ],
+        [
+          0.4880703831968628,
+          0.676691419774408
+        ]
+      ],
+      "environment_contrast_eigenvalues": [
+        1.5924523586403034,
+        0.05974927762995402
+      ],
+      "contrast_eigen_gap_standardized": 0.7642736187298644,
+      "environment_permutation_p": 0.005,
+      "bootstrap_min_direction_cosine_q10": 0.9996158532627305,
+      "environment_sensor_subspace_min_cosine": 0.9999979988939107,
+      "train_sample_count": 600,
+      "environment_counts": [
+        302,
+        298
+      ],
+      "source_whitener": {
+        "train_centered_sensor_means": [
+          -0.018614197730506325,
+          -0.01472943621477662,
+          -0.008473068742507684,
+          -0.014150216414897032,
+          -0.01146777285179013
+        ],
+        "train_rank_two_projection": [
+          [
+            -0.4712285150537598,
+            -0.17456527452708145
+          ],
+          [
+            -0.5158803148404214,
+            0.2868524642931254
+          ],
+          [
+            0.08533404245635967,
+            -1.037858579601383
+          ],
+          [
+            -0.2744752966381826,
+            -0.40357651494289576
+          ],
+          [
+            -0.05225671413651305,
+            -0.8327023552133688
+          ]
+        ],
+        "pooled_train_eigenvalues": [
+          1.7435631360410686,
+          0.4887167475972468
+        ],
+        "train_only": true
+      },
+      "source_origin_known_physically": false,
+      "oracle_latent_states_used_for_fit": false,
+      "task_labels_used_for_source_fit": false,
+      "external_source_identity_verified": false,
+      "source_identification_up_to_sign_and_permutation_only": true,
+      "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+      "source_task_outcome_predictive_status_known": false,
+      "declared_environment_mixing_change_can_escape_detection": true
+    },
+    "risk_screen": {
+      "initial_native_raw_risk_weights": {
+        "1": 0.05
+      },
+      "permanent_native_descriptive_no_risk_slots": [
+        0
+      ],
+      "source_screens": [
+        {
+          "slot": 0,
+          "status": "ABSTAIN_NO_STABLE_PREDICTIVE_ASSOCIATION",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": -0.09668290745648508,
+          "permutation_p_two_sided": 0.145,
+          "bootstrap_95pct_ci": [
+            -0.25361604412254773,
+            0.02357935944708699
+          ],
+          "two_split_correlations": [
+            -0.12438352704085524,
+            -0.06820499223951682
+          ],
+          "train_only_signed_orientation": 0,
+          "physical_source_or_clinical_cause_certified": false
+        },
+        {
+          "slot": 1,
+          "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": 0.5597597889025518,
+          "permutation_p_two_sided": 0.005,
+          "bootstrap_95pct_ci": [
+            0.4758980531928571,
+            0.6397014538815887
+          ],
+          "two_split_correlations": [
+            0.5810757195306243,
+            0.5352199365903816
+          ],
+          "train_only_signed_orientation": 1,
+          "physical_source_or_clinical_cause_certified": false
+        }
+      ],
+      "outcome_cohort_disjoint_from_unmixing_and_model_fit": true,
+      "artifact_cannot_be_identified_by_risk_screen": true,
+      "risk_screen_negative_is_not_nonphysical_label": true,
+      "neural_inference_uses_only_existing_native_concept_weights": true,
+      "no_clinical_or_causal_source_label_proven": true
+    }
+  }
+}

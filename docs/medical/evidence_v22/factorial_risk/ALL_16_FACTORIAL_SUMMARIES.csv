@@ -1,0 +1,17 @@
+arm,causal_source_identity_certified,family,masked_zero_concept_spearman_was_excluded_not_forced_zero,mean_crossseed_risk_eligible_signed_effect_spearman,mean_source_oracle_alignment_only_postfit,mean_validation_auprc,mean_validation_brier,n_fitted_models,n_registered_opportunities,n_source_identifiability_abstentions,number_actual_risk_eligible_pairwise_contributions
+random_original,False,mixed_distinct_variance,True,0.33483520187261334,0.9676488998025903,0.6509615298082779,0.24202099612041847,3,3,0,6
+signed_start_only,False,mixed_distinct_variance,True,0.33472408952692057,0.9679706070808193,0.6807655161394317,0.24301900584071948,3,3,0,6
+descriptive_mask_only,False,mixed_distinct_variance,True,0.9997565898880358,0.966957484712793,0.8012027510490176,0.24201405631295025,3,3,0,3
+signed_start_and_mask,False,mixed_distinct_variance,True,0.9999034063341444,0.9672310980935164,0.8019052251029332,0.24296254599420938,3,3,0,3
+random_original,False,mixed_proportional_variance,True,,,,,0,3,3,0
+signed_start_only,False,mixed_proportional_variance,True,,,,,0,3,3,0
+descriptive_mask_only,False,mixed_proportional_variance,True,,,,,0,3,3,0
+signed_start_and_mask,False,mixed_proportional_variance,True,,,,,0,3,3,0
+random_original,False,mixed_sensor_gain_drift,True,,,,,0,3,3,0
+signed_start_only,False,mixed_sensor_gain_drift,True,,,,,0,3,3,0
+descriptive_mask_only,False,mixed_sensor_gain_drift,True,,,,,0,3,3,0
+signed_start_and_mask,False,mixed_sensor_gain_drift,True,,,,,0,3,3,0
+random_original,False,mixed_artifact_only_variance,True,-0.32902165579617554,0.9735583728708096,0.5270808688279173,0.25336807829540775,3,3,0,6
+signed_start_only,False,mixed_artifact_only_variance,True,0.33652744289751363,0.9734098335360185,0.7711226783612167,0.24146186034365727,3,3,0,6
+descriptive_mask_only,False,mixed_artifact_only_variance,True,-0.3332557028411426,0.9734869646699776,0.5102056506286489,0.2534841723472944,3,3,0,3
+signed_start_and_mask,False,mixed_artifact_only_variance,True,0.9999714070897084,0.9730688118756875,0.838231390609848,0.2414072829796311,3,3,0,3
