@@ -68,9 +68,18 @@ class MultiScaleUnknownNeutralConceptFAN(UnknownNeutralSpectralConceptFAN):
         # transfer mass to 4, 12, or 24-hour contexts.
         with torch.no_grad():
             self.scale_logits[:, 0] = 1.5
+        # V18: 0=unrestricted V10; +/-1=TRAIN-screened signed association.
+        # Reproducible sign by construction is NOT evidence of independent
+        # signed-effect stability or medical cause.
+        self.register_buffer("signed_risk_policy", torch.zeros(self.n_slots, dtype=torch.int8))
 
     def scale_weights(self) -> torch.Tensor:
         return torch.softmax(self.scale_logits, dim=-1)
+
+    def decision_weights(self) -> torch.Tensor:
+        weights = super().decision_weights()
+        orientation = self.signed_risk_policy.to(dtype=weights.dtype)
+        return torch.where(orientation == 0, weights, orientation * weights.abs())
 
     def concept_formula(self) -> str:
         return (
@@ -129,6 +138,8 @@ class MultiScaleUnknownNeutralConceptFAN(UnknownNeutralSpectralConceptFAN):
                 "no_real_physio_label_claim": True,
                 "zero_observation_is_unknown_neutral": True,
                 "causal_temporal_inputs_only": True,
+                "risk_sign_policy_train_screen_only": self.signed_risk_policy.detach().cpu().tolist(),
+                "risk_orientation_is_observational_not_causal": True,
             }
 
 
