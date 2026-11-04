@@ -56,7 +56,7 @@ def test_empty_feedback_has_zero_gradient_and_never_negative():
     out = MockOutput(torch.sigmoid(logit), torch.ones_like(logit))
     loss, stats = native_expert_loss(out, torch.tensor([1, 2]), p)
     loss.backward()
-    assert float(loss) == 0.
+    assert float(loss.detach()) == 0.
     assert stats["supervised_slots"] == 0
     assert float(logit.grad.abs().sum()) == 0.
 
@@ -81,6 +81,7 @@ def test_native_v10_training_graph_receives_review_gradient():
         channels=tuple(f"sensor_{j}" for j in range(5)),
         forecast_horizon=3,
         n_observation_concepts=2,
+        adaptive_feature_gradients=True,
     )
     x = torch.randn(5, 20, 5)
     mask = torch.ones_like(x)
@@ -100,6 +101,7 @@ def test_native_v10_training_graph_receives_review_gradient():
     assert model.physical.scale_logits.grad is not None
     assert float(model.physical.scale_logits.grad.abs().sum()) > 0
     assert float(output.decomposition_error().detach()) < 1e-6
+    assert float(model.physical.expert_exploration_fraction) == .04 or abs(float(model.physical.expert_exploration_fraction)-.04)<1e-6
 
 
 def test_wrong_expert_can_harm_and_is_not_auto_certified():
