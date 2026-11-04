@@ -58,7 +58,7 @@ def test_external_scikit_learn_predictors_work_on_train_labels_and_fingerprint_u
         assert np.all((p>=0)&(p<=1))
         assert ext._pickle_fingerprint(model)==fingerprint
         metrics=ext._predictive_metrics(y[:100],p)
-        assert 0<=metrics["test_auprc"]<=1
+        assert -1e-12<=metrics["test_auprc"]<=1+1e-12  # sklearn FP roundoff near 1
         assert 0<=metrics["test_auroc"]<=1
         assert metrics["test_brier"]>=0
         assert metrics["test_logloss"]>=0
