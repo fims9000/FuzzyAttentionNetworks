@@ -1,0 +1,70 @@
+name: ConceptFAN V20d uninspected TEST seed 305115 gate replication
+on:
+  push:
+    branches: [experiment/conceptfan-v20-native-head-objective-ablation-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v20d-fresh-test.yml'
+      - 'src/conceptfan_discovery/experiment_refit_gate_v20c.py'
+      - 'tests/discovery/test_native_refit_gate_v20c.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fresh-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install research CPU environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test frozen gate and exact new-test separation
+        run: |
+          python -m pytest tests/discovery/test_native_refit_gate_v20c.py tests/discovery/test_head_factorial_v20.py -q
+      - name: Repeat frozen 12 decisions on genuinely uninspected TEST seed
+        run: |
+          python -m conceptfan_discovery.experiment_refit_gate_v20c --out-dir V20D_FRESH_TEST --independent-test-seed 305115
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('V20D_FRESH_TEST/STATUS.json').read_text())
+          assert x['status']=='V20C_INDEPENDENT_TRAIN_GATE_SELECTS_OR_REFUSES_NATIVE_RISK_REFIT'
+          assert x['number_independent_train_holdout_decisions']==12
+          assert x['number_predeclared_test_arm_evaluations']==36
+          assert x['random_seeds']['test']==305115
+          assert x['fresh_test_seed_v20d']
+          assert not x['test_seed_was_previously_inspected_in_v20b']
+          assert x['all_test_labels_scored_only_after_gate_decisions']
+          assert x['all_predeclared_cases_reported']
+          assert all(row['max_exact_additive_error']<2e-5 for row in x['test_cases'])
+          PY
+          git rev-parse HEAD > V20D_FRESH_TEST/COMMIT_SHA.txt
+      - name: Archive unchanged training/gate and NEW seed test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v20d-newtest305115-all-36-${{ github.run_number }}
+          path: V20D_FRESH_TEST/
+          if-no-files-found: warn
+      - name: Commit separate fresh synthetic TEST results
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v20-native-head-objective-ablation-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v20/fresh_test_305115
+          cp V20D_FRESH_TEST/* docs/medical/evidence_v20/fresh_test_305115/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v20/fresh_test_305115
+          git diff --cached --quiet || git commit -m "V20d: retain independent synthetic TEST seed 305115 results without V20c overwrite"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v20-native-head-objective-ablation-20261104
