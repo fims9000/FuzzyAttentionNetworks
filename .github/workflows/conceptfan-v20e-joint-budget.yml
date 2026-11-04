@@ -1,0 +1,77 @@
+name: ConceptFAN V20e joint-epochs vs frozen native head
+on:
+  push:
+    branches: [experiment/conceptfan-v20-native-head-objective-ablation-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v20e-joint-budget.yml'
+      - 'src/conceptfan_discovery/experiment_joint_epochs_v20e.py'
+  pull_request:
+    branches: [experiment/conceptfan-v19-temporal-concept-readout-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v20e-joint-budget.yml'
+      - 'src/conceptfan_discovery/experiment_joint_epochs_v20e.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  joint-versus-head:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install unchanged research environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify original native head fitting and immutable concepts
+        run: |
+          python -m pytest tests/discovery/test_head_factorial_v20.py tests/discovery/test_native_head_refit_v19e.py tests/discovery/test_risk_screen_v18.py -q
+      - name: Run all 36 frozen joint-epochs versus native-head controls
+        run: |
+          python -m conceptfan_discovery.experiment_joint_epochs_v20e --out-dir V20E_JOINT_EPOCHS
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('V20E_JOINT_EPOCHS/STATUS.json').read_text())
+          assert x['status']=='V20E_EXTRA_JOINT_EPOCHS_VERSUS_HEAD_ONLY_NATIVE_OPTIMIZATION'
+          assert x['complete_native_evaluations']==36
+          assert x['distinct_original_k2_to_k3_models']==9
+          assert len(x['summary'])==12
+          assert x['all_predeclared_modes_reported']
+          assert x['no_test_unsealing']
+          assert x['concept_head_frozen_for_head_only']
+          assert x['original_combined_loss_in_joint_arms']
+          assert x['not_compute_matched_due_different_objectives']
+          assert all(r['max_exact_additive_error']<2e-5 for r in x['rows'])
+          assert all(r['mean_native_concept_summary_drift_from_common_baseline']==0
+                     for r in x['rows'] if r['arm']=='frozen_head_adamw300')
+          PY
+          git rev-parse HEAD > V20E_JOINT_EPOCHS/COMMIT_SHA.txt
+      - name: Archive entire alternative-training denominator
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v20e-all-36-joint-vs-head-${{ github.run_number }}
+          path: V20E_JOINT_EPOCHS/
+          if-no-files-found: warn
+      - name: Persist all joint and native head comparison outcomes
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v20-native-head-objective-ablation-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v20/joint_epochs
+          cp V20E_JOINT_EPOCHS/* docs/medical/evidence_v20/joint_epochs/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v20/joint_epochs
+          git diff --cached --quiet || git commit -m "V20e: preserve all 36 joint-epochs versus native head-only ablations"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v20-native-head-objective-ablation-20261104
