@@ -116,7 +116,10 @@ def native_expert_loss(physical_output, batch_episode_ids: torch.Tensor,
         raise ValueError("Invalid reliability threshold")
     if not torch.isfinite(activation).all() or not torch.isfinite(reliability).all():
         raise ValueError("Nonfinite concept evidence")
-    if torch.any(reliability < 0) or torch.any(reliability > 1):
+    # Convex mixtures of reliability scores can exceed 1 by float32 ULP.
+    # Reject true contract violations, tolerate only numerical roundoff;
+    # each per-interval support is clamped before computing the loss.
+    if torch.any(reliability < -1e-5) or torch.any(reliability > 1 + 1e-5):
         raise ValueError("Invalid concept measurement reliability")
     index = {int(v): i for i, v in enumerate(batch_episode_ids.tolist())}
     if len(index) != len(batch_episode_ids):
