@@ -60,3 +60,22 @@ The accepted PIERE negative cross-run reproducibility conclusion remains unchang
 Paired-view V15 additionally certified **2/6 genuine source shifts**, **0/6 independent colored sensor-only shifts**, **4/6 shared colored sensor-only shifts falsely**, and 0/6 no-shift controls. At K_true=7, the lag method accepted a true-source shift in only 1/2 trials while the paired-view method accepted none in the six positive K5/K7 trials. This sensitivity deficit is substantive; it cannot be concealed by reporting high correlations on successful cases only.
 
 **A new protocol was then frozen before using its new generator**: `src/conceptfan_discovery/experiment_v15_holdout.py`, generator seed **20280105**, 700 separate TRAIN episodes in each environment, 250 (lag) or 300 (paired-view) **disjoint evaluation episodes** in each environment, 36 total positive/negative estimator runs. All estimator parameters and refusal thresholds remain unchanged, and all 36 acceptance outcomes belong in the denominator. See `.github/workflows/conceptfan-v15-HELDOUT-third-seed-ONCE.yml`. The third generator is not a substitute for out-of-family or clinical validation.
+
+
+## True disjoint-case holdout on independent third generator (20280105)
+
+**CI run 41815964093 SUCCESS**, artifact `V15-holdout-third-generator-1`, 36 total cases. The held-out protocol was committed before this generator was scored: 700 TRAIN episodes per environment for fitting, with disjoint 250 lag/V14 or 300 paired-view evaluation episodes per environment. The oracle was used only on these unseen evaluation episodes, after each estimator was frozen. No previously used Set B patients were involved.
+
+| Estimator | True latent variance change | White sensor-noise-only shift | Colored sensor-noise-only shift | No shift |
+|---|---:|---:|---:|---:|
+| V14 same-time | **1/3** | 0/3 | **2/3 false positives** | 0/3 |
+| V15 lagged | **1/3** | **0/3** | **1/3 false positive** | 0/3 |
+| V15 paired independent views | **1/3** | 0/3 independently colored noise | **1/3 false positive** from cross-view shared colored noise | 0/3 |
+
+**All three successful true-source certifications were for K=3.** Both V15 methods abstained on the K=5 and K=7 true-source shifts in this confirmation. Conditional source-oracle matched absolute Spearman on the previously unseen evaluated episodes was 0.9957 for V15 lag and 0.9938 for V15 crossview (K=3 only). Critically, falsely accepted K=3 colored sensor-only cases had mean oracle correlation around 0.69, not reliable source semantic identity.
+
+**Interpretation:** The held-out third-generator experiment confirms one narrow effect: V15 did not falsely certify any white temporally independent sensor noise shifts (0/3 here and 0/6 in the two earlier generators). However this is a small synthetic sample of scenarios, not evidence for a population false-positive probability of zero. Colored correlated errors still fool the procedure. Its sensitivity under 5 or 7 true latent factors is inadequate; no improvement in clinically meaningful concepts or outcome prediction is established. Reporting only the high 0.99 correlations of the one accepted K=3 regime would be selection bias.
+
+### Scientific verdict
+
+V15 is a **successful falsification study**, not yet a scientifically demonstrated general identifiable concept-learning method. Independent knowledge of measurement-error temporal structure or of genuine independent views is essential. Statistical bootstrap stability cannot authenticate those assumptions. A useful follow-up requires an actual source of auxiliary measurement information (instrument calibration, duplicated independently designed sensors, or controlled perturbations). Until that is present, the correct output for real unlabeled measurements is uncertainty/abstention, not invented concept names.
