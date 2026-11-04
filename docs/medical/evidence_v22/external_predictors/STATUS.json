@@ -1,0 +1,1791 @@
+{
+  "status": "V22E_FROZEN_EXTERNAL_PREDICTION_BASELINES_VS_NATIVE_CONCEPTFAN",
+  "n_predeclared_native_opportunities": 24,
+  "n_native_fits": 18,
+  "n_native_identifiability_abstentions": 6,
+  "n_external_training_fits": 8,
+  "n_total_registered_opportunities": 32,
+  "n_total_test_model_evaluations": 26,
+  "train_generator_seed": 522201,
+  "train_labels_available_per_family": 800,
+  "fresh_test_seed": 522323,
+  "fresh_test_patients_per_family": 300,
+  "all_native_and_external_fitted_before_any_fresh_test": true,
+  "no_test_hyperparameter_selection_or_optimizer_updates": true,
+  "same_raw_input_history_and_test_outcomes_per_family": true,
+  "no_latent_oracle_or_environment_in_external_features": true,
+  "known_source_truth_loaded_only_during_postfit_evaluation": true,
+  "native_bottleneck_is_train_native_not_posthoc_probe": true,
+  "external_predictors_do_not_certify_or_satisfy_concept_fidelity": true,
+  "not_an_official_concept_bottleneck_baseline": true,
+  "all_negative_and_nonidentifiable_cases_retained": true,
+  "no_physiological_causation_or_real_clinical_labels": true,
+  "per_case": [
+    {
+      "family": "mixed_distinct_variance",
+      "method": "native_pca_600fit_200screen",
+      "seed": 11,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [],
+      "source_risk_signed_initial_values": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "native_model_sha256_before_test": "47fe179b2b4f7f68252bce0884ed581797ee5e9d6687773a394f4292a0faa852",
+      "test_auprc": 0.7983922669164476,
+      "test_auroc": 0.8142312008978675,
+      "test_brier": 0.23593179481201312,
+      "test_logloss": 0.6649318550179281,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.6693463260702897,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.6585393171035233,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.6139419529756878,
+        "environment_1_oracle_alignment_eval_only": 0.6136503844615316
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 9.313225746154785e-09,
+      "native_model_sha256_after_test": "47fe179b2b4f7f68252bce0884ed581797ee5e9d6687773a394f4292a0faa852"
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "method": "native_pca_600fit_200screen",
+      "seed": 23,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [],
+      "source_risk_signed_initial_values": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "native_model_sha256_before_test": "84441dab5cca86208b6d199d0d32b1dee3925641914e0d8248a33c88f4b53fa4",
+      "test_auprc": 0.7979942126671375,
+      "test_auroc": 0.8139618406285073,
+      "test_brier": 0.23584543703217495,
+      "test_logloss": 0.6647583096944975,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.6692647696085512,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.6583308703430037,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.6139383972621005,
+        "environment_1_oracle_alignment_eval_only": 0.6137374994444198
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 2.546585164964199e-09,
+      "native_model_sha256_after_test": "84441dab5cca86208b6d199d0d32b1dee3925641914e0d8248a33c88f4b53fa4"
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "method": "native_pca_600fit_200screen",
+      "seed": 37,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [],
+      "source_risk_signed_initial_values": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "native_model_sha256_before_test": "b304b6e01d9366dc783209943db3214470dfe0c60d229fdf21402ed3090d2b03",
+      "test_auprc": 0.7983214525623923,
+      "test_auroc": 0.8137373737373736,
+      "test_brier": 0.23570543788632956,
+      "test_logloss": 0.6644764267278406,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.6701654462827364,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.65969844109379,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.615008667051869,
+        "environment_1_oracle_alignment_eval_only": 0.6139472865460687
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 2.60770320892334e-08,
+      "native_model_sha256_after_test": "b304b6e01d9366dc783209943db3214470dfe0c60d229fdf21402ed3090d2b03"
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "method": "native_environment_600fit_200screen",
+      "seed": 11,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [
+        1
+      ],
+      "source_risk_signed_initial_values": {
+        "0": 0.05
+      },
+      "native_model_sha256_before_test": "3d15b26af6f0b5ab06cac1bced25749377df1ecd366628924353cecfd0869da9",
+      "test_auprc": 0.7932243624141063,
+      "test_auroc": 0.8169696969696969,
+      "test_brier": 0.24221786114827196,
+      "test_logloss": 0.677570959473863,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9782870920788008,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9776384182046467,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.976651406729188,
+        "environment_1_oracle_alignment_eval_only": 0.9806124716654074
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 1.30385160446167e-08,
+      "native_model_sha256_after_test": "3d15b26af6f0b5ab06cac1bced25749377df1ecd366628924353cecfd0869da9"
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "method": "native_environment_600fit_200screen",
+      "seed": 23,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [
+        1
+      ],
+      "source_risk_signed_initial_values": {
+        "0": 0.05
+      },
+      "native_model_sha256_before_test": "3f9ebc747343c22076cddff2513226f7d8345cdb7c1eed8948ef78d6f5ea86b5",
+      "test_auprc": 0.7936272055118012,
+      "test_auroc": 0.8173737373737374,
+      "test_brier": 0.24201295554836405,
+      "test_logloss": 0.6771607996927229,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9789550995011055,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9781042011577906,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9771918751944532,
+        "environment_1_oracle_alignment_eval_only": 0.9808844837548336
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 4.540197551250458e-09,
+      "native_model_sha256_after_test": "3f9ebc747343c22076cddff2513226f7d8345cdb7c1eed8948ef78d6f5ea86b5"
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "method": "native_environment_600fit_200screen",
+      "seed": 37,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [
+        1
+      ],
+      "source_risk_signed_initial_values": {
+        "0": 0.05
+      },
+      "native_model_sha256_before_test": "e96dbf9f71f504a422ed65418111252eb30a9f9ddd8a5476fd5f4714978bbe07",
+      "test_auprc": 0.7921879674132136,
+      "test_auroc": 0.8164758698092032,
+      "test_brier": 0.24183756512682777,
+      "test_logloss": 0.6768090283505603,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9783302036689296,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9775121945799398,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9765269567536337,
+        "environment_1_oracle_alignment_eval_only": 0.9804791324058848
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 7.450580596923828e-09,
+      "native_model_sha256_after_test": "e96dbf9f71f504a422ed65418111252eb30a9f9ddd8a5476fd5f4714978bbe07"
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "method": "logistic_30_temporal_summaries",
+      "seed": null,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "model_input": "30_predeclared_observed_temporal_summary_features",
+      "source_alignment_only_for_native": null,
+      "predictor_sha256_before_test": "9a4f7f39ba2db6cd3e56a2ec179da7c8eaa18cdf4f24f7cc7159b003db9f4945",
+      "test_auprc": 0.7986745491503835,
+      "test_auroc": 0.8194837261503928,
+      "test_brier": 0.17297186615022844,
+      "test_logloss": 0.5067371968269039,
+      "real_clinical_semantics_certified": false,
+      "predictor_sha256_after_test": "9a4f7f39ba2db6cd3e56a2ec179da7c8eaa18cdf4f24f7cc7159b003db9f4945"
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "method": "hgb_30_temporal_summaries",
+      "seed": null,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "model_input": "30_predeclared_observed_temporal_summary_features",
+      "source_alignment_only_for_native": null,
+      "predictor_sha256_before_test": "2fef06a3056475a695122d8111e5d21a6ea59704bb6c2e3a9e90a919f0d62ec4",
+      "test_auprc": 0.7587826818268972,
+      "test_auroc": 0.7929517396184063,
+      "test_brier": 0.2026207930464334,
+      "test_logloss": 0.6204248020080596,
+      "real_clinical_semantics_certified": false,
+      "predictor_sha256_after_test": "2fef06a3056475a695122d8111e5d21a6ea59704bb6c2e3a9e90a919f0d62ec4"
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "method": "native_pca_600fit_200screen",
+      "seed": 11,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [],
+      "source_risk_signed_initial_values": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "native_model_sha256_before_test": "e1b0ce3fd8b6d7ed0873ae604c86f909e0e5a987946810ae8dd37d85fd9379a3",
+      "test_auprc": 0.845292809807315,
+      "test_auroc": 0.8455751424501424,
+      "test_brier": 0.2353186811197271,
+      "test_logloss": 0.6637261346892371,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.7003013366815186,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.6868414093489927,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.6848055469131962,
+        "environment_1_oracle_alignment_eval_only": 0.7184461531623628
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 1.30385160446167e-08,
+      "native_model_sha256_after_test": "e1b0ce3fd8b6d7ed0873ae604c86f909e0e5a987946810ae8dd37d85fd9379a3"
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "method": "native_pca_600fit_200screen",
+      "seed": 23,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [],
+      "source_risk_signed_initial_values": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "native_model_sha256_before_test": "82cbfbd1fe1cd032f8eeb1263fe52b32f7c65c1a5d54a7fcd1d2585ca63041db",
+      "test_auprc": 0.8451404472324948,
+      "test_auroc": 0.8457086894586895,
+      "test_brier": 0.23528517086132206,
+      "test_logloss": 0.6636592575058614,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.7003168924099157,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.6865640729341437,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.6849317747455443,
+        "environment_1_oracle_alignment_eval_only": 0.7184905995822036
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 8.469214662909508e-09,
+      "native_model_sha256_after_test": "82cbfbd1fe1cd032f8eeb1263fe52b32f7c65c1a5d54a7fcd1d2585ca63041db"
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "method": "native_pca_600fit_200screen",
+      "seed": 37,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [],
+      "source_risk_signed_initial_values": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "native_model_sha256_before_test": "3bee73586b31ca8f20cc6c376d141b042953f818b5712302f38c6d395e01a29c",
+      "test_auprc": 0.8445862512184594,
+      "test_auroc": 0.8448628917378916,
+      "test_brier": 0.23524780669912843,
+      "test_logloss": 0.6635836281735108,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.7002453360592895,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.6859836220402449,
+        "best_oracle_permutation_eval_only": [
+          0,
+          1
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.685040224009956,
+        "environment_1_oracle_alignment_eval_only": 0.7181456953642384
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 1.1175870895385742e-08,
+      "native_model_sha256_after_test": "3bee73586b31ca8f20cc6c376d141b042953f818b5712302f38c6d395e01a29c"
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "method": "native_environment_600fit_200screen",
+      "seed": 11,
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "test_evaluated": false,
+      "total_train_label_budget": 800,
+      "test_auprc": null,
+      "test_auroc": null,
+      "test_brier": null,
+      "test_logloss": null,
+      "source_alignment_only_for_native": null,
+      "real_clinical_semantics_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "method": "native_environment_600fit_200screen",
+      "seed": 23,
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "test_evaluated": false,
+      "total_train_label_budget": 800,
+      "test_auprc": null,
+      "test_auroc": null,
+      "test_brier": null,
+      "test_logloss": null,
+      "source_alignment_only_for_native": null,
+      "real_clinical_semantics_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "method": "native_environment_600fit_200screen",
+      "seed": 37,
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "trained": false,
+      "test_evaluated": false,
+      "total_train_label_budget": 800,
+      "test_auprc": null,
+      "test_auroc": null,
+      "test_brier": null,
+      "test_logloss": null,
+      "source_alignment_only_for_native": null,
+      "real_clinical_semantics_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "method": "logistic_30_temporal_summaries",
+      "seed": null,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "model_input": "30_predeclared_observed_temporal_summary_features",
+      "source_alignment_only_for_native": null,
+      "predictor_sha256_before_test": "aa27b2e30a747ca33ec289e2282511ca023a7aa6e4d08d59dfbce251abd795d1",
+      "test_auprc": 0.8473045718650896,
+      "test_auroc": 0.850338319088319,
+      "test_brier": 0.15890801694191312,
+      "test_logloss": 0.47864268404541443,
+      "real_clinical_semantics_certified": false,
+      "predictor_sha256_after_test": "aa27b2e30a747ca33ec289e2282511ca023a7aa6e4d08d59dfbce251abd795d1"
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "method": "hgb_30_temporal_summaries",
+      "seed": null,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "model_input": "30_predeclared_observed_temporal_summary_features",
+      "source_alignment_only_for_native": null,
+      "predictor_sha256_before_test": "61d7336db8962669f9b02c510dd0a320b13c23b7aeca3a171acf33d450ef8e24",
+      "test_auprc": 0.8069099842657576,
+      "test_auroc": 0.8144141737891738,
+      "test_brier": 0.191245936852527,
+      "test_logloss": 0.5948011114750444,
+      "real_clinical_semantics_certified": false,
+      "predictor_sha256_after_test": "61d7336db8962669f9b02c510dd0a320b13c23b7aeca3a171acf33d450ef8e24"
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "method": "native_pca_600fit_200screen",
+      "seed": 11,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [],
+      "source_risk_signed_initial_values": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "native_model_sha256_before_test": "228e57abfa9bfbbf88cb8909752ab22d54d17864b54cacf5fc797ffd5c39d470",
+      "test_auprc": 0.8116877618389742,
+      "test_auroc": 0.8202752661351387,
+      "test_brier": 0.2360648923149482,
+      "test_logloss": 0.6652203713026644,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.7094665496283292,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.6650998344426049,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.7512440552913463,
+        "environment_1_oracle_alignment_eval_only": 0.6652171207609228
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 1.0244548320770264e-08,
+      "native_model_sha256_after_test": "228e57abfa9bfbbf88cb8909752ab22d54d17864b54cacf5fc797ffd5c39d470"
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "method": "native_pca_600fit_200screen",
+      "seed": 23,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [],
+      "source_risk_signed_initial_values": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "native_model_sha256_before_test": "b557ba4a411f9f4ddabd2b51e0db901f85c0f598f8d7a1e2bcc0cdce5d18ce13",
+      "test_auprc": 0.8117564254065879,
+      "test_auroc": 0.8204979733642155,
+      "test_brier": 0.23599068254555702,
+      "test_logloss": 0.6650722561047901,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.7096538850431671,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.6653078367537416,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.7516707409218188,
+        "environment_1_oracle_alignment_eval_only": 0.6654606871416507
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 1.2092641554772854e-08,
+      "native_model_sha256_after_test": "b557ba4a411f9f4ddabd2b51e0db901f85c0f598f8d7a1e2bcc0cdce5d18ce13"
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "method": "native_pca_600fit_200screen",
+      "seed": 37,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [],
+      "source_risk_signed_initial_values": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "native_model_sha256_before_test": "2068140cc80406353f9e6701115f71300e02bf63e210e226b8f1a6b02cc5f42e",
+      "test_auprc": 0.8113459845516187,
+      "test_auroc": 0.8200080174602468,
+      "test_brier": 0.23603191547279115,
+      "test_logloss": 0.6651550492811485,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.709829664774053,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.6647931643684929,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.7515729587981689,
+        "environment_1_oracle_alignment_eval_only": 0.6657024756655852
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 1.6763806343078613e-08,
+      "native_model_sha256_after_test": "2068140cc80406353f9e6701115f71300e02bf63e210e226b8f1a6b02cc5f42e"
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "method": "native_environment_600fit_200screen",
+      "seed": 11,
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "test_evaluated": false,
+      "total_train_label_budget": 800,
+      "test_auprc": null,
+      "test_auroc": null,
+      "test_brier": null,
+      "test_logloss": null,
+      "source_alignment_only_for_native": null,
+      "real_clinical_semantics_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "method": "native_environment_600fit_200screen",
+      "seed": 23,
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "test_evaluated": false,
+      "total_train_label_budget": 800,
+      "test_auprc": null,
+      "test_auroc": null,
+      "test_brier": null,
+      "test_logloss": null,
+      "source_alignment_only_for_native": null,
+      "real_clinical_semantics_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "method": "native_environment_600fit_200screen",
+      "seed": 37,
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "trained": false,
+      "test_evaluated": false,
+      "total_train_label_budget": 800,
+      "test_auprc": null,
+      "test_auroc": null,
+      "test_brier": null,
+      "test_logloss": null,
+      "source_alignment_only_for_native": null,
+      "real_clinical_semantics_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "method": "logistic_30_temporal_summaries",
+      "seed": null,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "model_input": "30_predeclared_observed_temporal_summary_features",
+      "source_alignment_only_for_native": null,
+      "predictor_sha256_before_test": "8e7f1b61d4104417041080147d87c2d2d09c7f4777b1781836f2acc5ee7b684a",
+      "test_auprc": 0.8083662014900099,
+      "test_auroc": 0.8210324707139994,
+      "test_brier": 0.17298898041418712,
+      "test_logloss": 0.5154768167478471,
+      "real_clinical_semantics_certified": false,
+      "predictor_sha256_after_test": "8e7f1b61d4104417041080147d87c2d2d09c7f4777b1781836f2acc5ee7b684a"
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "method": "hgb_30_temporal_summaries",
+      "seed": null,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "model_input": "30_predeclared_observed_temporal_summary_features",
+      "source_alignment_only_for_native": null,
+      "predictor_sha256_before_test": "38e5e30b2b1d4a546d46f407771ad2bb58ce0a7524eab756c87c4a0748429081",
+      "test_auprc": 0.7659625523579381,
+      "test_auroc": 0.7702552224845217,
+      "test_brier": 0.209834793081229,
+      "test_logloss": 0.6524645108712551,
+      "real_clinical_semantics_certified": false,
+      "predictor_sha256_after_test": "38e5e30b2b1d4a546d46f407771ad2bb58ce0a7524eab756c87c4a0748429081"
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "method": "native_pca_600fit_200screen",
+      "seed": 11,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [],
+      "source_risk_signed_initial_values": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "native_model_sha256_before_test": "9252f79a57780781cb00c89a955e71020f6407cdbab5c59b6b88e1caf9537d2c",
+      "test_auprc": 0.802801822926535,
+      "test_auroc": 0.8179591109527415,
+      "test_brier": 0.23572256682789658,
+      "test_logloss": 0.664529384848591,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.7027066967410749,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.7026415849064989,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.7003137917240767,
+        "environment_1_oracle_alignment_eval_only": 0.6907809235966044
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 1.7695128917694092e-08,
+      "native_model_sha256_after_test": "9252f79a57780781cb00c89a955e71020f6407cdbab5c59b6b88e1caf9537d2c"
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "method": "native_pca_600fit_200screen",
+      "seed": 23,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [],
+      "source_risk_signed_initial_values": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "native_model_sha256_before_test": "cacf0ca3326a6d279e2ad4955bcd80389f1d203024b1a992fb4d3365445b1297",
+      "test_auprc": 0.8025975722297873,
+      "test_auroc": 0.8177809451694802,
+      "test_brier": 0.2356748705540945,
+      "test_logloss": 0.6644350287450416,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.702624918054645,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.7026082512027911,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.700272901017823,
+        "environment_1_oracle_alignment_eval_only": 0.6906884750433352
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 6.300979293882847e-09,
+      "native_model_sha256_after_test": "cacf0ca3326a6d279e2ad4955bcd80389f1d203024b1a992fb4d3365445b1297"
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "method": "native_pca_600fit_200screen",
+      "seed": 37,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [],
+      "source_risk_signed_initial_values": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "native_model_sha256_before_test": "c29b0878db4d1c0f38d864abc6f5931eff0a531c87557dde369a097a8b47c5cd",
+      "test_auprc": 0.801775624270571,
+      "test_auroc": 0.8176027793862187,
+      "test_brier": 0.23567434296492276,
+      "test_logloss": 0.6644338248721279,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.7029453660596229,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.7020869120768009,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.7001004489088405,
+        "environment_1_oracle_alignment_eval_only": 0.6909942664118406
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 1.862645149230957e-08,
+      "native_model_sha256_after_test": "c29b0878db4d1c0f38d864abc6f5931eff0a531c87557dde369a097a8b47c5cd"
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "method": "native_environment_600fit_200screen",
+      "seed": 11,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [
+        0
+      ],
+      "source_risk_signed_initial_values": {
+        "1": 0.05
+      },
+      "native_model_sha256_before_test": "39e74fbbdc47e62e8d254805f135370f0cfe0483cabc1ee9c2d89af6e780af21",
+      "test_auprc": 0.8097239525109023,
+      "test_auroc": 0.8190281056523094,
+      "test_brier": 0.2415748504298908,
+      "test_logloss": 0.6762845249779559,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9785399837775975,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9784090934343715,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9788470598693275,
+        "environment_1_oracle_alignment_eval_only": 0.9780772478776835
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 1.30385160446167e-08,
+      "native_model_sha256_after_test": "39e74fbbdc47e62e8d254805f135370f0cfe0483cabc1ee9c2d89af6e780af21"
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "method": "native_environment_600fit_200screen",
+      "seed": 23,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [
+        0
+      ],
+      "source_risk_signed_initial_values": {
+        "1": 0.05
+      },
+      "native_model_sha256_before_test": "ea9619c523f49134c1e51b0ae484d62bd02f67dfb6bd304c8a737e2bbe4ea782",
+      "test_auprc": 0.8097761094392206,
+      "test_auroc": 0.8190281056523094,
+      "test_brier": 0.2414875508088242,
+      "test_logloss": 0.6761105175428321,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.9785106501183346,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9784557606195624,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9789928441264057,
+        "environment_1_oracle_alignment_eval_only": 0.9779687986132717
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 5.296897143125534e-09,
+      "native_model_sha256_after_test": "ea9619c523f49134c1e51b0ae484d62bd02f67dfb6bd304c8a737e2bbe4ea782"
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "method": "native_environment_600fit_200screen",
+      "seed": 37,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "trained_native_model_fit_episodes": 600,
+      "trained_task_risk_screen_episodes": 200,
+      "source_basis_and_whitener_fit_episodes": 600,
+      "descriptive_only_source_slots": [
+        0
+      ],
+      "source_risk_signed_initial_values": {
+        "1": 0.05
+      },
+      "native_model_sha256_before_test": "fa9202e62e61e5d9dbaa4e6fdd367d6d4b7e1634e386470fc7a9cdcc4519d01e",
+      "test_auprc": 0.8095345504829933,
+      "test_auroc": 0.8188499398690481,
+      "test_brier": 0.24144358977823213,
+      "test_logloss": 0.6760224839774638,
+      "source_alignment_only_for_native": {
+        "mean_abs_oracle_source_spearman_eval_only": 0.980480227558084,
+        "worst_of_two_oracle_source_abs_spearman_eval_only": 0.9780593117701308,
+        "best_oracle_permutation_eval_only": [
+          1,
+          0
+        ],
+        "frozen_assignment_never_used_in_model": true,
+        "environment_0_oracle_alignment_eval_only": 0.9807884794879773,
+        "environment_1_oracle_alignment_eval_only": 0.9795368683052581
+      },
+      "real_clinical_semantics_certified": false,
+      "max_native_logit_decomposition_error": 1.30385160446167e-08,
+      "native_model_sha256_after_test": "fa9202e62e61e5d9dbaa4e6fdd367d6d4b7e1634e386470fc7a9cdcc4519d01e"
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "method": "logistic_30_temporal_summaries",
+      "seed": null,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "model_input": "30_predeclared_observed_temporal_summary_features",
+      "source_alignment_only_for_native": null,
+      "predictor_sha256_before_test": "e4984543a39abd3f9fa272acd8e7a4ca42be15292f8c060e2bfb91c794accb0c",
+      "test_auprc": 0.8016813697925285,
+      "test_auroc": 0.8156874972161596,
+      "test_brier": 0.17603453777424657,
+      "test_logloss": 0.5244725115863704,
+      "real_clinical_semantics_certified": false,
+      "predictor_sha256_after_test": "e4984543a39abd3f9fa272acd8e7a4ca42be15292f8c060e2bfb91c794accb0c"
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "method": "hgb_30_temporal_summaries",
+      "seed": null,
+      "status": "TRAINED",
+      "trained": true,
+      "test_evaluated": true,
+      "total_train_label_budget": 800,
+      "model_input": "30_predeclared_observed_temporal_summary_features",
+      "source_alignment_only_for_native": null,
+      "predictor_sha256_before_test": "6c6e7eb9bfea829682ac359da29c8f38b731fadeb31373b2be341b59de33da39",
+      "test_auprc": 0.7814237300400958,
+      "test_auroc": 0.7873145962317937,
+      "test_brier": 0.20141767084586454,
+      "test_logloss": 0.6354718574172568,
+      "real_clinical_semantics_certified": false,
+      "predictor_sha256_after_test": "6c6e7eb9bfea829682ac359da29c8f38b731fadeb31373b2be341b59de33da39"
+    }
+  ],
+  "summary": [
+    {
+      "family": "mixed_distinct_variance",
+      "method": "native_pca_600fit_200screen",
+      "n_registered": 3,
+      "n_fitted_and_test_evaluated": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.7982359773819926,
+      "mean_test_auroc": 0.8139768050879161,
+      "mean_test_brier": 0.2358275565768392,
+      "mean_test_logloss": 0.6647221971467553,
+      "mean_postfit_intrinsic_source_alignment": 0.6695921806538591,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "method": "native_environment_600fit_200screen",
+      "n_registered": 3,
+      "n_fitted_and_test_evaluated": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.7930131784463738,
+      "mean_test_auroc": 0.8169397680508791,
+      "mean_test_brier": 0.24202279394115458,
+      "mean_test_logloss": 0.6771802625057154,
+      "mean_postfit_intrinsic_source_alignment": 0.978524131749612,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "method": "logistic_30_temporal_summaries",
+      "n_registered": 1,
+      "n_fitted_and_test_evaluated": 1,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.7986745491503835,
+      "mean_test_auroc": 0.8194837261503928,
+      "mean_test_brier": 0.17297186615022844,
+      "mean_test_logloss": 0.5067371968269039,
+      "mean_postfit_intrinsic_source_alignment": null,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_distinct_variance",
+      "method": "hgb_30_temporal_summaries",
+      "n_registered": 1,
+      "n_fitted_and_test_evaluated": 1,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.7587826818268972,
+      "mean_test_auroc": 0.7929517396184063,
+      "mean_test_brier": 0.2026207930464334,
+      "mean_test_logloss": 0.6204248020080596,
+      "mean_postfit_intrinsic_source_alignment": null,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "method": "native_pca_600fit_200screen",
+      "n_registered": 3,
+      "n_fitted_and_test_evaluated": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.8450065027527565,
+      "mean_test_auroc": 0.8453822412155745,
+      "mean_test_brier": 0.23528388622672583,
+      "mean_test_logloss": 0.6636563401228698,
+      "mean_postfit_intrinsic_source_alignment": 0.7002878550502413,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "method": "native_environment_600fit_200screen",
+      "n_registered": 3,
+      "n_fitted_and_test_evaluated": 0,
+      "n_source_identifiability_abstentions": 3,
+      "mean_test_auprc": null,
+      "mean_test_auroc": null,
+      "mean_test_brier": null,
+      "mean_test_logloss": null,
+      "mean_postfit_intrinsic_source_alignment": null,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "method": "logistic_30_temporal_summaries",
+      "n_registered": 1,
+      "n_fitted_and_test_evaluated": 1,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.8473045718650896,
+      "mean_test_auroc": 0.850338319088319,
+      "mean_test_brier": 0.15890801694191312,
+      "mean_test_logloss": 0.47864268404541443,
+      "mean_postfit_intrinsic_source_alignment": null,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_proportional_variance",
+      "method": "hgb_30_temporal_summaries",
+      "n_registered": 1,
+      "n_fitted_and_test_evaluated": 1,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.8069099842657576,
+      "mean_test_auroc": 0.8144141737891738,
+      "mean_test_brier": 0.191245936852527,
+      "mean_test_logloss": 0.5948011114750444,
+      "mean_postfit_intrinsic_source_alignment": null,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "method": "native_pca_600fit_200screen",
+      "n_registered": 3,
+      "n_fitted_and_test_evaluated": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.8115967239323935,
+      "mean_test_auroc": 0.8202604189865337,
+      "mean_test_brier": 0.23602916344443212,
+      "mean_test_logloss": 0.6651492255628676,
+      "mean_postfit_intrinsic_source_alignment": 0.7096500331485164,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "method": "native_environment_600fit_200screen",
+      "n_registered": 3,
+      "n_fitted_and_test_evaluated": 0,
+      "n_source_identifiability_abstentions": 3,
+      "mean_test_auprc": null,
+      "mean_test_auroc": null,
+      "mean_test_brier": null,
+      "mean_test_logloss": null,
+      "mean_postfit_intrinsic_source_alignment": null,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "method": "logistic_30_temporal_summaries",
+      "n_registered": 1,
+      "n_fitted_and_test_evaluated": 1,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.8083662014900099,
+      "mean_test_auroc": 0.8210324707139994,
+      "mean_test_brier": 0.17298898041418712,
+      "mean_test_logloss": 0.5154768167478471,
+      "mean_postfit_intrinsic_source_alignment": null,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_sensor_gain_drift",
+      "method": "hgb_30_temporal_summaries",
+      "n_registered": 1,
+      "n_fitted_and_test_evaluated": 1,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.7659625523579381,
+      "mean_test_auroc": 0.7702552224845217,
+      "mean_test_brier": 0.209834793081229,
+      "mean_test_logloss": 0.6524645108712551,
+      "mean_postfit_intrinsic_source_alignment": null,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "method": "native_pca_600fit_200screen",
+      "n_registered": 3,
+      "n_fitted_and_test_evaluated": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.8023916731422979,
+      "mean_test_auroc": 0.8177809451694801,
+      "mean_test_brier": 0.23569059344897128,
+      "mean_test_logloss": 0.6644660794885868,
+      "mean_postfit_intrinsic_source_alignment": 0.7027589936184476,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "method": "native_environment_600fit_200screen",
+      "n_registered": 3,
+      "n_fitted_and_test_evaluated": 3,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.8096782041443721,
+      "mean_test_auroc": 0.818968717057889,
+      "mean_test_brier": 0.24150199700564903,
+      "mean_test_logloss": 0.6761391754994173,
+      "mean_postfit_intrinsic_source_alignment": 0.9791769538180054,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "method": "logistic_30_temporal_summaries",
+      "n_registered": 1,
+      "n_fitted_and_test_evaluated": 1,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.8016813697925285,
+      "mean_test_auroc": 0.8156874972161596,
+      "mean_test_brier": 0.17603453777424657,
+      "mean_test_logloss": 0.5244725115863704,
+      "mean_postfit_intrinsic_source_alignment": null,
+      "physiological_mechanism_certified": false
+    },
+    {
+      "family": "mixed_artifact_only_variance",
+      "method": "hgb_30_temporal_summaries",
+      "n_registered": 1,
+      "n_fitted_and_test_evaluated": 1,
+      "n_source_identifiability_abstentions": 0,
+      "mean_test_auprc": 0.7814237300400958,
+      "mean_test_auroc": 0.7873145962317937,
+      "mean_test_brier": 0.20141767084586454,
+      "mean_test_logloss": 0.6354718574172568,
+      "mean_postfit_intrinsic_source_alignment": null,
+      "physiological_mechanism_certified": false
+    }
+  ],
+  "TRAIN_source_proposal": {
+    "mixed_distinct_variance": {
+      "candidate_id": "mixed-observable-environments-bfa247e23cb8648f",
+      "status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "source_vectors_whitened": [
+        [
+          -0.7125833186702055,
+          0.701587495579102
+        ],
+        [
+          -0.701587495579102,
+          -0.7125833186702055
+        ]
+      ],
+      "source_filters_original_sensor_space": [
+        [
+          0.3966389170700374,
+          -0.24921550703595177
+        ],
+        [
+          0.10559435816818993,
+          -0.5803671158636522
+        ],
+        [
+          0.6634465923757733,
+          0.733446903716316
+        ],
+        [
+          0.4386840572130923,
+          0.0490208715205191
+        ],
+        [
+          0.6037666303350282,
+          0.4964641743051617
+        ]
+      ],
+      "environment_contrast_eigenvalues": [
+        1.527136118751751,
+        -1.4995615149898462
+      ],
+      "contrast_eigen_gap_standardized": 1.5137546168053444,
+      "environment_permutation_p": 0.005,
+      "bootstrap_min_direction_cosine_q10": 0.9999605225218969,
+      "environment_sensor_subspace_min_cosine": 0.9999975569265726,
+      "train_sample_count": 600,
+      "environment_counts": [
+        302,
+        298
+      ],
+      "source_whitener": {
+        "train_centered_sensor_means": [
+          -0.028722255239418803,
+          -0.026819365130668554,
+          -0.00433376319788724,
+          -0.019383662221530484,
+          -0.010833860604180833
+        ],
+        "train_rank_two_projection": [
+          [
+            -0.4574847592803531,
+            -0.1006900914086182
+          ],
+          [
+            -0.4824230895115853,
+            0.3394762441746738
+          ],
+          [
+            0.041816201763009375,
+            -0.9881078619139672
+          ],
+          [
+            -0.27820651085542963,
+            -0.34270670436281014
+          ],
+          [
+            -0.08192097245095635,
+            -0.7773672070182213
+          ]
+        ],
+        "pooled_train_eigenvalues": [
+          1.8943597214804657,
+          0.5483997247588372
+        ],
+        "train_only": true
+      },
+      "source_origin_known_physically": false,
+      "oracle_latent_states_used_for_fit": false,
+      "task_labels_used_for_source_fit": false,
+      "external_source_identity_verified": false,
+      "source_identification_up_to_sign_and_permutation_only": true,
+      "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+      "source_task_outcome_predictive_status_known": false,
+      "declared_environment_mixing_change_can_escape_detection": true
+    },
+    "mixed_proportional_variance": {
+      "candidate_id": "mixed-observable-environments-69cb0274a64ef427",
+      "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+      "source_vectors_whitened": [
+        [
+          -0.8505291241541769,
+          0.5259279503558719
+        ],
+        [
+          -0.5259279503558719,
+          -0.8505291241541769
+        ]
+      ],
+      "source_filters_original_sensor_space": [
+        [
+          0.43595257459714337,
+          -0.15899627798633736
+        ],
+        [
+          0.22336054846461265,
+          -0.5463660806848915
+        ],
+        [
+          0.4890399390198454,
+          0.8616844528873822
+        ],
+        [
+          0.41434946646429516,
+          0.14252187409578074
+        ],
+        [
+          0.4805362880978984,
+          0.6160996703713512
+        ]
+      ],
+      "environment_contrast_eigenvalues": [
+        1.010812200410172,
+        0.9316019663744959
+      ],
+      "contrast_eigen_gap_standardized": 0.0394839518805159,
+      "environment_permutation_p": 0.405,
+      "bootstrap_min_direction_cosine_q10": 0.7931980518955705,
+      "environment_sensor_subspace_min_cosine": 0.9999985603977477,
+      "train_sample_count": 600,
+      "environment_counts": [
+        302,
+        298
+      ],
+      "source_whitener": {
+        "train_centered_sensor_means": [
+          -0.02375762524618848,
+          -0.019944953252783712,
+          -0.008465750524452838,
+          -0.017405042358172473,
+          -0.012741611074520228
+        ],
+        "train_rank_two_projection": [
+          [
+            -0.4544109480404338,
+            -0.09404867895074748
+          ],
+          [
+            -0.47732384461477956,
+            0.347228708628114
+          ],
+          [
+            0.03724122714962059,
+            -0.9900874957824444
+          ],
+          [
+            -0.2774600516815559,
+            -0.3391369703761122
+          ],
+          [
+            -0.08468607138687172,
+            -0.776738178103569
+          ]
+        ],
+        "pooled_train_eigenvalues": [
+          1.9235575080046208,
+          0.5470392900070375
+        ],
+        "train_only": true
+      },
+      "source_origin_known_physically": false,
+      "oracle_latent_states_used_for_fit": false,
+      "task_labels_used_for_source_fit": false,
+      "external_source_identity_verified": false,
+      "source_identification_up_to_sign_and_permutation_only": true,
+      "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+      "source_task_outcome_predictive_status_known": false,
+      "declared_environment_mixing_change_can_escape_detection": true
+    },
+    "mixed_sensor_gain_drift": {
+      "candidate_id": "mixed-observable-environments-d8eb4557926b24cf",
+      "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+      "source_vectors_whitened": [
+        [
+          -0.9635420845020616,
+          -0.2675568190000436
+        ],
+        [
+          0.2675568190000436,
+          -0.9635420845020616
+        ]
+      ],
+      "source_filters_original_sensor_space": [
+        [
+          0.2854332090825917,
+          0.327364948850019
+        ],
+        [
+          0.6050806078940226,
+          -0.17824601876263632
+        ],
+        [
+          -0.3234821036621686,
+          0.9860040096064402
+        ],
+        [
+          0.0896510550890384,
+          0.48554495698087924
+        ],
+        [
+          -0.17511966762862327,
+          0.8314088465721424
+        ]
+      ],
+      "environment_contrast_eigenvalues": [
+        0.6496862312898921,
+        -0.00034148216881837307
+      ],
+      "contrast_eigen_gap_standardized": 0.32467905779669953,
+      "environment_permutation_p": 0.005,
+      "bootstrap_min_direction_cosine_q10": 0.9987904867805367,
+      "environment_sensor_subspace_min_cosine": 0.9711041631959062,
+      "train_sample_count": 600,
+      "environment_counts": [
+        302,
+        298
+      ],
+      "source_whitener": {
+        "train_centered_sensor_means": [
+          -0.0224133925669499,
+          -0.024676341534258357,
+          -0.005534069133832417,
+          -0.015727240335144946,
+          -0.010177480273320133
+        ],
+        "train_rank_two_projection": [
+          [
+            -0.36261563363197624,
+            -0.23906030374874548
+          ],
+          [
+            -0.535329692442428,
+            0.3336409831594815
+          ],
+          [
+            0.04787652413017038,
+            -1.0366062014028723
+          ],
+          [
+            -0.21629342866961826,
+            -0.4438562488491994
+          ],
+          [
+            -0.05371393669314587,
+            -0.8479518743146361
+          ]
+        ],
+        "pooled_train_eigenvalues": [
+          2.1275320438222702,
+          0.46316682025191513
+        ],
+        "train_only": true
+      },
+      "source_origin_known_physically": false,
+      "oracle_latent_states_used_for_fit": false,
+      "task_labels_used_for_source_fit": false,
+      "external_source_identity_verified": false,
+      "source_identification_up_to_sign_and_permutation_only": true,
+      "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+      "source_task_outcome_predictive_status_known": false,
+      "declared_environment_mixing_change_can_escape_detection": true
+    },
+    "mixed_artifact_only_variance": {
+      "candidate_id": "mixed-observable-environments-4bc89e16cf8d6f50",
+      "status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+      "source_vectors_whitened": [
+        [
+          0.7728186395355215,
+          -0.6346269379615601
+        ],
+        [
+          -0.6346269379615601,
+          -0.7728186395355215
+        ]
+      ],
+      "source_filters_original_sensor_space": [
+        [
+          -0.2533903542666499,
+          0.43396160755890434
+        ],
+        [
+          -0.5807262241392047,
+          0.10570661335939703
+        ],
+        [
+          0.7246007510067498,
+          0.747921173449848
+        ],
+        [
+          0.04400090257737869,
+          0.4860808702782363
+        ],
+        [
+          0.4880703831968627,
+          0.6766914197744078
+        ]
+      ],
+      "environment_contrast_eigenvalues": [
+        1.5924523586403028,
+        0.05974927762995397
+      ],
+      "contrast_eigen_gap_standardized": 0.7642736187298645,
+      "environment_permutation_p": 0.005,
+      "bootstrap_min_direction_cosine_q10": 0.9996158532627306,
+      "environment_sensor_subspace_min_cosine": 0.9999979988939102,
+      "train_sample_count": 600,
+      "environment_counts": [
+        302,
+        298
+      ],
+      "source_whitener": {
+        "train_centered_sensor_means": [
+          -0.018614197730506325,
+          -0.01472943621477662,
+          -0.008473068742507684,
+          -0.014150216414897032,
+          -0.01146777285179013
+        ],
+        "train_rank_two_projection": [
+          [
+            -0.4712285150537598,
+            -0.17456527452708134
+          ],
+          [
+            -0.5158803148404211,
+            0.28685246429312544
+          ],
+          [
+            0.08533404245635966,
+            -1.0378585796013826
+          ],
+          [
+            -0.27447529663818254,
+            -0.4035765149428956
+          ],
+          [
+            -0.052256714136513054,
+            -0.8327023552133684
+          ]
+        ],
+        "pooled_train_eigenvalues": [
+          1.743563136041068,
+          0.48871674759724687
+        ],
+        "train_only": true
+      },
+      "source_origin_known_physically": false,
+      "oracle_latent_states_used_for_fit": false,
+      "task_labels_used_for_source_fit": false,
+      "external_source_identity_verified": false,
+      "source_identification_up_to_sign_and_permutation_only": true,
+      "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+      "source_task_outcome_predictive_status_known": false,
+      "declared_environment_mixing_change_can_escape_detection": true
+    }
+  },
+  "TRAIN_source_risk_screens": {
+    "mixed_distinct_variance__native_pca_600fit_200screen": {
+      "initial_native_raw_risk_weights": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "permanent_native_descriptive_no_risk_slots": [],
+      "source_screens": [
+        {
+          "slot": 0,
+          "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": -0.4111904736075769,
+          "permutation_p_two_sided": 0.005,
+          "bootstrap_95pct_ci": [
+            -0.5075956351330136,
+            -0.30394130460583796
+          ],
+          "two_split_correlations": [
+            -0.5326299350624644,
+            -0.29381854050255984
+          ],
+          "train_only_signed_orientation": -1,
+          "physical_source_or_clinical_cause_certified": false
+        },
+        {
+          "slot": 1,
+          "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": -0.37842667260723517,
+          "permutation_p_two_sided": 0.005,
+          "bootstrap_95pct_ci": [
+            -0.4806469998403885,
+            -0.25661917839640663
+          ],
+          "two_split_correlations": [
+            -0.49070456713360894,
+            -0.27188789363947097
+          ],
+          "train_only_signed_orientation": -1,
+          "physical_source_or_clinical_cause_certified": false
+        }
+      ],
+      "outcome_cohort_disjoint_from_unmixing_and_model_fit": true,
+      "artifact_cannot_be_identified_by_risk_screen": true,
+      "risk_screen_negative_is_not_nonphysical_label": true,
+      "neural_inference_uses_only_existing_native_concept_weights": true,
+      "no_clinical_or_causal_source_label_proven": true
+    },
+    "mixed_distinct_variance__native_environment_600fit_200screen": {
+      "initial_native_raw_risk_weights": {
+        "0": 0.05
+      },
+      "permanent_native_descriptive_no_risk_slots": [
+        1
+      ],
+      "source_screens": [
+        {
+          "slot": 0,
+          "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": 0.5411701906515618,
+          "permutation_p_two_sided": 0.005,
+          "bootstrap_95pct_ci": [
+            0.47812639038132304,
+            0.6183090409457618
+          ],
+          "two_split_correlations": [
+            0.5441014327744853,
+            0.5427168026309721
+          ],
+          "train_only_signed_orientation": 1,
+          "physical_source_or_clinical_cause_certified": false
+        },
+        {
+          "slot": 1,
+          "status": "ABSTAIN_NO_STABLE_PREDICTIVE_ASSOCIATION",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": -0.034752028049170755,
+          "permutation_p_two_sided": 0.585,
+          "bootstrap_95pct_ci": [
+            -0.17511564356131804,
+            0.10070872914143597
+          ],
+          "two_split_correlations": [
+            0.05625188071639642,
+            -0.1131830734097797
+          ],
+          "train_only_signed_orientation": 0,
+          "physical_source_or_clinical_cause_certified": false
+        }
+      ],
+      "outcome_cohort_disjoint_from_unmixing_and_model_fit": true,
+      "artifact_cannot_be_identified_by_risk_screen": true,
+      "risk_screen_negative_is_not_nonphysical_label": true,
+      "neural_inference_uses_only_existing_native_concept_weights": true,
+      "no_clinical_or_causal_source_label_proven": true
+    },
+    "mixed_proportional_variance__native_pca_600fit_200screen": {
+      "initial_native_raw_risk_weights": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "permanent_native_descriptive_no_risk_slots": [],
+      "source_screens": [
+        {
+          "slot": 0,
+          "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": -0.43996700872143274,
+          "permutation_p_two_sided": 0.005,
+          "bootstrap_95pct_ci": [
+            -0.5358518837525811,
+            -0.34084177777852476
+          ],
+          "two_split_correlations": [
+            -0.5243745437333006,
+            -0.3488985031952454
+          ],
+          "train_only_signed_orientation": -1,
+          "physical_source_or_clinical_cause_certified": false
+        },
+        {
+          "slot": 1,
+          "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": -0.3398081011046101,
+          "permutation_p_two_sided": 0.005,
+          "bootstrap_95pct_ci": [
+            -0.4468273776927662,
+            -0.228275062494251
+          ],
+          "two_split_correlations": [
+            -0.39184345511482066,
+            -0.2829616276212341
+          ],
+          "train_only_signed_orientation": -1,
+          "physical_source_or_clinical_cause_certified": false
+        }
+      ],
+      "outcome_cohort_disjoint_from_unmixing_and_model_fit": true,
+      "artifact_cannot_be_identified_by_risk_screen": true,
+      "risk_screen_negative_is_not_nonphysical_label": true,
+      "neural_inference_uses_only_existing_native_concept_weights": true,
+      "no_clinical_or_causal_source_label_proven": true
+    },
+    "mixed_proportional_variance__native_environment_600fit_200screen": null,
+    "mixed_sensor_gain_drift__native_pca_600fit_200screen": {
+      "initial_native_raw_risk_weights": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "permanent_native_descriptive_no_risk_slots": [],
+      "source_screens": [
+        {
+          "slot": 0,
+          "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": -0.4134956769886295,
+          "permutation_p_two_sided": 0.005,
+          "bootstrap_95pct_ci": [
+            -0.5110047073044875,
+            -0.3072521727965072
+          ],
+          "two_split_correlations": [
+            -0.47934806424148824,
+            -0.34434448868275075
+          ],
+          "train_only_signed_orientation": -1,
+          "physical_source_or_clinical_cause_certified": false
+        },
+        {
+          "slot": 1,
+          "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": -0.37302329879820045,
+          "permutation_p_two_sided": 0.005,
+          "bootstrap_95pct_ci": [
+            -0.47804609952860283,
+            -0.26430316065839843
+          ],
+          "two_split_correlations": [
+            -0.4247295574221543,
+            -0.3162441538068149
+          ],
+          "train_only_signed_orientation": -1,
+          "physical_source_or_clinical_cause_certified": false
+        }
+      ],
+      "outcome_cohort_disjoint_from_unmixing_and_model_fit": true,
+      "artifact_cannot_be_identified_by_risk_screen": true,
+      "risk_screen_negative_is_not_nonphysical_label": true,
+      "neural_inference_uses_only_existing_native_concept_weights": true,
+      "no_clinical_or_causal_source_label_proven": true
+    },
+    "mixed_sensor_gain_drift__native_environment_600fit_200screen": null,
+    "mixed_artifact_only_variance__native_pca_600fit_200screen": {
+      "initial_native_raw_risk_weights": {
+        "0": -0.05,
+        "1": -0.05
+      },
+      "permanent_native_descriptive_no_risk_slots": [],
+      "source_screens": [
+        {
+          "slot": 0,
+          "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": -0.4078346597638291,
+          "permutation_p_two_sided": 0.005,
+          "bootstrap_95pct_ci": [
+            -0.5058604214240255,
+            -0.2942724933628119
+          ],
+          "two_split_correlations": [
+            -0.45386198670780387,
+            -0.3586983221407303
+          ],
+          "train_only_signed_orientation": -1,
+          "physical_source_or_clinical_cause_certified": false
+        },
+        {
+          "slot": 1,
+          "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": -0.36112354772772287,
+          "permutation_p_two_sided": 0.005,
+          "bootstrap_95pct_ci": [
+            -0.47148720385834897,
+            -0.2390264570899301
+          ],
+          "two_split_correlations": [
+            -0.39531745510131977,
+            -0.32131826678846637
+          ],
+          "train_only_signed_orientation": -1,
+          "physical_source_or_clinical_cause_certified": false
+        }
+      ],
+      "outcome_cohort_disjoint_from_unmixing_and_model_fit": true,
+      "artifact_cannot_be_identified_by_risk_screen": true,
+      "risk_screen_negative_is_not_nonphysical_label": true,
+      "neural_inference_uses_only_existing_native_concept_weights": true,
+      "no_clinical_or_causal_source_label_proven": true
+    },
+    "mixed_artifact_only_variance__native_environment_600fit_200screen": {
+      "initial_native_raw_risk_weights": {
+        "1": 0.05
+      },
+      "permanent_native_descriptive_no_risk_slots": [
+        0
+      ],
+      "source_screens": [
+        {
+          "slot": 0,
+          "status": "ABSTAIN_NO_STABLE_PREDICTIVE_ASSOCIATION",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": -0.09668290745648503,
+          "permutation_p_two_sided": 0.145,
+          "bootstrap_95pct_ci": [
+            -0.25361604412254773,
+            0.02357935944708701
+          ],
+          "two_split_correlations": [
+            -0.12438352704085522,
+            -0.06820499223951677
+          ],
+          "train_only_signed_orientation": 0,
+          "physical_source_or_clinical_cause_certified": false
+        },
+        {
+          "slot": 1,
+          "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
+          "n_disjoint_screen_episodes": 200,
+          "observed_point_biserial_r": 0.5597597889025517,
+          "permutation_p_two_sided": 0.005,
+          "bootstrap_95pct_ci": [
+            0.475898053192857,
+            0.6397014538815887
+          ],
+          "two_split_correlations": [
+            0.5810757195306244,
+            0.5352199365903816
+          ],
+          "train_only_signed_orientation": 1,
+          "physical_source_or_clinical_cause_certified": false
+        }
+      ],
+      "outcome_cohort_disjoint_from_unmixing_and_model_fit": true,
+      "artifact_cannot_be_identified_by_risk_screen": true,
+      "risk_screen_negative_is_not_nonphysical_label": true,
+      "neural_inference_uses_only_existing_native_concept_weights": true,
+      "no_clinical_or_causal_source_label_proven": true
+    }
+  }
+}
