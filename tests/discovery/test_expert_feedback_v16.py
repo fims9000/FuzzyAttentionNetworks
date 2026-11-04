@@ -167,3 +167,22 @@ def test_real_fit_multiscale_accepts_review_and_preserves_bottleneck():
     with torch.no_grad():
         out = model(values, mask, process_mask=mask)
     assert float(out.decomposition_error()) < 1e-6
+
+
+def test_reliability_roundoff_tolerated_but_real_invalid_refused():
+    p = prepare_feedback(
+        [ExpertReview(1, 0, 2, 5, "yes")], [1], n_slots=2, n_steps=12,
+    )
+    raw = torch.full((1, 12, 2), .25, requires_grad=True)
+    rounded = torch.full_like(raw, 1.0 + 2e-7)
+    loss, stats = native_expert_loss(
+        MockOutput(raw, rounded), torch.tensor([1]), p,
+    )
+    loss.backward()
+    assert stats["supervised_slots"] == 1
+    assert float(raw.grad.abs().sum()) > 0
+    with pytest.raises(ValueError, match="reliability"):
+        native_expert_loss(
+            MockOutput(raw, torch.full_like(raw, 1.01)),
+            torch.tensor([1]), p,
+        )
