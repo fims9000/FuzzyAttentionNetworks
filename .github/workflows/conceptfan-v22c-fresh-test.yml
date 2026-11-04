@@ -1,0 +1,84 @@
+name: ConceptFAN V22c independent new TEST seed frozen risk-concept replication
+on:
+  push:
+    branches: [experiment/conceptfan-v22-mixed-source-identifiability-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v22c-fresh-test.yml'
+      - 'src/conceptfan_discovery/experiment_unseen_test_v22c.py'
+      - 'tests/discovery/test_unseen_test_v22c.py'
+  pull_request:
+    branches: [experiment/conceptfan-v21-provenance-falsification-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v22c-fresh-test.yml'
+      - 'src/conceptfan_discovery/experiment_unseen_test_v22c.py'
+      - 'tests/discovery/test_unseen_test_v22c.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  frozen-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install unchanged native ConceptFAN CPU environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test fresh TEST source isolation without opening reserved seed
+        run: |
+          python -m pytest tests/discovery/test_unseen_test_v22c.py tests/discovery/test_risk_screened_sources_v22b.py tests/discovery/test_mixed_source_v22.py -q
+      - name: Fit all 36 models then unseal heldout TEST seed 522203 exactly once
+        run: |
+          python -m conceptfan_discovery.experiment_unseen_test_v22c --out-dir V22C_FRESH_TEST
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('V22C_FRESH_TEST/STATUS.json').read_text())
+          assert x['status']=='V22C_FROZEN_FRESH_TEST_522203_NATIVE_SOURCE_AND_RISK'
+          assert x['registered_opportunities']==48
+          assert x['fitted_models']==36
+          assert x['predeclared_identifiability_refusals']==12
+          assert x['test_evaluated_frozen_models']==36
+          assert x['test_seed']==522203
+          assert x['new_test_episodes_per_family']==300
+          assert x['frozen_test_instantiated_only_after_every_model_fit']
+          assert x['identical_independent_train_screening_policy_v22b']
+          assert x['no_test_retraining_threshold_tuning_or_model_selection']
+          assert x['test_evaluation_never_mutates_native_state']
+          assert x['all_negative_and_refused_cases_preserved']
+          assert len(x['aggregate'])==16
+          assert all(r['max_native_logit_decomposition_error']<2e-5
+                     for r in x['per_fit_and_abstention'] if r['trained'])
+          assert all(r['native_model_sha256_after_test']==r['native_model_sha256_before_any_test_data']
+                     for r in x['per_fit_and_abstention'] if r['trained'])
+          PY
+          git rev-parse HEAD > V22C_FRESH_TEST/COMMIT_SHA.txt
+      - name: Archive complete fresh TEST arm denominator
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v22c-fresh-test-522203-all-48-${{ github.run_number }}
+          path: V22C_FRESH_TEST/
+          if-no-files-found: warn
+      - name: Commit the independent TEST scientific record if run on branch
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v22-mixed-source-identifiability-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v22/fresh_test_522203
+          cp V22C_FRESH_TEST/* docs/medical/evidence_v22/fresh_test_522203/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v22/fresh_test_522203
+          git diff --cached --quiet || git commit -m "V22c: preserve unchanged native TEST 522203 outcomes with all refusals"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v22-mixed-source-identifiability-20261104
