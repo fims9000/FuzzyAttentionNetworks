@@ -1,0 +1,65 @@
+name: ConceptFAN V17 new concept candidate falsification
+on:
+  push:
+    branches: [experiment/conceptfan-v17-dynamic-concept-admission-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v17-candidate-falsification.yml'
+      - 'src/conceptfan_discovery/candidate_admission_v17.py'
+      - 'src/conceptfan_discovery/experiment_candidate_admission_v17.py'
+      - 'tests/discovery/test_candidate_admission_v17.py'
+  pull_request:
+    branches: [experiment/conceptfan-v16-expert-feedback-native-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v17-candidate-falsification.yml'
+      - 'src/conceptfan_discovery/candidate_admission_v17.py'
+      - 'src/conceptfan_discovery/experiment_candidate_admission_v17.py'
+      - 'tests/discovery/test_candidate_admission_v17.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install same V10 environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Positive, abstention, colored-noise and native slot expansion tests
+        run: |
+          python -m pytest tests/discovery/test_candidate_admission_v17.py tests/discovery/test_expert_feedback_v16.py tests/discovery/test_multiscale_physiology_v10.py -q
+      - name: Run all nine predeclared independent generator cases
+        run: |
+          python -m conceptfan_discovery.experiment_candidate_admission_v17 --out-dir V17_CANDIDATE_EVIDENCE
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('V17_CANDIDATE_EVIDENCE/STATUS.json').read_text())
+          assert x['status']=='V17_RESIDUAL_CONCEPT_SYNTHETIC_FALSIFICATION'
+          assert x['n_cases']==9
+          assert len(x['summary'])==3
+          assert x['all_proposals_and_refusals_included']
+          assert x['no_oracle_training']
+          assert x['candidate_is_not_automatically_admitted']
+          PY
+          git rev-parse HEAD > V17_CANDIDATE_EVIDENCE/COMMIT_SHA.txt
+      - name: Publish aggregate, including false certificates and abstentions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v17-candidate-all-controls-${{ github.run_number }}
+          path: V17_CANDIDATE_EVIDENCE/
+          if-no-files-found: warn
