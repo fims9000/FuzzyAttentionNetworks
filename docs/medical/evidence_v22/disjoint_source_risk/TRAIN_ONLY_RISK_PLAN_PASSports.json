@@ -66,7 +66,7 @@
           0.6183090409457618
         ],
         "two_split_correlations": [
-          0.5441014327744853,
+          0.5441014327744854,
           0.5427168026309721
         ],
         "train_only_signed_orientation": 1,
@@ -76,15 +76,15 @@
         "slot": 1,
         "status": "ABSTAIN_NO_STABLE_PREDICTIVE_ASSOCIATION",
         "n_disjoint_screen_episodes": 200,
-        "observed_point_biserial_r": -0.034752028049170755,
+        "observed_point_biserial_r": -0.03475202804917069,
         "permutation_p_two_sided": 0.585,
         "bootstrap_95pct_ci": [
           -0.17511564356131804,
-          0.10070872914143597
+          0.10070872914143607
         ],
         "two_split_correlations": [
-          0.05625188071639642,
-          -0.1131830734097797
+          0.05625188071639652,
+          -0.1131830734097796
         ],
         "train_only_signed_orientation": 0,
         "physical_source_or_clinical_cause_certified": false
@@ -254,15 +254,15 @@
         "slot": 0,
         "status": "ABSTAIN_NO_STABLE_PREDICTIVE_ASSOCIATION",
         "n_disjoint_screen_episodes": 200,
-        "observed_point_biserial_r": -0.09668290745648508,
+        "observed_point_biserial_r": -0.09668290745648515,
         "permutation_p_two_sided": 0.145,
         "bootstrap_95pct_ci": [
-          -0.25361604412254773,
-          0.02357935944708699
+          -0.2536160441225478,
+          0.023579359447086876
         ],
         "two_split_correlations": [
-          -0.12438352704085524,
-          -0.06820499223951682
+          -0.12438352704085537,
+          -0.06820499223951693
         ],
         "train_only_signed_orientation": 0,
         "physical_source_or_clinical_cause_certified": false
@@ -271,7 +271,7 @@
         "slot": 1,
         "status": "ACCEPT_OBSERVATIONAL_PREDICTIVE_SOURCE",
         "n_disjoint_screen_episodes": 200,
-        "observed_point_biserial_r": 0.5597597889025518,
+        "observed_point_biserial_r": 0.5597597889025515,
         "permutation_p_two_sided": 0.005,
         "bootstrap_95pct_ci": [
           0.4758980531928571,
@@ -279,7 +279,7 @@
         ],
         "two_split_correlations": [
           0.5810757195306243,
-          0.5352199365903816
+          0.5352199365903815
         ],
         "train_only_signed_orientation": 1,
         "physical_source_or_clinical_cause_certified": false
