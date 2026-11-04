@@ -80,3 +80,29 @@ Although V20d uses a previously unevaluated **TEST random draw**, its simulator 
 - **Do not cite class-weighting irrelevance generally:** current TRAIN prevalence was near balanced and V20a was conducted on a narrow family.
 - **Do not claim physiological source identity, expert-validated semantics or real-world safety:** the gate tests only risk-prediction improvement. Earlier V18 showed predictive instrument artifacts survive a task association check.
 - **Outstanding scientific research:** isolate joint-training epoch/optimizer budget under more balanced budgets, official intrinsic-concept baselines, negative controls with colored sensor artifacts on the new generator, a real clinician feedback trial, and independent clinical cohort external validation. None is solved by V20.
+
+
+## E. V20e: larger budget of the ORIGINAL joint objective, not just a head-only optimization comparison
+
+Frozen preregistration: `CONCEPTFAN_V20E_FROZEN_ADDITIONAL_JOINT_EPOCHS_20261104.md`. [GitHub Actions 41841521716 — SUCCESS](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41841521716), 36 completed native model evaluations (3 outcome modes × 3 seeds × 4 arms); machine-readable full denominator `docs/medical/evidence_v20/joint_epochs/{ALL_36_JOINT_VERSUS_HEAD_FITS.csv,SUMMARY.csv,STATUS.json,COMMIT_SHA.txt}`.
+
+All arms start from the **same originally trained** 6-epoch K2 + 6-epoch native K3 model on the repeatedly inspected V18 synthetic family. The additional joint-training arms continue exactly the original V10 combined supervised task, future forecast, masked reconstruction, operator regularization and entropy loss for 6 or 12 extra epochs. Joint training uses explicit new random-order and masking seeds and **restarts the AdamW optimizer every six-epoch block**; optimization cost is not matched to head-only AdamW. The comparison refits only the *actual* native decision weights/bias on frozen concept features for 300 full-batch AdamW steps, with the native concept bank, forecast and process head identical.
+
+| Arm | Positive-source AUPRC | Negative-source AUPRC | Null-target AUPRC |
+|---|---:|---:|---:|
+| Original 6 K2 + 6 K3 | 0.587819 | 0.604346 | 0.453344 |
+| +6 more joint epochs | 0.610107 | 0.635028 | 0.442300 |
+| +12 more joint epochs | 0.627088 | 0.652216 | 0.437485 |
+| Same native model, 300 head-only AdamW steps | **0.650418** | **0.686257** | **0.432737 (most harm)** |
+
+**Interpretation:** the original native model was partly short-trained: more joint epochs improve AUPRC on task-relevant sources. However this **does not close the gap** to head-only optimization under the fixed studied budgets. Concept summaries drift during further joint training (mean absolute displacement positive 0.00883 / negative 0.01150 after 12 extra epochs), while head-only refit leaves them **bit-for-bit unchanged**. Results support a separate head optimization phase as a useful practical design at these budgets, but do **not** isolate why (loss coupling, optimization path, weight dynamics, exposure counts). The null-target deterioration shows why the independent TRAIN acceptance gate is not optional.
+
+## Research decision after V20e
+
+The largest *demonstrated practical limitation* of the original prediction graph is no longer simply lack of extra concept capacity or temporal attention. The proposed **optional** training process is:
+1. Train measurable native concept trajectories and their auxiliary forecast/denoising tasks jointly (unchanged V10 concept graph).
+2. On TRAIN core only, optionally refit **only native decision coefficients and bias** using frozen concepts; the original model architecture is preserved.
+3. On an independent fit-disjoint labelled **TRAIN gate** accept only if a preregistered predictive association and logloss-improvement rule passes; otherwise **retain original model**.
+4. On external TEST, report all attempted changes and negative controls. Do not call source identity physical or causal without independent measurement provenance/expert confirmation.
+
+**No clinician-proven concept semantics or hidden physical law identified.** A V20b/c/d family with fixed observed sensor-coordinate axes is not automatic concept discovery. The next substantive scientific goal is to evaluate end-to-end concept correctness, human-editable positive/negative concept annotations and automatic novel-concept admission against external, explicitly **physically annotated** independent data. Without those labels/provenance one cannot substantiate the intended scientific claim, regardless of predictive gains.
