@@ -6,6 +6,12 @@ on:
       - '.github/workflows/conceptfan-v20d-fresh-test.yml'
       - 'src/conceptfan_discovery/experiment_refit_gate_v20c.py'
       - 'tests/discovery/test_native_refit_gate_v20c.py'
+  pull_request:
+    branches: [experiment/conceptfan-v19-temporal-concept-readout-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v20d-fresh-test.yml'
+      - 'src/conceptfan_discovery/experiment_refit_gate_v20c.py'
+      - 'tests/discovery/test_native_refit_gate_v20c.py'
   workflow_dispatch:
 permissions:
   contents: write
