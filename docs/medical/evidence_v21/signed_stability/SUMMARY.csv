@@ -1,0 +1,11 @@
+family,arm,opportunities,trained,abstentions,mean_validation_auprc,mean_patient_signed_effect_crossseed_spearman,mean_abs_physical_source_alignment_eval_only,mean_abs_artifact_alignment_eval_only,signed_stability_is_not_a_semantic_or_causal_proof
+physical_predictive,arbitrary_native_start,3,3,0,0.5101789577345769,-0.3332824065232613,0.9835925970936993,0.11186247446425573,True
+physical_predictive,train_screened_signed_start,3,3,0,0.6996087944969084,0.9998414324322757,0.9853197682830138,0.11446292470355386,True
+physical_nontask,arbitrary_native_start,3,3,0,0.49991463200883013,-0.3330558400898163,0.9833596648089954,0.11102565438057371,True
+physical_nontask,train_screened_signed_start,3,0,3,,,,,True
+artifact_predictive,arbitrary_native_start,3,3,0,0.5397153048491378,-0.33310618818613746,0.1366528354080221,0.9906193394561247,True
+artifact_predictive,train_screened_signed_start,3,3,0,0.7602131619838058,0.9999464689780492,0.13649802947967846,0.9899057854013668,True
+artifact_nontask,arbitrary_native_start,3,3,0,0.4988184991374613,-0.33330005729266127,0.13709902370990232,0.989775574807433,True
+artifact_nontask,train_screened_signed_start,3,0,3,,,,,True
+artifact_common_mode_reference,arbitrary_native_start,3,3,0,0.5337573810299956,-0.333178816761865,0.13695260913094554,0.9904031898701944,True
+artifact_common_mode_reference,train_screened_signed_start,3,3,0,0.7266909205900057,0.9999424179817935,0.13632586213881026,0.9902544604362342,True

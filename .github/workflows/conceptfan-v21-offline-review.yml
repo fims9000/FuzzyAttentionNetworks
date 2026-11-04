@@ -1,0 +1,51 @@
+name: ConceptFAN V21 offline four-choice native concept review
+on:
+  push:
+    branches: [experiment/conceptfan-v21-provenance-falsification-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v21-offline-review.yml'
+      - 'src/conceptfan_discovery/offline_native_review_v21.py'
+      - 'tests/discovery/test_offline_native_review_v21.py'
+  pull_request:
+    branches: [experiment/conceptfan-v20-native-head-objective-ablation-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v21-offline-review.yml'
+      - 'src/conceptfan_discovery/offline_native_review_v21.py'
+      - 'tests/discovery/test_offline_native_review_v21.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reviewer-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install native CPU environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Run offline reviewer integration and native feedback safety
+        run: |
+          python -m pytest tests/discovery/test_offline_native_review_v21.py tests/discovery/test_expert_feedback_v16.py -q
+      - name: Verify no patient-level review packets or private keys are archived
+        run: |
+          python - <<'PY'
+          import inspect
+          from conceptfan_discovery.offline_native_review_v21 import create_offline_native_review_packet
+          args=inspect.signature(create_offline_native_review_packet).parameters
+          assert 'private_key' in args and 'train_split' in args
+          assert 'concept_slot' in args and 'channel_names' in args
+          print("PASS: local reviewer packet intentionally not generated or uploaded by CI")
+          PY

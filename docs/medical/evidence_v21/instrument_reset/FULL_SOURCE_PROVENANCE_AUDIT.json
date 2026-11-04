@@ -1,0 +1,620 @@
+[
+  {
+    "scenario": "physical_predictive",
+    "candidate": {
+      "candidate_id": "observable-residual-2b422a0500113b50",
+      "training_n": 350,
+      "positive_lag_strength": 0.4621061277955537,
+      "permutation_p_train": 0.005,
+      "bootstrap_abs_cosine_q10_train": 0.9998314183309391,
+      "top_signed_observed_sensor_loadings": [
+        [
+          "new_measurement_device_b",
+          0.9999129992644462
+        ],
+        [
+          "suspect_device_a",
+          0.013190674811382544
+        ],
+        [
+          "prior_device_a",
+          -0.0
+        ]
+      ],
+      "approved_by_real_clinician": false,
+      "physical_cause_identified": false,
+      "concept_is_part_of_native_predictive_graph_only_after_admission": true
+    },
+    "outcome_risk": {
+      "candidate_id": "observable-residual-2b422a0500113b50",
+      "status": "ACCEPT_PREDICTIVE_ASSOCIATION",
+      "orientation": 1,
+      "n_train_screen": 300,
+      "point_biserial_r": 0.359929661472548,
+      "bootstrap_ci95": [
+        0.27935952993567803,
+        0.44587830465948647
+      ],
+      "permutation_p_two_sided": 0.005,
+      "split_correlations": [
+        0.3071923755184506,
+        0.4078763746860432
+      ],
+      "observational_prediction_only": true,
+      "physical_cause_identified": false,
+      "clinical_semantic_ground_truth": false,
+      "sign_is_fixed_from_train_evidence_NOT_new_cross_seed_discovery": true
+    },
+    "cross_device": {
+      "candidate_id": "observable-residual-2b422a0500113b50",
+      "status": "ACCEPT_MEASUREMENT_CORROBORATION",
+      "n_train_provenance_episodes": 250,
+      "observed_signed_pearson_r": 0.9971598069060221,
+      "absolute_pearson_r": 0.9971598069060221,
+      "permutation_p_two_sided": 0.005,
+      "signed_bootstrap_ci95": [
+        0.9964212036718945,
+        0.9977127513608698
+      ],
+      "two_halves_signed_correlations": [
+        0.9968813833591886,
+        0.9973750820602144
+      ],
+      "reference_orientation_from_train_only": 1,
+      "reference_device_id": "device_c",
+      "reference_not_in_model_inputs": true,
+      "clinical_or_physical_causal_identity_established": false,
+      "cross_device_common_mode_artifact_ruled_out": false,
+      "provenance_evidence_measured_not_latent_oracle": true,
+      "outcome_labels_used_to_correlate_reference": false,
+      "causal_physiological_mechanism_identified": false,
+      "risk_association_proven": false,
+      "common_mode_artifact_still_possible": true,
+      "individual_patient_reference_records_exported": false
+    },
+    "paired_instrument_reset": {
+      "candidate_id": "observable-residual-2b422a0500113b50",
+      "status": "ACCEPT_ACQUISITION_REPEATABILITY",
+      "n_independent_calibration_episodes": 240,
+      "first_repeat_pearson_r": 0.99805360659231,
+      "permutation_p_two_sided": 0.005,
+      "bootstrap_ci95": [
+        0.9975145225419557,
+        0.9984846144356677
+      ],
+      "paired_two_half_correlations": [
+        0.9977685832062584,
+        0.9983223114053895
+      ],
+      "before_reference_signed_r": 0.9971431518378049,
+      "after_reference_signed_r": 0.9975830165578042,
+      "external_reference_repeat_r": 0.9966484233281245,
+      "acquisition_reset_declared": true,
+      "physical_causal_identity_established": false,
+      "persistent_commonmode_interference_ruled_out": false,
+      "measured_acquisition_only_no_hidden_oracle": true,
+      "outcome_labels_entered_paired_test": false,
+      "clinical_physical_identity_certified": false,
+      "persistent_common_mode_can_spoof_paired_repeat": true,
+      "patient_level_paired_measurements_exported": false
+    },
+    "source_cohort_size": 960,
+    "calibration_data_contains_hidden_true_latent_states": false,
+    "same_underlying_physical_state_is_simulator_intervention": true
+  },
+  {
+    "scenario": "physical_nontask",
+    "candidate": {
+      "candidate_id": "observable-residual-2b422a0500113b50",
+      "training_n": 350,
+      "positive_lag_strength": 0.4621061277955537,
+      "permutation_p_train": 0.005,
+      "bootstrap_abs_cosine_q10_train": 0.9998314183309391,
+      "top_signed_observed_sensor_loadings": [
+        [
+          "new_measurement_device_b",
+          0.9999129992644462
+        ],
+        [
+          "suspect_device_a",
+          0.013190674811382544
+        ],
+        [
+          "prior_device_a",
+          -0.0
+        ]
+      ],
+      "approved_by_real_clinician": false,
+      "physical_cause_identified": false,
+      "concept_is_part_of_native_predictive_graph_only_after_admission": true
+    },
+    "outcome_risk": {
+      "candidate_id": "observable-residual-2b422a0500113b50",
+      "status": "ABSTAIN_UNSTABLE_OR_WEAK_ASSOCIATION",
+      "orientation": 0,
+      "n_train_screen": 300,
+      "point_biserial_r": 0.08150368828932514,
+      "bootstrap_ci95": [
+        -0.038901250249617485,
+        0.18211176212067573
+      ],
+      "permutation_p_two_sided": 0.14,
+      "split_correlations": [
+        -0.015111962672929715,
+        0.1685297275114063
+      ],
+      "observational_prediction_only": true,
+      "physical_cause_identified": false,
+      "clinical_semantic_ground_truth": false,
+      "sign_is_fixed_from_train_evidence_NOT_new_cross_seed_discovery": true
+    },
+    "cross_device": {
+      "candidate_id": "observable-residual-2b422a0500113b50",
+      "status": "ACCEPT_MEASUREMENT_CORROBORATION",
+      "n_train_provenance_episodes": 250,
+      "observed_signed_pearson_r": 0.9971598069060221,
+      "absolute_pearson_r": 0.9971598069060221,
+      "permutation_p_two_sided": 0.005,
+      "signed_bootstrap_ci95": [
+        0.9964212036718945,
+        0.9977127513608698
+      ],
+      "two_halves_signed_correlations": [
+        0.9968813833591886,
+        0.9973750820602144
+      ],
+      "reference_orientation_from_train_only": 1,
+      "reference_device_id": "device_c",
+      "reference_not_in_model_inputs": true,
+      "clinical_or_physical_causal_identity_established": false,
+      "cross_device_common_mode_artifact_ruled_out": false,
+      "provenance_evidence_measured_not_latent_oracle": true,
+      "outcome_labels_used_to_correlate_reference": false,
+      "causal_physiological_mechanism_identified": false,
+      "risk_association_proven": false,
+      "common_mode_artifact_still_possible": true,
+      "individual_patient_reference_records_exported": false
+    },
+    "paired_instrument_reset": {
+      "candidate_id": "observable-residual-2b422a0500113b50",
+      "status": "ACCEPT_ACQUISITION_REPEATABILITY",
+      "n_independent_calibration_episodes": 240,
+      "first_repeat_pearson_r": 0.99805360659231,
+      "permutation_p_two_sided": 0.005,
+      "bootstrap_ci95": [
+        0.9975145225419557,
+        0.9984846144356677
+      ],
+      "paired_two_half_correlations": [
+        0.9977685832062584,
+        0.9983223114053895
+      ],
+      "before_reference_signed_r": 0.9971431518378049,
+      "after_reference_signed_r": 0.9975830165578042,
+      "external_reference_repeat_r": 0.9966484233281245,
+      "acquisition_reset_declared": true,
+      "physical_causal_identity_established": false,
+      "persistent_commonmode_interference_ruled_out": false,
+      "measured_acquisition_only_no_hidden_oracle": true,
+      "outcome_labels_entered_paired_test": false,
+      "clinical_physical_identity_certified": false,
+      "persistent_common_mode_can_spoof_paired_repeat": true,
+      "patient_level_paired_measurements_exported": false
+    },
+    "source_cohort_size": 960,
+    "calibration_data_contains_hidden_true_latent_states": false,
+    "same_underlying_physical_state_is_simulator_intervention": true
+  },
+  {
+    "scenario": "artifact_predictive",
+    "candidate": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "training_n": 350,
+      "positive_lag_strength": 0.5257879588921206,
+      "permutation_p_train": 0.005,
+      "bootstrap_abs_cosine_q10_train": 0.9998756086594124,
+      "top_signed_observed_sensor_loadings": [
+        [
+          "suspect_device_a",
+          0.9999997263430439
+        ],
+        [
+          "new_measurement_device_b",
+          0.0007398066215603486
+        ],
+        [
+          "prior_device_a",
+          0.0
+        ]
+      ],
+      "approved_by_real_clinician": false,
+      "physical_cause_identified": false,
+      "concept_is_part_of_native_predictive_graph_only_after_admission": true
+    },
+    "outcome_risk": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "status": "ACCEPT_PREDICTIVE_ASSOCIATION",
+      "orientation": 1,
+      "n_train_screen": 300,
+      "point_biserial_r": 0.49771286690391964,
+      "bootstrap_ci95": [
+        0.42298206197866667,
+        0.5689017873492168
+      ],
+      "permutation_p_two_sided": 0.005,
+      "split_correlations": [
+        0.39037226763342275,
+        0.5799614659340472
+      ],
+      "observational_prediction_only": true,
+      "physical_cause_identified": false,
+      "clinical_semantic_ground_truth": false,
+      "sign_is_fixed_from_train_evidence_NOT_new_cross_seed_discovery": true
+    },
+    "cross_device": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "status": "ABSTAIN_UNCORROBORATED_SENSOR_DIRECTION",
+      "n_train_provenance_episodes": 250,
+      "observed_signed_pearson_r": -0.039348896931746015,
+      "absolute_pearson_r": 0.039348896931746015,
+      "permutation_p_two_sided": 0.535,
+      "signed_bootstrap_ci95": [
+        -0.18386909464890264,
+        0.062206990982638426
+      ],
+      "two_halves_signed_correlations": [
+        -0.05750892491023017,
+        -0.01526053107326809
+      ],
+      "reference_orientation_from_train_only": 0,
+      "reference_device_id": "device_c",
+      "reference_not_in_model_inputs": true,
+      "clinical_or_physical_causal_identity_established": false,
+      "cross_device_common_mode_artifact_ruled_out": false,
+      "provenance_evidence_measured_not_latent_oracle": true,
+      "outcome_labels_used_to_correlate_reference": false,
+      "causal_physiological_mechanism_identified": false,
+      "risk_association_proven": false,
+      "common_mode_artifact_still_possible": true,
+      "individual_patient_reference_records_exported": false
+    },
+    "paired_instrument_reset": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "status": "ABSTAIN_UNSTABLE_UNDER_INSTRUMENT_RESET",
+      "n_independent_calibration_episodes": 240,
+      "first_repeat_pearson_r": 0.02185479631472246,
+      "permutation_p_two_sided": 0.79,
+      "bootstrap_ci95": [
+        -0.0792840442217236,
+        0.1494536799181098
+      ],
+      "paired_two_half_correlations": [
+        0.12152878359171679,
+        -0.07037726133298586
+      ],
+      "before_reference_signed_r": 0.0203095291249544,
+      "after_reference_signed_r": 0.047259804960059416,
+      "external_reference_repeat_r": 0.9966484233281245,
+      "acquisition_reset_declared": true,
+      "physical_causal_identity_established": false,
+      "persistent_commonmode_interference_ruled_out": false,
+      "measured_acquisition_only_no_hidden_oracle": true,
+      "outcome_labels_entered_paired_test": false,
+      "clinical_physical_identity_certified": false,
+      "persistent_common_mode_can_spoof_paired_repeat": true,
+      "patient_level_paired_measurements_exported": false
+    },
+    "source_cohort_size": 960,
+    "calibration_data_contains_hidden_true_latent_states": false,
+    "same_underlying_physical_state_is_simulator_intervention": true
+  },
+  {
+    "scenario": "artifact_nontask",
+    "candidate": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "training_n": 350,
+      "positive_lag_strength": 0.5257879588921206,
+      "permutation_p_train": 0.005,
+      "bootstrap_abs_cosine_q10_train": 0.9998756086594124,
+      "top_signed_observed_sensor_loadings": [
+        [
+          "suspect_device_a",
+          0.9999997263430439
+        ],
+        [
+          "new_measurement_device_b",
+          0.0007398066215603486
+        ],
+        [
+          "prior_device_a",
+          0.0
+        ]
+      ],
+      "approved_by_real_clinician": false,
+      "physical_cause_identified": false,
+      "concept_is_part_of_native_predictive_graph_only_after_admission": true
+    },
+    "outcome_risk": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "status": "ABSTAIN_UNSTABLE_OR_WEAK_ASSOCIATION",
+      "orientation": 0,
+      "n_train_screen": 300,
+      "point_biserial_r": -0.03094630988714007,
+      "bootstrap_ci95": [
+        -0.1367810658264563,
+        0.09203638335859134
+      ],
+      "permutation_p_two_sided": 0.63,
+      "split_correlations": [
+        -0.06370611728571281,
+        0.018013063303009936
+      ],
+      "observational_prediction_only": true,
+      "physical_cause_identified": false,
+      "clinical_semantic_ground_truth": false,
+      "sign_is_fixed_from_train_evidence_NOT_new_cross_seed_discovery": true
+    },
+    "cross_device": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "status": "ABSTAIN_UNCORROBORATED_SENSOR_DIRECTION",
+      "n_train_provenance_episodes": 250,
+      "observed_signed_pearson_r": -0.039348896931746015,
+      "absolute_pearson_r": 0.039348896931746015,
+      "permutation_p_two_sided": 0.535,
+      "signed_bootstrap_ci95": [
+        -0.18386909464890264,
+        0.062206990982638426
+      ],
+      "two_halves_signed_correlations": [
+        -0.05750892491023017,
+        -0.01526053107326809
+      ],
+      "reference_orientation_from_train_only": 0,
+      "reference_device_id": "device_c",
+      "reference_not_in_model_inputs": true,
+      "clinical_or_physical_causal_identity_established": false,
+      "cross_device_common_mode_artifact_ruled_out": false,
+      "provenance_evidence_measured_not_latent_oracle": true,
+      "outcome_labels_used_to_correlate_reference": false,
+      "causal_physiological_mechanism_identified": false,
+      "risk_association_proven": false,
+      "common_mode_artifact_still_possible": true,
+      "individual_patient_reference_records_exported": false
+    },
+    "paired_instrument_reset": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "status": "ABSTAIN_UNSTABLE_UNDER_INSTRUMENT_RESET",
+      "n_independent_calibration_episodes": 240,
+      "first_repeat_pearson_r": 0.02185479631472246,
+      "permutation_p_two_sided": 0.79,
+      "bootstrap_ci95": [
+        -0.0792840442217236,
+        0.1494536799181098
+      ],
+      "paired_two_half_correlations": [
+        0.12152878359171679,
+        -0.07037726133298586
+      ],
+      "before_reference_signed_r": 0.0203095291249544,
+      "after_reference_signed_r": 0.047259804960059416,
+      "external_reference_repeat_r": 0.9966484233281245,
+      "acquisition_reset_declared": true,
+      "physical_causal_identity_established": false,
+      "persistent_commonmode_interference_ruled_out": false,
+      "measured_acquisition_only_no_hidden_oracle": true,
+      "outcome_labels_entered_paired_test": false,
+      "clinical_physical_identity_certified": false,
+      "persistent_common_mode_can_spoof_paired_repeat": true,
+      "patient_level_paired_measurements_exported": false
+    },
+    "source_cohort_size": 960,
+    "calibration_data_contains_hidden_true_latent_states": false,
+    "same_underlying_physical_state_is_simulator_intervention": true
+  },
+  {
+    "scenario": "artifact_common_mode_reference",
+    "candidate": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "training_n": 350,
+      "positive_lag_strength": 0.5257879588921206,
+      "permutation_p_train": 0.005,
+      "bootstrap_abs_cosine_q10_train": 0.9998756086594124,
+      "top_signed_observed_sensor_loadings": [
+        [
+          "suspect_device_a",
+          0.9999997263430439
+        ],
+        [
+          "new_measurement_device_b",
+          0.0007398066215603486
+        ],
+        [
+          "prior_device_a",
+          0.0
+        ]
+      ],
+      "approved_by_real_clinician": false,
+      "physical_cause_identified": false,
+      "concept_is_part_of_native_predictive_graph_only_after_admission": true
+    },
+    "outcome_risk": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "status": "ACCEPT_PREDICTIVE_ASSOCIATION",
+      "orientation": 1,
+      "n_train_screen": 300,
+      "point_biserial_r": 0.5280018322649778,
+      "bootstrap_ci95": [
+        0.4536995587350495,
+        0.5926208486983569
+      ],
+      "permutation_p_two_sided": 0.005,
+      "split_correlations": [
+        0.5189925329167953,
+        0.5202610022359613
+      ],
+      "observational_prediction_only": true,
+      "physical_cause_identified": false,
+      "clinical_semantic_ground_truth": false,
+      "sign_is_fixed_from_train_evidence_NOT_new_cross_seed_discovery": true
+    },
+    "cross_device": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "status": "ACCEPT_MEASUREMENT_CORROBORATION",
+      "n_train_provenance_episodes": 250,
+      "observed_signed_pearson_r": 0.9952723342946919,
+      "absolute_pearson_r": 0.9952723342946919,
+      "permutation_p_two_sided": 0.005,
+      "signed_bootstrap_ci95": [
+        0.9941705471293728,
+        0.9961643342009505
+      ],
+      "two_halves_signed_correlations": [
+        0.9954164174822989,
+        0.9951078040756207
+      ],
+      "reference_orientation_from_train_only": 1,
+      "reference_device_id": "device_c",
+      "reference_not_in_model_inputs": true,
+      "clinical_or_physical_causal_identity_established": false,
+      "cross_device_common_mode_artifact_ruled_out": false,
+      "provenance_evidence_measured_not_latent_oracle": true,
+      "outcome_labels_used_to_correlate_reference": false,
+      "causal_physiological_mechanism_identified": false,
+      "risk_association_proven": false,
+      "common_mode_artifact_still_possible": true,
+      "individual_patient_reference_records_exported": false
+    },
+    "paired_instrument_reset": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "status": "ABSTAIN_UNSTABLE_UNDER_INSTRUMENT_RESET",
+      "n_independent_calibration_episodes": 240,
+      "first_repeat_pearson_r": 0.02185479631472246,
+      "permutation_p_two_sided": 0.79,
+      "bootstrap_ci95": [
+        -0.0792840442217236,
+        0.1494536799181098
+      ],
+      "paired_two_half_correlations": [
+        0.12152878359171679,
+        -0.07037726133298586
+      ],
+      "before_reference_signed_r": 0.9960799433278459,
+      "after_reference_signed_r": 0.9953393212199666,
+      "external_reference_repeat_r": 0.0258896699710384,
+      "acquisition_reset_declared": true,
+      "physical_causal_identity_established": false,
+      "persistent_commonmode_interference_ruled_out": false,
+      "measured_acquisition_only_no_hidden_oracle": true,
+      "outcome_labels_entered_paired_test": false,
+      "clinical_physical_identity_certified": false,
+      "persistent_common_mode_can_spoof_paired_repeat": true,
+      "patient_level_paired_measurements_exported": false
+    },
+    "source_cohort_size": 960,
+    "calibration_data_contains_hidden_true_latent_states": false,
+    "same_underlying_physical_state_is_simulator_intervention": true
+  },
+  {
+    "scenario": "artifact_environmental_persistent",
+    "candidate": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "training_n": 350,
+      "positive_lag_strength": 0.5257879588921206,
+      "permutation_p_train": 0.005,
+      "bootstrap_abs_cosine_q10_train": 0.9998756086594124,
+      "top_signed_observed_sensor_loadings": [
+        [
+          "suspect_device_a",
+          0.9999997263430439
+        ],
+        [
+          "new_measurement_device_b",
+          0.0007398066215603486
+        ],
+        [
+          "prior_device_a",
+          0.0
+        ]
+      ],
+      "approved_by_real_clinician": false,
+      "physical_cause_identified": false,
+      "concept_is_part_of_native_predictive_graph_only_after_admission": true
+    },
+    "outcome_risk": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "status": "ACCEPT_PREDICTIVE_ASSOCIATION",
+      "orientation": 1,
+      "n_train_screen": 300,
+      "point_biserial_r": 0.5280018322649778,
+      "bootstrap_ci95": [
+        0.4536995587350495,
+        0.5926208486983569
+      ],
+      "permutation_p_two_sided": 0.005,
+      "split_correlations": [
+        0.5189925329167953,
+        0.5202610022359613
+      ],
+      "observational_prediction_only": true,
+      "physical_cause_identified": false,
+      "clinical_semantic_ground_truth": false,
+      "sign_is_fixed_from_train_evidence_NOT_new_cross_seed_discovery": true
+    },
+    "cross_device": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "status": "ACCEPT_MEASUREMENT_CORROBORATION",
+      "n_train_provenance_episodes": 250,
+      "observed_signed_pearson_r": 0.9952723342946919,
+      "absolute_pearson_r": 0.9952723342946919,
+      "permutation_p_two_sided": 0.005,
+      "signed_bootstrap_ci95": [
+        0.9941705471293728,
+        0.9961643342009505
+      ],
+      "two_halves_signed_correlations": [
+        0.9954164174822989,
+        0.9951078040756207
+      ],
+      "reference_orientation_from_train_only": 1,
+      "reference_device_id": "device_c",
+      "reference_not_in_model_inputs": true,
+      "clinical_or_physical_causal_identity_established": false,
+      "cross_device_common_mode_artifact_ruled_out": false,
+      "provenance_evidence_measured_not_latent_oracle": true,
+      "outcome_labels_used_to_correlate_reference": false,
+      "causal_physiological_mechanism_identified": false,
+      "risk_association_proven": false,
+      "common_mode_artifact_still_possible": true,
+      "individual_patient_reference_records_exported": false
+    },
+    "paired_instrument_reset": {
+      "candidate_id": "observable-residual-77a631f6990c7725",
+      "status": "ACCEPT_ACQUISITION_REPEATABILITY",
+      "n_independent_calibration_episodes": 240,
+      "first_repeat_pearson_r": 0.9983939547742736,
+      "permutation_p_two_sided": 0.005,
+      "bootstrap_ci95": [
+        0.9978568778796426,
+        0.9987754632414382
+      ],
+      "paired_two_half_correlations": [
+        0.997957552658327,
+        0.9987620435211444
+      ],
+      "before_reference_signed_r": 0.9960799433278459,
+      "after_reference_signed_r": 0.9957208846912114,
+      "external_reference_repeat_r": 0.9973781380026113,
+      "acquisition_reset_declared": true,
+      "physical_causal_identity_established": false,
+      "persistent_commonmode_interference_ruled_out": false,
+      "measured_acquisition_only_no_hidden_oracle": true,
+      "outcome_labels_entered_paired_test": false,
+      "clinical_physical_identity_certified": false,
+      "persistent_common_mode_can_spoof_paired_repeat": true,
+      "patient_level_paired_measurements_exported": false
+    },
+    "source_cohort_size": 960,
+    "calibration_data_contains_hidden_true_latent_states": false,
+    "same_underlying_physical_state_is_simulator_intervention": true
+  }
+]

@@ -1,0 +1,85 @@
+name: ConceptFAN V21d bounded native concept admission and instrument veto
+on:
+  push:
+    branches: [experiment/conceptfan-v21-provenance-falsification-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v21d-evidence-policy.yml'
+      - 'src/conceptfan_discovery/concept_evidence_policy_v21d.py'
+      - 'src/conceptfan_discovery/experiment_admission_policy_v21d.py'
+      - 'src/conceptfan_discovery/multiscale_physiology_v10.py'
+      - 'src/conceptfan_discovery/native_head_refit_v19e.py'
+      - 'tests/discovery/test_concept_evidence_policy_v21d.py'
+  pull_request:
+    branches: [experiment/conceptfan-v20-native-head-objective-ablation-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v21d-evidence-policy.yml'
+      - 'src/conceptfan_discovery/concept_evidence_policy_v21d.py'
+      - 'src/conceptfan_discovery/experiment_admission_policy_v21d.py'
+      - 'src/conceptfan_discovery/multiscale_physiology_v10.py'
+      - 'src/conceptfan_discovery/native_head_refit_v19e.py'
+      - 'tests/discovery/test_concept_evidence_policy_v21d.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  evidence-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install exact native concept CPU runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify no-risk native slot, signed source semantics, input and review safety
+        run: |
+          python -m pytest tests/discovery/test_concept_evidence_policy_v21d.py tests/discovery/test_instrument_reset_v21c.py tests/discovery/test_native_head_refit_v19e.py tests/discovery/test_candidate_admission_v17.py tests/discovery/test_expert_feedback_v16.py -q
+      - name: Execute all six evidence-vetted source insertions and manual-veto negative control
+        run: |
+          python -m conceptfan_discovery.experiment_admission_policy_v21d --out-dir V21D_BOUNDED_ADMISSION
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          x=json.loads(Path('V21D_BOUNDED_ADMISSION/STATUS.json').read_text())
+          assert x['status']=='V21D_BOUNDED_MEASURED_CONCEPT_ADMISSION_AND_ARTIFACT_VETO'
+          assert x['n_predeclared_admission_conditions']==6
+          assert x['n_accepted_provisional_native_measured_concepts']==3
+          assert x['n_rejected_instrument_suspected_concepts']==3
+          assert x['n_descriptive_only_native_zero_risk_slots']==1
+          assert x['persistent_artifact_false_positive_explicit']
+          assert x['counterfactual_artifact_provenance_veto_blocks_native_admission']
+          assert not x['reviewer_was_real_clinician']
+          assert x['no_physical_or_causal_source_certification']
+          assert x['new_provisional_slots_have_zero_inference_drift_before_training']
+          assert x['six_case_full_denominator_preserved']
+          assert all(r['original_inference_drift_max_abs_logit'] < 1e-6 for r in x['per_scenario'])
+          PY
+          git rev-parse HEAD > V21D_BOUNDED_ADMISSION/COMMIT_SHA.txt
+      - name: Archive all six admitted/refused source provenance cases
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v21d-measured-source-admission-${{ github.run_number }}
+          path: V21D_BOUNDED_ADMISSION/
+          if-no-files-found: warn
+      - name: Version research evidence with original V21 outcomes immutable
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v21-provenance-falsification-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v21/bounded_admission
+          cp V21D_BOUNDED_ADMISSION/* docs/medical/evidence_v21/bounded_admission/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v21/bounded_admission
+          git diff --cached --quiet || git commit -m "V21d: retain all six bounded source-admission results and permanent risk veto"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v21-provenance-falsification-20261104

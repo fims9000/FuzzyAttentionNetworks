@@ -1,0 +1,79 @@
+name: ConceptFAN V21 measured provenance vs instrument-source falsification
+on:
+  push:
+    branches: [experiment/conceptfan-v21-provenance-falsification-20261104]
+    paths:
+      - '.github/workflows/conceptfan-v21-provenance.yml'
+      - 'src/conceptfan_discovery/provenance_data_v21.py'
+      - 'src/conceptfan_discovery/measurement_corroboration_v21.py'
+      - 'src/conceptfan_discovery/experiment_provenance_v21.py'
+      - 'tests/discovery/test_provenance_v21.py'
+  pull_request:
+    branches: [experiment/conceptfan-v20-native-head-objective-ablation-20261104]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  measured-provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONPATH: src:.
+      PYTHONHASHSEED: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+          cache: pip
+      - name: Install frozen CPU native concept research dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test source-vs-artifact falsification and existing expert native graph
+        run: |
+          python -m pytest tests/discovery/test_provenance_v21.py tests/discovery/test_expert_feedback_v16.py tests/discovery/test_candidate_admission_v17.py tests/discovery/test_risk_screen_v18.py -q
+      - name: Execute all 45 native K3 training and simulated reviewer conditions
+        run: |
+          python -m conceptfan_discovery.experiment_provenance_v21 --out-dir V21_MEASUREMENT_PROVENANCE
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('V21_MEASUREMENT_PROVENANCE/STATUS.json').read_text())
+          assert x['status']=='V21_SOURCE_VERSUS_ARTIFACT_AND_NATIVE_FEEDBACK_FALSIFICATION'
+          assert x['five_independent_generator_conditions']==5
+          assert x['n_native_full_model_fits']==45
+          assert x['n_model_initialization_seeds']==3
+          assert x['n_feedback_arms']==3
+          assert x['native_train_oracle_states_excluded']
+          assert x['oracle_truth_loaded_after_all_fits_in_each_condition']
+          assert x['oracle_never_in_training_or_model_selection']
+          assert not x['real_doctor_labels_provided']
+          assert x['common_mode_artifact_can_imitate_crossdevice_measurement']
+          assert len(x['source_passports'])==5
+          assert len(x['aggregate'])==15
+          assert all(r['max_native_logit_additive_error']<2e-5 for r in x['per_fit'])
+          assert all(r['physical_source_certified'] is False for r in x['per_fit'])
+          PY
+          git rev-parse HEAD > V21_MEASUREMENT_PROVENANCE/COMMIT_SHA.txt
+      - name: Archive full provenance/feedback/measurement truth audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v21-all-45-physical-artifact-fits-${{ github.run_number }}
+          path: V21_MEASUREMENT_PROVENANCE/
+          if-no-files-found: warn
+      - name: Version all scientific audit cases in this research branch
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/experiment/conceptfan-v21-provenance-falsification-20261104'
+        run: |
+          mkdir -p docs/medical/evidence_v21/provenance
+          cp V21_MEASUREMENT_PROVENANCE/* docs/medical/evidence_v21/provenance/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/medical/evidence_v21/provenance
+          git diff --cached --quiet || git commit -m "V21: archive all 45 native source/artifact reviewer observations and refusals"
+          git push origin HEAD:refs/heads/experiment/conceptfan-v21-provenance-falsification-20261104
