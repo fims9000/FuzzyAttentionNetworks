@@ -147,6 +147,13 @@ class MultiScaleUnknownNeutralConceptFAN(UnknownNeutralSpectralConceptFAN):
                 "zero_observation_is_unknown_neutral": True,
                 "causal_temporal_inputs_only": True,
                 "risk_sign_policy_train_screen_only": self.signed_risk_policy.detach().cpu().tolist(),
+                "native_risk_policy_code_legend": {
+                    "-1": "risk_association_screened_negative",
+                    "0": "unrestricted_observational_risk",
+                    "1": "risk_association_screened_positive",
+                    "2": "descriptive_only_exact_zero_risk",
+                },
+                "native_descriptive_only_risk_exclusion_serialized": True,
                 "risk_orientation_is_observational_not_causal": True,
             }
 
