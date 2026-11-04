@@ -46,3 +46,17 @@ Methods based on lagged covariance / joint diagonalization have a long history (
 - `.github/workflows/conceptfan-v15-sensor-noise-falsification.yml`
 
 The accepted PIERE negative cross-run reproducibility conclusion remains unchanged. V15 is a deliberately limited *research falsification prototype* and should not be merged into clinical training or characterized as a validated general concept-discovery method.
+
+
+## Executed first new-seed audit, 72 conditions, **source recovery evaluated on fitting episodes**
+
+[CI success 41815626891](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/41815626891), artifact `V15-frozen-twoseed-full-denominator-1`. Two generators 20261105 / 20261205 × K_true=3,5,7. Exactly 6 trials for each estimator × noise/scenario combination; accepted/rejected attempts all retained. These first new-seed experiments are **exploratory in-sample oracle diagnostics**, because source directions and source-oracle matches were evaluated on the same episodes. This was not hidden validation and must not be described as such. A separately frozen, distinct-case generator was subsequently created.
+
+| Estimator | Genuinely changed source variance | White noise only | AR(1) colored noise only | No changes |
+|---|---:|---:|---:|---:|
+| V14 same-time contrast | 2/6 | 1/6 false positive | 2/6 false positive | 0/6 |
+| V15 lagged contrast | 4/6 | **0/6 false positive** | **4/6 false positives** | 0/6 |
+
+Paired-view V15 additionally certified **2/6 genuine source shifts**, **0/6 independent colored sensor-only shifts**, **4/6 shared colored sensor-only shifts falsely**, and 0/6 no-shift controls. At K_true=7, the lag method accepted a true-source shift in only 1/2 trials while the paired-view method accepted none in the six positive K5/K7 trials. This sensitivity deficit is substantive; it cannot be concealed by reporting high correlations on successful cases only.
+
+**A new protocol was then frozen before using its new generator**: `src/conceptfan_discovery/experiment_v15_holdout.py`, generator seed **20280105**, 700 separate TRAIN episodes in each environment, 250 (lag) or 300 (paired-view) **disjoint evaluation episodes** in each environment, 36 total positive/negative estimator runs. All estimator parameters and refusal thresholds remain unchanged, and all 36 acceptance outcomes belong in the denominator. See `.github/workflows/conceptfan-v15-HELDOUT-third-seed-ONCE.yml`. The third generator is not a substitute for out-of-family or clinical validation.
