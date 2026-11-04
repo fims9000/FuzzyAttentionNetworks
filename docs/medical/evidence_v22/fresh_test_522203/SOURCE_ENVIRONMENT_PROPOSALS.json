@@ -1,0 +1,374 @@
+{
+  "mixed_distinct_variance": {
+    "candidate_id": "mixed-observable-environments-bfa247e23cb8648f",
+    "status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+    "source_vectors_whitened": [
+      [
+        -0.7125833186702056,
+        0.7015874955791019
+      ],
+      [
+        -0.7015874955791019,
+        -0.7125833186702056
+      ]
+    ],
+    "source_filters_original_sensor_space": [
+      [
+        0.3966389170700373,
+        -0.24921550703595235
+      ],
+      [
+        0.10559435816819025,
+        -0.5803671158636519
+      ],
+      [
+        0.6634465923757735,
+        0.7334469037163165
+      ],
+      [
+        0.4386840572130922,
+        0.04902087152051889
+      ],
+      [
+        0.6037666303350283,
+        0.49646417430516193
+      ]
+    ],
+    "environment_contrast_eigenvalues": [
+      1.5271361187517511,
+      -1.4995615149898474
+    ],
+    "contrast_eigen_gap_standardized": 1.5137546168053442,
+    "environment_permutation_p": 0.005,
+    "bootstrap_min_direction_cosine_q10": 0.9999605225218969,
+    "environment_sensor_subspace_min_cosine": 0.9999975569265722,
+    "train_sample_count": 600,
+    "environment_counts": [
+      302,
+      298
+    ],
+    "source_whitener": {
+      "train_centered_sensor_means": [
+        -0.028722255239418803,
+        -0.026819365130668554,
+        -0.00433376319788724,
+        -0.019383662221530484,
+        -0.010833860604180833
+      ],
+      "train_rank_two_projection": [
+        [
+          -0.4574847592803534,
+          -0.10069009140861761
+        ],
+        [
+          -0.4824230895115852,
+          0.3394762441746734
+        ],
+        [
+          0.04181620176300936,
+          -0.9881078619139676
+        ],
+        [
+          -0.2782065108554298,
+          -0.3427067043628099
+        ],
+        [
+          -0.08192097245095642,
+          -0.7773672070182215
+        ]
+      ],
+      "pooled_train_eigenvalues": [
+        1.8943597214804648,
+        0.5483997247588372
+      ],
+      "train_only": true
+    },
+    "source_origin_known_physically": false,
+    "oracle_latent_states_used_for_fit": false,
+    "task_labels_used_for_source_fit": false,
+    "external_source_identity_verified": false,
+    "source_identification_up_to_sign_and_permutation_only": true,
+    "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+    "source_task_outcome_predictive_status_known": false,
+    "declared_environment_mixing_change_can_escape_detection": true
+  },
+  "mixed_proportional_variance": {
+    "candidate_id": "mixed-observable-environments-69cb0274a64ef427",
+    "status": "ABSTAIN_NONIDENTIFIABLE_PROPORTIONAL_ENVIRONMENT_SIGNATURES",
+    "source_vectors_whitened": [
+      [
+        -0.8505291241541779,
+        0.5259279503558705
+      ],
+      [
+        -0.5259279503558705,
+        -0.8505291241541779
+      ]
+    ],
+    "source_filters_original_sensor_space": [
+      [
+        0.43595257459714376,
+        -0.15899627798633675
+      ],
+      [
+        0.2233605484646136,
+        -0.5463660806848908
+      ],
+      [
+        0.4890399390198438,
+        0.8616844528873828
+      ],
+      [
+        0.41434946646429477,
+        0.14252187409578151
+      ],
+      [
+        0.48053628809789717,
+        0.6160996703713519
+      ]
+    ],
+    "environment_contrast_eigenvalues": [
+      1.0108122004101718,
+      0.9316019663744954
+    ],
+    "contrast_eigen_gap_standardized": 0.03948395188051603,
+    "environment_permutation_p": 0.405,
+    "bootstrap_min_direction_cosine_q10": 0.7931980518955706,
+    "environment_sensor_subspace_min_cosine": 0.9999985603977473,
+    "train_sample_count": 600,
+    "environment_counts": [
+      302,
+      298
+    ],
+    "source_whitener": {
+      "train_centered_sensor_means": [
+        -0.02375762524618848,
+        -0.019944953252783712,
+        -0.008465750524452838,
+        -0.017405042358172473,
+        -0.012741611074520228
+      ],
+      "train_rank_two_projection": [
+        [
+          -0.4544109480404339,
+          -0.09404867895074735
+        ],
+        [
+          -0.4773238446147794,
+          0.3472287086281138
+        ],
+        [
+          0.03724122714962056,
+          -0.990087495782444
+        ],
+        [
+          -0.27746005168155574,
+          -0.3391369703761121
+        ],
+        [
+          -0.08468607138687169,
+          -0.7767381781035688
+        ]
+      ],
+      "pooled_train_eigenvalues": [
+        1.9235575080046208,
+        0.5470392900070379
+      ],
+      "train_only": true
+    },
+    "source_origin_known_physically": false,
+    "oracle_latent_states_used_for_fit": false,
+    "task_labels_used_for_source_fit": false,
+    "external_source_identity_verified": false,
+    "source_identification_up_to_sign_and_permutation_only": true,
+    "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+    "source_task_outcome_predictive_status_known": false,
+    "declared_environment_mixing_change_can_escape_detection": true
+  },
+  "mixed_sensor_gain_drift": {
+    "candidate_id": "mixed-observable-environments-d8eb4557926b24cf",
+    "status": "ABSTAIN_ENVIRONMENT_MIXING_CHANGE",
+    "source_vectors_whitened": [
+      [
+        -0.9635420845020615,
+        -0.26755681900004374
+      ],
+      [
+        0.26755681900004374,
+        -0.9635420845020615
+      ]
+    ],
+    "source_filters_original_sensor_space": [
+      [
+        0.2854332090825914,
+        0.32736494885001904
+      ],
+      [
+        0.6050806078940225,
+        -0.17824601876263613
+      ],
+      [
+        -0.3234821036621688,
+        0.9860040096064401
+      ],
+      [
+        0.08965105508903834,
+        0.48554495698087907
+      ],
+      [
+        -0.17511966762862338,
+        0.8314088465721423
+      ]
+    ],
+    "environment_contrast_eigenvalues": [
+      0.6496862312898917,
+      -0.00034148216881828286
+    ],
+    "contrast_eigen_gap_standardized": 0.3246790577966994,
+    "environment_permutation_p": 0.005,
+    "bootstrap_min_direction_cosine_q10": 0.9987904867805367,
+    "environment_sensor_subspace_min_cosine": 0.9711041631959052,
+    "train_sample_count": 600,
+    "environment_counts": [
+      302,
+      298
+    ],
+    "source_whitener": {
+      "train_centered_sensor_means": [
+        -0.0224133925669499,
+        -0.024676341534258357,
+        -0.005534069133832417,
+        -0.015727240335144946,
+        -0.010177480273320133
+      ],
+      "train_rank_two_projection": [
+        [
+          -0.362615633631976,
+          -0.23906030374874554
+        ],
+        [
+          -0.535329692442428,
+          0.33364098315948143
+        ],
+        [
+          0.04787652413017038,
+          -1.0366062014028723
+        ],
+        [
+          -0.21629342866961826,
+          -0.4438562488491992
+        ],
+        [
+          -0.05371393669314585,
+          -0.847951874314636
+        ]
+      ],
+      "pooled_train_eigenvalues": [
+        2.1275320438222716,
+        0.46316682025191513
+      ],
+      "train_only": true
+    },
+    "source_origin_known_physically": false,
+    "oracle_latent_states_used_for_fit": false,
+    "task_labels_used_for_source_fit": false,
+    "external_source_identity_verified": false,
+    "source_identification_up_to_sign_and_permutation_only": true,
+    "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+    "source_task_outcome_predictive_status_known": false,
+    "declared_environment_mixing_change_can_escape_detection": true
+  },
+  "mixed_artifact_only_variance": {
+    "candidate_id": "mixed-observable-environments-4bc89e16cf8d6f50",
+    "status": "ACCEPT_OBSERVATIONAL_ENVIRONMENT_UNMIXING",
+    "source_vectors_whitened": [
+      [
+        0.7728186395355217,
+        -0.6346269379615599
+      ],
+      [
+        -0.6346269379615599,
+        -0.7728186395355217
+      ]
+    ],
+    "source_filters_original_sensor_space": [
+      [
+        -0.2533903542666501,
+        0.43396160755890445
+      ],
+      [
+        -0.5807262241392048,
+        0.1057066133593969
+      ],
+      [
+        0.7246007510067499,
+        0.7479211734498484
+      ],
+      [
+        0.04400090257737858,
+        0.4860808702782364
+      ],
+      [
+        0.4880703831968626,
+        0.676691419774408
+      ]
+    ],
+    "environment_contrast_eigenvalues": [
+      1.5924523586403037,
+      0.05974927762995397
+    ],
+    "contrast_eigen_gap_standardized": 0.7642736187298647,
+    "environment_permutation_p": 0.005,
+    "bootstrap_min_direction_cosine_q10": 0.9996158532627305,
+    "environment_sensor_subspace_min_cosine": 0.9999979988939108,
+    "train_sample_count": 600,
+    "environment_counts": [
+      302,
+      298
+    ],
+    "source_whitener": {
+      "train_centered_sensor_means": [
+        -0.018614197730506325,
+        -0.01472943621477662,
+        -0.008473068742507684,
+        -0.014150216414897032,
+        -0.01146777285179013
+      ],
+      "train_rank_two_projection": [
+        [
+          -0.47122851505375996,
+          -0.17456527452708145
+        ],
+        [
+          -0.5158803148404212,
+          0.2868524642931255
+        ],
+        [
+          0.08533404245635967,
+          -1.037858579601383
+        ],
+        [
+          -0.2744752966381826,
+          -0.40357651494289565
+        ],
+        [
+          -0.05225671413651307,
+          -0.8327023552133686
+        ]
+      ],
+      "pooled_train_eigenvalues": [
+        1.7435631360410684,
+        0.4887167475972468
+      ],
+      "train_only": true
+    },
+    "source_origin_known_physically": false,
+    "oracle_latent_states_used_for_fit": false,
+    "task_labels_used_for_source_fit": false,
+    "external_source_identity_verified": false,
+    "source_identification_up_to_sign_and_permutation_only": true,
+    "physical_vs_instrument_disambiguation_by_statistics_alone": false,
+    "source_task_outcome_predictive_status_known": false,
+    "declared_environment_mixing_change_can_escape_detection": true
+  }
+}
