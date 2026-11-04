@@ -64,6 +64,9 @@ def fit_multiscale(
     expert_feedback_weight: float = 0.0,
     feature_exploration: bool = False,
     temporal_readout_mode: str = "legacy",
+    native_head_refit: bool = False,
+    native_head_refit_weight_l2: float = .001,
+    native_head_refit_max_iter: int = 120,
 ) -> tuple[MultiScaleDualProcessConceptFAN, dict]:
     _seed_everything(seed)
     t = base_config["training"]
@@ -193,7 +196,24 @@ def fit_multiscale(
             accumulation["scale_entropy"]+=float(scale_entropy.detach())
             steps+=1
     model.eval()
+    native_head_report = None
+    if native_head_refit:
+        # Explicit second TRAIN-only phase, never a raw-input classifier.
+        # Frozen native concepts, reconstruction and care-process semantics.
+        from .native_head_refit_v19e import fit_train_only_native_risk_head
+        native_head_report = fit_train_only_native_risk_head(
+            model,data.train,
+            declared_train_episode_ids=data.train.episode_ids,
+            weight_l2=native_head_refit_weight_l2,
+            max_iter=native_head_refit_max_iter,
+        )
     return model,{
+        "native_head_refit_enabled":bool(native_head_refit),
+        "native_head_train_bce_before":(
+            native_head_report.original_train_bce if native_head_report else None),
+        "native_head_train_bce_after":(
+            native_head_report.final_train_bce if native_head_report else None),
+        "native_head_refit_changes_only_decision_parameters":bool(native_head_refit),
         "n_training_minibatches":steps,
         "mean_training_consistency_penalty":accumulation["consistency"]/max(steps,1),
         "mean_training_joint_measurement_reliability":
