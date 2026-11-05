@@ -119,9 +119,13 @@ def flatten_measured_inputs(x: np.ndarray, m: np.ndarray) -> np.ndarray:
     return np.concatenate([means, recent, m.mean(axis=1)], axis=1)
 
 
-def measured_witness(x: np.ndarray) -> np.ndarray:
-    """TRAIN-fixed third source's sensor evidence; not a revealed latent oracle."""
-    return x[:, :, 4:6].mean(axis=(1, 2), keepdims=False)[:, None].astype(np.float64)
+def measured_witness(x: np.ndarray, m: np.ndarray) -> np.ndarray:
+    """Actually measured third-pair evidence, no hidden-value or oracle shortcut."""
+    if x.shape != m.shape:
+        raise ValueError("Measured witness values and masks must match")
+    usable = np.where(m[:, :, 4:6], x[:, :, 4:6], 0.0)
+    denominator = m[:, :, 4:6].sum(axis=(1, 2)).clip(min=1)
+    return (usable.sum(axis=(1, 2)) / denominator)[:, None].astype(np.float64)
 
 
 def provenance_map(k: int) -> torch.Tensor:
@@ -345,7 +349,7 @@ def run(*, out_dir: Path, smoke: bool = False) -> dict[str, Any]:
                 labels=np.concatenate([y[tr],y[te]]),
                 predicted_concepts=np.concatenate([predicted_train,predicted_test]),
                 true_concepts=np.concatenate([true_train,true_test]),
-                residual_candidate=np.concatenate([measured_witness(x[tr]),measured_witness(x[te])]),
+                residual_candidate=np.concatenate([measured_witness(x[tr],train_mask),measured_witness(x[te],test_reference_mask)]),
                 train_indices=np.arange(len(tr)),
                 test_indices=np.arange(len(tr),len(tr)+len(te)),
                 bootstrap_replicates=bootstrap,
