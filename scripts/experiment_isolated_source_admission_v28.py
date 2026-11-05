@@ -87,7 +87,7 @@ def summary_row(rows:list[dict],world:str,method:str,mode:str)->dict:
         "mean_source_usage_fraction":float(np.mean(
             [r.get("source_usage_fraction",0) for r in entries])),
         "mean_source_support_fraction":float(np.mean(
-            [r.get("source_support_fraction",0) for r in entries])),
+            [r.get("source_supported_fraction",0) for r in entries])),
     }
 
 
