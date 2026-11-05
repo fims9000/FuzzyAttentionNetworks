@@ -339,7 +339,7 @@ def execute(out_dir:Path,*,smoke:bool=False):
                     })
                     if stress=="MCAR20" and method in (
                         "frozen_K2","AUTO_STATIC","AUTO_HALF_CONTRAST",
-                        "AUTO_BANK"):
+                        "AUTO_TEMPLATE","AUTO_BANK"):
                         bootstrap_prediction[(case_name,method,seed)]=prob
             if sha_state(native)!=native_sha or float(head.bias)!=old_bias or (
                 not np.array_equal(np.asarray(head.weights),old_weights)):
