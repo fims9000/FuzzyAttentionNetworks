@@ -1,0 +1,105 @@
+name: IOI automatic masked source proposals and independent concept admission
+on:
+  push:
+    branches:
+      - experiment/ioi-automatic-measured-concepts-20261106
+    paths:
+      - '.github/workflows/ioi-automatic-measured-concepts.yml'
+      - 'docs/medical/IOI_AUTOMATIC_MEASURED_CONCEPTS_FROZEN_PROTOCOL_20261106.md'
+      - 'src/conceptfan_discovery/auto_measured_concept_proposals.py'
+      - 'src/conceptfan_discovery/auto_measured_concept_admission.py'
+      - 'src/conceptfan_discovery/auto_measured_concept_benchmark.py'
+      - 'scripts/experiment_automatic_measured_concepts.py'
+      - 'tests/discovery/test_auto_measured_concept_pipeline.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  automatic-source-study:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install frozen CPU ConceptFAN environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test masked oracle-free candidate proposal and independent admission
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/auto_measured_concept_proposals.py \
+            src/conceptfan_discovery/auto_measured_concept_admission.py \
+            src/conceptfan_discovery/auto_measured_concept_benchmark.py \
+            scripts/experiment_automatic_measured_concepts.py
+          python -m pytest -q \
+            tests/discovery/test_auto_measured_concept_pipeline.py \
+            tests/discovery/test_trusted_anchor_repair_v30.py \
+            tests/discovery/test_isolated_source_admission_v28.py
+      - name: Smoke: actual native K2 trained without latent oracle trajectories
+        run: |
+          python scripts/experiment_automatic_measured_concepts.py \
+            --smoke --out-dir AUTO_SMOKE | tee AUTO_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('AUTO_SMOKE/STATUS.json').read_text())
+          assert x['status']=='SMOKE_ONLY'
+          assert x['n_known_neural_fits']==1
+          assert x['never_trained_on_simulator_true_concepts'] is True
+          assert x['source_proposals_do_not_use_any_labels'] is True
+          assert x['source_gating_uses_two_disjoint_VALID_outcome_cohorts'] is True
+          assert len(x['summary'])==240
+          assert len(x['rows'])==240
+          assert len(x['selections'])==3
+          assert not x['candidate_selection_no_TEST_outcomes'] is False
+          assert len(x['proposal_manifest']['candidates'])>=2
+          PY
+      - name: Complete fresh draw 3 native models / 3 target worlds and all negative controls
+        run: |
+          python scripts/experiment_automatic_measured_concepts.py \
+            --out-dir AUTO_FROZEN_EVIDENCE | tee AUTO_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('AUTO_FROZEN_EVIDENCE/STATUS.json').read_text())
+          assert x['status']=='AUTO_MEASURED_CONCEPTS_TRAIN_ONLY_PROPOSE_TWO_ENV_GATED'
+          assert x['n_known_neural_fits']==3
+          assert x['split_sizes']=={'TRAIN':1700,'VALID_ENV1':600,'VALID_ENV2':600,'TEST':900}
+          assert len(x['summary'])==240
+          assert len(x['rows'])==540
+          assert len(x['selections'])==9
+          assert len(x['gates'])==3*3*(len(x['proposal_manifest']['candidates'])+2)
+          assert x['source_proposals_do_not_use_any_labels']
+          assert x['candidate_selection_no_TEST_outcomes']
+          assert x['known_concept_training_receipts'][0]['synthetic_latent_concept_targets_used'] is False
+          assert not x['proposal_manifest']['outcomes_used_for_grouping']
+          assert all(z['semantic_or_physical_identity_confirmed'] is False
+                     for z in x['gates'])
+          assert all(z['selected_candidate_id'] is None
+                     or z['selected_candidate_id'] in
+                     [p['candidate_id'] for p in x['proposal_manifest']['candidates']]
+                     for z in x['selections'])
+          PY
+          git rev-parse HEAD > AUTO_FROZEN_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Archive all proposals, rejected candidates and TEST metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-ioi-auto-measured-sources-${{ github.run_number }}
+          path: |
+            AUTO_SMOKE/
+            AUTO_FROZEN_EVIDENCE/
+            AUTO_SMOKE_LOG.jsonl
+            AUTO_FULL_LOG.jsonl
+          if-no-files-found: warn
