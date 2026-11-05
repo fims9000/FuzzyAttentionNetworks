@@ -1,0 +1,104 @@
+name: IOI V31 temporal source concepts vs static and matched-label CBM baselines
+on:
+  push:
+    branches:
+      - experiment/ioi-temporal-source-bank-v31-20261106
+    paths:
+      - '.github/workflows/ioi-v31-temporal-source-bank.yml'
+      - 'docs/medical/IOI_V31_FROZEN_PHASE_PULSE_TEMPORAL_SOURCE_PROTOCOL_20261106.md'
+      - 'src/conceptfan_discovery/phase_pulse_benchmark_v31.py'
+      - 'src/conceptfan_discovery/temporal_source_candidate_bank_v31.py'
+      - 'scripts/experiment_temporal_source_bank_v31.py'
+      - 'tests/discovery/test_temporal_source_bank_v31.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  phase-order:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install canonical torch CPU temporal model and science stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify temporal-order counterexample and masked source stability
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/phase_pulse_benchmark_v31.py \
+            src/conceptfan_discovery/temporal_source_candidate_bank_v31.py \
+            scripts/experiment_temporal_source_bank_v31.py
+          python -m pytest -q \
+            tests/discovery/test_temporal_source_bank_v31.py \
+            tests/discovery/test_auto_measured_concept_pipeline.py \
+            tests/discovery/test_cross_environment_source_admission.py
+      - name: 'Smoke - actual trained native two-concept model and temporal bank'
+        run: |
+          python scripts/experiment_temporal_source_bank_v31.py \
+            --smoke --out-dir V31_SMOKE | tee V31_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads(Path('V31_SMOKE/STATUS.json').read_text())
+          assert s['status']=='SMOKE_ONLY'
+          assert s['n_unique_native_K2_models']==1
+          assert s['split_sizes']=={'TRAIN':300,'VALID1':150,'VALID2':150,'TEST':240}
+          assert s['known_concepts_trained_from_observable_proxies_only']
+          assert s['oracle_true_latent_concepts_for_training'] is False
+          assert s['source_semantic_physical_certification'] is False
+          assert len(s['summary'])==250
+          assert len(s['rows'])==250
+          assert len(s['selections'])==5
+          assert len(s['confidence_intervals'])==15
+          PY
+      - name: Full preregistered distinct waveform generator 3-seed benchmark
+        run: |
+          python scripts/experiment_temporal_source_bank_v31.py \
+            --out-dir V31_FROZEN_EVIDENCE | tee V31_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads(Path('V31_FROZEN_EVIDENCE/STATUS.json').read_text())
+          assert s['status']=='V31_TEMPORAL_SOURCE_BANK_EXECUTED'
+          assert s['n_unique_native_K2_models']==3
+          assert s['split_sizes']=={'TRAIN':1500,'VALID1':500,'VALID2':500,'TEST':800}
+          assert len(s['summary'])==250
+          assert len(s['rows'])==550
+          assert len(s['selections'])==15
+          assert len(s['confidence_intervals'])==15
+          assert len(s['gates'])==3*5*len(s['temporal_bank_spec'])
+          assert s['not_previous_AR_source_generator']
+          assert s['phase_order_hidden_by_full_history_mean_in_generator']
+          assert s['TEST_outcomes_used_for_training_or_source_gate'] is False
+          assert s['IB_CBM_and_ResSCBM_original_implementations_executed'] is False
+          assert all(not z['target_gradients_to_concept_path']
+                     and not z['oracle_true_latent_concepts_for_training']
+                     for z in [s])
+          assert all(z['n_total_train_labels']==1500 and
+                     z['n_total_valid_labels']==1000 for z in s['gates'])
+          assert Path('V31_FROZEN_EVIDENCE/FROZEN_TEST_PREDICTIONS.npz').exists()
+          PY
+          git rev-parse HEAD > V31_FROZEN_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve all positive and negative results, model hashes and source decisions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ioi-v31-temporal-source-bank-${{ github.run_number }}
+          path: |
+            V31_SMOKE/
+            V31_FROZEN_EVIDENCE/
+            V31_SMOKE_LOG.jsonl
+            V31_FULL_LOG.jsonl
+          if-no-files-found: warn
