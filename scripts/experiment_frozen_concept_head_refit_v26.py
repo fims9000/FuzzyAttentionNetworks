@@ -48,14 +48,15 @@ class LinearNativeHead:
 def refit_linear_concept_head(train_concepts: np.ndarray,
                               train_labels: np.ndarray) -> LinearNativeHead:
     pipe=make_pipeline(StandardScaler(),LogisticRegression(C=1.0,max_iter=1000))
-    pipe.fit(train_concepts,train_labels)
+    q=np.asarray(train_concepts,dtype=np.float64)
+    pipe.fit(q,train_labels)
     scale=pipe.named_steps["standardscaler"]
     clf=pipe.named_steps["logisticregression"]
     weights=clf.coef_[0]/scale.scale_
     bias=float(clf.intercept_[0]-np.dot(weights,scale.mean_))
     result=LinearNativeHead(bias,tuple(map(float,weights)))
-    our_logits,_=result(train_concepts)
-    np.testing.assert_allclose(our_logits,pipe.decision_function(train_concepts),
+    our_logits,_=result(q)
+    np.testing.assert_allclose(our_logits,pipe.decision_function(q),
                                rtol=1e-8,atol=1e-8)
     return result
 
