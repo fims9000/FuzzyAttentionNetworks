@@ -9,6 +9,7 @@ on:
       - 'src/fan/concept/completeness_audit.py'
       - 'src/conceptfan_discovery/selective_explanation_audit_v24.py'
       - 'scripts/run_oracle_coverage_sanity.py'
+      - 'scripts/run_selective_missingness_protocol_v24.py'
       - 'tests/fan_attention/test_observability.py'
       - 'tests/fan_attention/test_completeness_audit.py'
       - 'tests/fan_attention/test_real_model_integration.py'
@@ -64,6 +65,16 @@ jobs:
           assert (result['omitted_predictive_source']['oracle_residual_gain']
                   ==result['predictive_measurement_artifact']['oracle_residual_gain'])
           PY
+          python scripts/run_selective_missingness_protocol_v24.py > ioi_mask_stress_surrogate.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('ioi_mask_stress_surrogate.json').read_text())
+          assert x['status']=='SURROGATE_MASK_STRESS_ONLY'
+          assert len(x['cases'])==21
+          assert all(row['select_model_changes_predictions'] is False for row in x['cases'])
+          assert len({row['mode'] for row in x['cases']})==7
+          PY
           git rev-parse HEAD > ioi_research_commit.txt
       - name: Publish complete diagnostic receipts
         if: always()
@@ -72,5 +83,6 @@ jobs:
           name: ioi-conceptfan-native-integrated-${{ github.run_number }}
           path: |
             ioi_oracle_coverage_sanity.json
+            ioi_mask_stress_surrogate.json
             ioi_research_commit.txt
           if-no-files-found: warn
