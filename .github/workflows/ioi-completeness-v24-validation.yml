@@ -1,0 +1,88 @@
+name: IOI completeness V24 native model validation
+on:
+  push:
+    branches:
+      - experiment/ioi-completeness-observability-20261105
+    paths:
+      - '.github/workflows/ioi-completeness-v24-validation.yml'
+      - 'src/fan/concept/observability.py'
+      - 'src/fan/concept/completeness_audit.py'
+      - 'src/conceptfan_discovery/selective_explanation_audit_v24.py'
+      - 'scripts/run_oracle_coverage_sanity.py'
+      - 'scripts/run_selective_missingness_protocol_v24.py'
+      - 'tests/fan_attention/test_observability.py'
+      - 'tests/fan_attention/test_completeness_audit.py'
+      - 'tests/fan_attention/test_real_model_integration.py'
+      - 'tests/discovery/test_selective_explanation_audit_v24.py'
+      - 'tests/discovery/test_selective_explanation_audit_v24_integration.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONPATH: src:.
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU native model and audit dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Contract, native integration, old V10 regression
+        run: |
+          python -m compileall -q src/fan/concept src/conceptfan_discovery/selective_explanation_audit_v24.py
+          python -m pytest -q \
+            tests/fan_attention/test_observability.py \
+            tests/fan_attention/test_completeness_audit.py \
+            tests/fan_attention/test_real_model_integration.py \
+            tests/discovery/test_selective_explanation_audit_v24.py \
+            tests/discovery/test_selective_explanation_audit_v24_integration.py \
+            tests/discovery/test_multiscale_physiology_v10.py
+      - name: Re-run blinded synthetic-oracle diagnostics (not real clinical validation)
+        run: |
+          python scripts/run_oracle_coverage_sanity.py > ioi_oracle_coverage_sanity.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result=json.loads(Path('ioi_oracle_coverage_sanity.json').read_text())
+          assert set(result)=={'complete_but_noisy_concepts',
+                              'omitted_predictive_source','predictive_measurement_artifact'}
+          for row in result.values():
+              assert row['n_train']==2800 and row['n_test']==1400
+          assert result['complete_but_noisy_concepts']['residual_gain_positive_ci'] is False
+          assert result['omitted_predictive_source']['residual_gain_positive_ci'] is True
+          assert (result['omitted_predictive_source']['oracle_residual_gain']
+                  ==result['predictive_measurement_artifact']['oracle_residual_gain'])
+          PY
+          python scripts/run_selective_missingness_protocol_v24.py > ioi_mask_stress_surrogate.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('ioi_mask_stress_surrogate.json').read_text())
+          assert x['status']=='SURROGATE_MASK_STRESS_ONLY'
+          assert len(x['cases'])==21
+          assert all(row['select_model_changes_predictions'] is False for row in x['cases'])
+          assert len({row['mode'] for row in x['cases']})==7
+          PY
+          git rev-parse HEAD > ioi_research_commit.txt
+      - name: Publish complete diagnostic receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ioi-conceptfan-native-integrated-${{ github.run_number }}
+          path: |
+            ioi_oracle_coverage_sanity.json
+            ioi_mask_stress_surrogate.json
+            ioi_research_commit.txt
+          if-no-files-found: warn

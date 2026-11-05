@@ -1,0 +1,113 @@
+name: IOI V25 trained ConceptFAN omission vs artifact falsification
+on:
+  push:
+    branches:
+      - experiment/ioi-completeness-observability-20261105
+    paths:
+      - '.github/workflows/ioi-v25-trained-omission.yml'
+      - 'scripts/experiment_trained_conceptfan_omission_v25.py'
+      - 'tests/fan_attention/test_v25_trained_omission.py'
+      - 'src/fan/concept/observability.py'
+      - 'src/fan/concept/completeness_audit.py'
+      - 'docs/medical/IOI_V25_FROZEN_TRAINED_NETWORK_OMISSION_PROTOCOL_20261106.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned CPU torch with repository dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Native model and prior V24 regression tests
+        run: |
+          python -m compileall -q scripts/experiment_trained_conceptfan_omission_v25.py
+          python -m pytest -q tests/fan_attention/test_v25_trained_omission.py \
+            tests/fan_attention/test_real_model_integration.py \
+            tests/discovery/test_selective_explanation_audit_v24_integration.py
+      - name: Train three actual native architectures on a separate tiny smoke dataset
+        run: |
+          python scripts/experiment_trained_conceptfan_omission_v25.py --smoke --out-dir V25_SMOKE | tee v25_smoke_log.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V25_SMOKE/STATUS.json').read_text())
+          assert d['status']=='SMOKE_ONLY'
+          assert d['n_trained_distinct_native_models']==6
+          assert len(d['summary'])==84
+          assert len(d['diagnostics'])==3
+          assert len(d['stress_conditions'])==7
+          assert d['original_observational_artifact_world_equals_omitted']
+          PY
+      - name: Attach smoke receipts including negative controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ioi-v25-smoke-${{ github.run_number }}
+          path: |
+            V25_SMOKE/
+            v25_smoke_log.jsonl
+          if-no-files-found: warn
+
+  matched-native-research:
+    needs: smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned CPU torch with repository dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Full frozen comparison, 3 network seeds and all missingness modes
+        run: |
+          python scripts/experiment_trained_conceptfan_omission_v25.py --out-dir V25_NATIVE_EVIDENCE | tee v25_training_log.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V25_NATIVE_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V25_TRAINED_CANONICAL_CONCEPTFAN_OMISSION_AUDIT'
+          assert d['n_trained_distinct_native_models']==18
+          assert len(d['summary'])==84
+          assert len(d['diagnostics'])==9
+          assert len(d['rows'])==210
+          assert d['sample_sizes']=={'train':1600,'unused_calibration':400,'test':800}
+          assert d['oracle_concepts_supervised_on_train_only']
+          assert d['original_observational_artifact_world_equals_omitted']
+          assert all(row['max_additive_error']<=2e-5 for row in d['rows']
+                     if row.get('max_additive_error') is not None)
+          for source in ('rows','diagnostics','training_receipts'):
+              omit=[r for r in d[source] if r['family']=='omitted']
+              artifact=[r for r in d[source] if r['family']=='artifact']
+              assert len(omit)==len(artifact)
+          PY
+          git rev-parse HEAD > V25_NATIVE_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve all synthetic aggregate evidence including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ioi-v25-trained-complete-${{ github.run_number }}
+          path: |
+            V25_NATIVE_EVIDENCE/
+            v25_training_log.jsonl
+          if-no-files-found: warn

@@ -1,0 +1,68 @@
+{
+  "complete_but_noisy_concepts": {
+    "n_train": 2800,
+    "n_test": 1400,
+    "concept_only_logloss": 0.4422697383307838,
+    "concept_plus_residual_logloss": 0.4423360848800059,
+    "oracle_residual_gain": -6.634654922221414e-05,
+    "oracle_residual_gain_ci95": [
+      -0.00017058489649345333,
+      4.4062432012944975e-05
+    ],
+    "predicted_concept_logloss": 0.553209266060679,
+    "corrected_concept_logloss": 0.44320633263656817,
+    "concept_estimation_gain": 0.11000293342411091,
+    "concept_estimation_gain_ci95": [
+      0.08857942878217101,
+      0.13184145654103757
+    ],
+    "residual_gain_positive_ci": false,
+    "interpretation": "No positive held-out oracle-residual gain resolved by this probe; absence of evidence is not proof of a complete concept dictionary.",
+    "scenario": "complete_but_noisy_concepts",
+    "note": "Synthetic oracle diagnostic only; association does not establish physical meaning"
+  },
+  "omitted_predictive_source": {
+    "n_train": 2800,
+    "n_test": 1400,
+    "concept_only_logloss": 0.5493557302662454,
+    "concept_plus_residual_logloss": 0.38537322336629976,
+    "oracle_residual_gain": 0.16398250689994556,
+    "oracle_residual_gain_ci95": [
+      0.1409683269999519,
+      0.18866718907445232
+    ],
+    "predicted_concept_logloss": 0.6110173794427667,
+    "corrected_concept_logloss": 0.5498109924776624,
+    "concept_estimation_gain": 0.061206386965104255,
+    "concept_estimation_gain_ci95": [
+      0.043685721116669345,
+      0.07897016444814595
+    ],
+    "residual_gain_positive_ci": true,
+    "interpretation": "Held-out candidate evidence beyond known oracle concepts under a fixed logistic probe; investigate omitted factors and probe misspecification.",
+    "scenario": "omitted_predictive_source",
+    "note": "Synthetic oracle diagnostic only; association does not establish physical meaning"
+  },
+  "predictive_measurement_artifact": {
+    "n_train": 2800,
+    "n_test": 1400,
+    "concept_only_logloss": 0.5493557302662454,
+    "concept_plus_residual_logloss": 0.38537322336629976,
+    "oracle_residual_gain": 0.16398250689994556,
+    "oracle_residual_gain_ci95": [
+      0.1409683269999519,
+      0.18866718907445232
+    ],
+    "predicted_concept_logloss": 0.6110173794427667,
+    "corrected_concept_logloss": 0.5498109924776624,
+    "concept_estimation_gain": 0.061206386965104255,
+    "concept_estimation_gain_ci95": [
+      0.043685721116669345,
+      0.07897016444814595
+    ],
+    "residual_gain_positive_ci": true,
+    "interpretation": "Held-out candidate evidence beyond known oracle concepts under a fixed logistic probe; investigate omitted factors and probe misspecification.",
+    "scenario": "predictive_measurement_artifact",
+    "note": "Synthetic oracle diagnostic only; association does not establish physical meaning"
+  }
+}
