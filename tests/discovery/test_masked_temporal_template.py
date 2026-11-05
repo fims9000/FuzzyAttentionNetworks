@@ -74,7 +74,17 @@ def test_template_handles_one_missing_half_where_half_contrast_must_reject():
     x,m,g,_,_= _known(n=650)
     profile=fit_masked_rank1_template(g,x[:500],m[:500])
     damaged=m[500:].copy()
-    damaged[:,:8,4:7]=False
+    # Exactly ONE half has all of its channel observations, and the
+    # other half is absent. Preserve the half with >=50% of the
+    # TRAIN-learned squared template energy; this is the prespecified
+    # >=.50 information contract, not TEST-threshold tuning.
+    phi=np.asarray(profile.phi)
+    if np.sum(phi[:8]**2)>=np.sum(phi[8:]**2):
+        damaged[:,:8,4:7]=True
+        damaged[:,8:,4:7]=False
+    else:
+        damaged[:,:8,4:7]=False
+        damaged[:,8:,4:7]=True
     source=x[500:]
     q_static,s_static=measured_temporal_activation(
         g,source,damaged,statistic="static_mean")
@@ -84,7 +94,7 @@ def test_template_handles_one_missing_half_where_half_contrast_must_reject():
         profile,g,source,damaged)
     assert not np.any(s_half>=.5)
     np.testing.assert_array_equal(q_half,np.full(len(q_half),.5))
-    assert (s_template>=.5).mean()>.50
+    assert (s_template>=.5).mean()>.95
     assert (np.abs(q_template-.5)>.02).mean()>.40
     assert np.isfinite(q_static).all()
 
