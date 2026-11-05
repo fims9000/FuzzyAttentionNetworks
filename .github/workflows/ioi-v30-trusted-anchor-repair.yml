@@ -1,0 +1,100 @@
+name: IOI V30 nonlinear source family and independent-anchor repair
+on:
+  push:
+    branches:
+      - experiment/ioi-v30-trusted-anchor-repair-20261106
+    paths:
+      - '.github/workflows/ioi-v30-trusted-anchor-repair.yml'
+      - 'docs/medical/IOI_V30_FROZEN_NONLINEAR_ANCHOR_PROTOCOL_20261106.md'
+      - 'src/conceptfan_discovery/nonlinear_source_bench_v30.py'
+      - 'src/conceptfan_discovery/trusted_anchor_repair_v30.py'
+      - 'scripts/experiment_nonlinear_anchor_repair_v30.py'
+      - 'tests/discovery/test_trusted_anchor_repair_v30.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  native-nonlinear:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned CPU canonical ConceptFAN dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Validate independent anchor assumptions and negative controls
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/nonlinear_source_bench_v30.py \
+            src/conceptfan_discovery/trusted_anchor_repair_v30.py \
+            scripts/experiment_nonlinear_anchor_repair_v30.py
+          python -m pytest -q \
+            tests/discovery/test_trusted_anchor_repair_v30.py \
+            tests/discovery/test_sensor_pair_provenance_v29.py \
+            tests/discovery/test_isolated_source_admission_v28.py
+      - name: Native ConceptFAN sensor-firewall smoke experiment
+        run: |
+          python scripts/experiment_nonlinear_anchor_repair_v30.py \
+            --smoke --out-dir V30_SMOKE | tee V30_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V30_SMOKE/STATUS.json').read_text())
+          assert d['status']=='V30_SMOKE_ONLY'
+          assert d['n_unique_native_known_K2_models']==1
+          assert d['data_sizes']=={'train':240,'validation_total':240,
+                                   'validation_per_environment':120,'test':240}
+          assert len(d['gates'])==2
+          assert len(d['rows'])==256
+          assert len(d['summary'])==256
+          assert d['known_concept_input_sensor_firewall']==[0,1,2,3]
+          assert not d['test_outcomes_used_for_training_threshold_admission_or_repair']
+          assert d['not_previous_gaussian_AR_generator']
+          PY
+      - name: Three independent canonical ConceptFAN fits, full nonlinear fault experiment
+        run: |
+          python scripts/experiment_nonlinear_anchor_repair_v30.py \
+            --out-dir V30_FROZEN_EVIDENCE | tee V30_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V30_FROZEN_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V30_NATIVE_NEW_NONLINEAR_FAMILY_TRUSTED_ANCHOR_STUDY'
+          assert d['n_unique_native_known_K2_models']==3
+          assert d['data_sizes']=={'train':1800,'validation_total':1200,
+                                   'validation_per_environment':600,'test':900}
+          assert len(d['gates'])==6
+          assert len(d['rows'])==576
+          assert len(d['summary'])==256
+          assert not d['test_outcomes_used_for_training_threshold_admission_or_repair']
+          assert not d['physiological_source_identity_certified']
+          assert d['sensor_anchor_independent_noise_by_generator_assumption']
+          assert all(s['max_source_additive_error']<1e-11
+              for s in d['rows'] if s.get('max_source_additive_error') is not None)
+          for seed in (11,23,37):
+              assert len([z for z in d['gates'] if z['seed']==seed])==2
+          PY
+          git rev-parse HEAD > V30_FROZEN_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve all original and negative results as GitHub Actions artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ioi-v30-nonlinear-independent-anchor-${{ github.run_number }}
+          path: |
+            V30_SMOKE/
+            V30_FROZEN_EVIDENCE/
+            V30_SMOKE_LOG.jsonl
+            V30_FULL_LOG.jsonl
+          if-no-files-found: warn
