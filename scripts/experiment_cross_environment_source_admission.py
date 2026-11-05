@@ -37,10 +37,10 @@ from conceptfan_discovery.cross_environment_transport import (
     CASES, changed_sensor_environment, paired_test_ap_difference, case_manifest,
 )
 from conceptfan_discovery.isolated_source_admission_v28 import (
-    train_source_coefficient,
+    train_source_coefficient, measured_candidate,
 )
 from scripts.experiment_automatic_measured_concepts import (
-    train_masked_measured_known_concepts, candidate_with_support,
+    train_masked_measured_known_concepts,
     logit_from_head, _oracle_head_for_outcome,
 )
 from scripts.experiment_nonlinear_anchor_repair_v30 import make_firewalled_k2
@@ -77,6 +77,15 @@ def _baseline_raw(x,mask,y):
         StandardScaler(),LogisticRegression(C=1.,max_iter=1200))
     model.fit(raw_measured_features(x,mask),y)
     return model
+
+
+def candidate_with_support(name, source, values, mask):
+    """Use identical frozen proposal algorithms, adapting baseline names."""
+    if name=="MANUAL_PAIR":
+        return measured_candidate(values[:,:,:6],mask[:,:,:6])
+    if name=="PCA_UNKNOWN":
+        return pca_unknown_values(source,values,mask)
+    return measured_group_concept(source,values,mask)
 
 
 def _one_candidate(
