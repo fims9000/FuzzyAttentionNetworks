@@ -1,0 +1,78 @@
+name: IOI V26 frozen concept-only head vs native fuzzy head
+on:
+  push:
+    branches:
+      - experiment/ioi-v26-frozen-concept-head-refit-20261106
+    paths:
+      - '.github/workflows/ioi-v26-concept-head-control.yml'
+      - 'scripts/experiment_frozen_concept_head_refit_v26.py'
+      - 'tests/fan_attention/test_v26_frozen_head_refit.py'
+      - 'docs/medical/IOI_V26_FROZEN_CONCEPT_HEAD_REFIT_PROTOCOL_20261106.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  head-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install canonical CPU native model dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Validate strictly additive readout and positive risk calibration
+        run: |
+          python -m compileall -q scripts/experiment_frozen_concept_head_refit_v26.py
+          python -m pytest -q \
+            tests/fan_attention/test_v26_frozen_head_refit.py \
+            tests/fan_attention/test_v25_trained_omission.py
+      - name: Validate four trained canonical neural models on smoke synthetic controls
+        run: |
+          python scripts/experiment_frozen_concept_head_refit_v26.py --smoke --out-dir V26_SMOKE | tee v26_smoke_log.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V26_SMOKE/STATUS.json').read_text())
+          assert d['n_distinct_trained_native_models']==4
+          assert len(d['summary'])==81
+          assert d['not_independent_confirmation']
+          PY
+      - name: Run entire fixed V26 exploratory comparison on 3 seeds
+        run: |
+          python scripts/experiment_frozen_concept_head_refit_v26.py --out-dir V26_NATIVE_EVIDENCE | tee v26_full_log.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V26_NATIVE_EVIDENCE/STATUS.json').read_text())
+          assert d['n_distinct_trained_native_models']==12
+          assert d['samples']=={'train':1600,'untouched_cal':400,'test':800}
+          assert len(d['summary'])==81
+          assert len(d['rows'])==189
+          assert all(row.get('additive_error') is None or row['additive_error']<2e-5 for row in d['rows'])
+          assert d['no_raw_or_latent_to_risk_bypass']
+          assert d['test_generator_already_inspected_in_V25']
+          PY
+          git rev-parse HEAD > V26_NATIVE_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Publish all exploratory aggregate comparisons and negative results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ioi-v26-native-concept-head-${{ github.run_number }}
+          path: |
+            V26_SMOKE/
+            V26_NATIVE_EVIDENCE/
+            v26_smoke_log.jsonl
+            v26_full_log.jsonl
+          if-no-files-found: warn
