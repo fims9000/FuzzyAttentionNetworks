@@ -46,7 +46,7 @@ jobs:
             tests/discovery/test_auto_measured_concept_pipeline.py \
             tests/discovery/test_trusted_anchor_repair_v30.py \
             tests/discovery/test_isolated_source_admission_v28.py
-      - name: Smoke: actual native K2 trained without latent oracle trajectories
+      - name: 'Smoke - native K2 trained without latent oracle trajectories'
         run: |
           python scripts/experiment_automatic_measured_concepts.py \
             --smoke --out-dir AUTO_SMOKE | tee AUTO_SMOKE_LOG.jsonl
