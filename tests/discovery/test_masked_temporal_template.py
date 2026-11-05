@@ -11,7 +11,7 @@ from conceptfan_discovery.masked_temporal_template import (
     fit_masked_rank1_template,project_masked_template,template_concept,
 )
 from conceptfan_discovery.masked_template_benchmark import (
-    SEED,CASES,own_draw,test_device_observations,
+    SEED,CASES,own_draw,test_device_observations as simulate_device_observations,
 )
 from conceptfan_discovery.phase_pulse_benchmark_v31 import (
     measured_mask,
@@ -119,7 +119,7 @@ def test_hidden_amplitude_defines_only_test_observation_deformation():
     d=own_draw(n_train=350,n_valid=300,n_test=250)
     x=d["x"][d["test"]]
     amp=d["amplitude_CONCEPTS_AUDIT_ONLY"]["physical"][d["test"]]
-    shifted=test_device_observations(
+    shifted=simulate_device_observations(
         x,"change_pulse_shape",
         oracle_pulse_amplitude_for_GENERATOR_ONLY=amp)
     np.testing.assert_array_equal(x[:,:,:4],shifted[:,:,:4])
