@@ -21,7 +21,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from conceptfan_discovery.phase_pulse_benchmark_v31 import (
-    measured_mask,temporal_sensor_features,
+    measured_mask,temporal_sensor_features,device_environment,
 )
 from conceptfan_discovery.masked_template_benchmark import (
     SEED,TRAIN_N,VALID_N,TEST_N,CASES,STRESS,own_draw,
