@@ -1,0 +1,91 @@
+name: IOI V29 unlabeled two-readout integrity under correlated shifts
+on:
+  push:
+    branches:
+      - experiment/ioi-v29-sensor-provenance-guard-20261106
+    paths:
+      - '.github/workflows/ioi-v29-sensor-integrity.yml'
+      - 'docs/medical/IOI_V29_FROZEN_SENSOR_PROVENANCE_PROTOCOL_20261106.md'
+      - 'src/conceptfan_discovery/sensor_pair_provenance_v29.py'
+      - 'scripts/experiment_sensor_pair_monitor_v29.py'
+      - 'tests/discovery/test_sensor_pair_provenance_v29.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  two-readout-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install frozen CPU ConceptFAN environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify source-integrity guards and common-mode negative control
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/sensor_pair_provenance_v29.py \
+            scripts/experiment_sensor_pair_monitor_v29.py
+          python -m pytest -q \
+            tests/discovery/test_sensor_pair_provenance_v29.py \
+            tests/discovery/test_isolated_source_admission_v28.py
+      - name: Exercise one frozen K2 ConceptFAN model and every instrument scenario
+        run: |
+          python scripts/experiment_sensor_pair_monitor_v29.py \
+            --smoke --out-dir V29_SMOKE | tee V29_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V29_SMOKE/STATUS.json').read_text())
+          assert d['status']=='V29_SMOKE_ONLY'
+          assert d['unique_native_K2_models']==1
+          assert len(d['summary'])==144
+          assert len(d['rows'])==144
+          assert len(d['gates'])==2
+          assert d['train_only_sensor_pair_policy']['outcome_labels_used'] is False
+          PY
+      - name: Execute complete frozen three-model V29 on a fresh generator draw
+        run: |
+          python scripts/experiment_sensor_pair_monitor_v29.py \
+            --out-dir V29_FROZEN_EVIDENCE | tee V29_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V29_FROZEN_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V29_NATIVE_UNLABELLED_SENSOR_PAIR_MONITOR'
+          assert d['unique_native_K2_models']==3
+          assert d['subject_splits']=={'train':1800,'valid_two_environments':1200,
+                                       'each_validation_environment':600,'test':900}
+          assert len(d['summary'])==144
+          assert len(d['rows'])==288
+          assert len(d['gates'])==6
+          assert d['test_outcomes_used_for_training_source_gate_or_sensor_monitor'] is False
+          assert d['common_mode_fault_not_detectable_from_pair_agreement']
+          assert all(z['original_model_additive_error']<2e-5 for z in d['rows']
+                     if z.get('original_model_additive_error') is not None)
+          assert d['native_states'][0]['label_free_first_stage'] is True
+          PY
+          git rev-parse HEAD > V29_FROZEN_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Publish full, negative, and common-mode failure receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-ioi-v29-pair-consistency-${{ github.run_number }}
+          path: |
+            V29_SMOKE/
+            V29_FROZEN_EVIDENCE/
+            V29_SMOKE_LOG.jsonl
+            V29_FULL_LOG.jsonl
+          if-no-files-found: warn
