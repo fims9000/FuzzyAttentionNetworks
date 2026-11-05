@@ -1,0 +1,103 @@
+name: IOI masked source temporal template and long missing-block falsification
+on:
+  push:
+    branches:
+      - experiment/ioi-mask-aware-source-template-20261106
+    paths:
+      - '.github/workflows/ioi-masked-temporal-template.yml'
+      - 'docs/medical/IOI_MASKED_TEMPORAL_TEMPLATE_FROZEN_PROTOCOL_20261106.md'
+      - 'src/conceptfan_discovery/masked_temporal_template.py'
+      - 'src/conceptfan_discovery/masked_template_benchmark.py'
+      - 'scripts/experiment_masked_template_sources.py'
+      - 'tests/discovery/test_masked_temporal_template.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  masked-template:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned CPU torch temporal architecture
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify masked weighted PCA, absent payloads, and source shape failures
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/masked_temporal_template.py \
+            src/conceptfan_discovery/masked_template_benchmark.py \
+            scripts/experiment_masked_template_sources.py
+          python -m pytest -q \
+            tests/discovery/test_masked_temporal_template.py \
+            tests/discovery/test_temporal_source_bank_v31.py
+      - name: 'Smoke - native ConceptFAN with TRAIN-only masked rank1 source'
+        run: |
+          python scripts/experiment_masked_template_sources.py \
+            --smoke --out-dir MASKED_TEMPLATE_SMOKE | tee MASKED_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('MASKED_TEMPLATE_SMOKE/STATUS.json').read_text())
+          assert x['status']=='SMOKE_ONLY'
+          assert x['n_unique_native_K2_models']==1
+          assert x['split_sizes']=={'TRAIN':300,'VALID1':150,'VALID2':150,'TEST':240}
+          assert len(x['summary'])==330
+          assert len(x['rows'])==330
+          assert len(x['selections'])==6
+          assert len(x['gates'])==6*len(x['temporal_bank_spec'])
+          assert len(x['confidence_intervals'])==18
+          assert x['source_templates_fit_from_TRAIN_observed_values_only']
+          assert not x['template_uses_target_labels_or_oracle_factors']
+          PY
+      - name: Complete new-draw 3-seed native benchmark including long missing blocks
+        run: |
+          python scripts/experiment_masked_template_sources.py \
+            --out-dir MASKED_TEMPLATE_EVIDENCE | tee MASKED_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('MASKED_TEMPLATE_EVIDENCE/STATUS.json').read_text())
+          assert x['status']=='MASKED_WLS_TEMPLATE_SOURCE_EXECUTED'
+          assert x['n_unique_native_K2_models']==3
+          assert x['split_sizes']=={'TRAIN':1500,'VALID1':500,'VALID2':500,'TEST':800}
+          assert len(x['summary'])==330
+          assert len(x['rows'])==750
+          assert len(x['selections'])==18
+          assert len(x['gates'])==3*6*len(x['temporal_bank_spec'])
+          assert len(x['confidence_intervals'])==18
+          assert x['known_concepts_trained_from_observable_proxies_only']
+          assert x['source_templates_fit_from_TRAIN_observed_values_only']
+          assert not x['TEST_outcomes_used_for_training_or_source_gate']
+          assert len(x['source_temporal_templates'])==len(x['source_proposals']['candidates'])
+          assert all(not v['template_used_target_outcomes']
+                     and not v['template_used_hidden_generator_factors']
+                     for v in x['source_temporal_templates'].values())
+          assert all(z['n_total_train_labels']==1500
+                     and z['n_total_valid_labels']==1000 for z in x['gates'])
+          assert Path('MASKED_TEMPLATE_EVIDENCE/FROZEN_TEST_PREDICTIONS.npz').exists()
+          PY
+          git rev-parse HEAD > MASKED_TEMPLATE_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Archive SOURCE templates, uncertainty and all negative tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ioi-masked-template-temporal-sources-${{ github.run_number }}
+          path: |
+            MASKED_TEMPLATE_SMOKE/
+            MASKED_TEMPLATE_EVIDENCE/
+            MASKED_SMOKE_LOG.jsonl
+            MASKED_FULL_LOG.jsonl
+          if-no-files-found: warn
