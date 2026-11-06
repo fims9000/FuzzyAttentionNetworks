@@ -96,7 +96,7 @@ def run(out:Path,*,smoke=False):
     ntr,nva,nte=(360,300,240) if smoke else (1000,800,600)
     bootstrap=199 if smoke else 399
     summary=[];rows=[];gates=[];audits=[];paired=[];predictions={}
-    test_labels={};trained_models=[]
+    test_labels={};trained_models=[];native_checkpoints=[]
     for device in devices:
         world=fresh_device_v44(device_seed=device,n_train=ntr,n_valid=nva,n_test=nte)
         tr,v1,v2,te=(world[k] for k in ("train","valid1","valid2","test"))
@@ -164,6 +164,11 @@ def run(out:Path,*,smoke=False):
                 native,ontr[:,:,:4],mo[:,:,:4],seed=seed,epochs=2 if smoke else 10)
             sha=sha_state(native)
             trained_models.append({"device":device,"seed":seed,"sha":sha,**record})
+            native_checkpoints.append({
+                "device":device,"seed":seed,"sha":sha,
+                "state_dict":{k:v.detach().cpu().clone()
+                              for k,v in native.state_dict().items()},
+            })
             qtr=predict_native(native,ontr[:,:,:4],mo[:,:,:4])["concept_summary"]
             q1=predict_native(native,on1[:,:,:4],mo1[:,:,:4])["concept_summary"]
             ontest=test_cases["healthy_energy","MCAR20"]["on"][:,:,:4]
@@ -277,7 +282,14 @@ def run(out:Path,*,smoke=False):
     for (device,case),y in test_labels.items():
         archive[f"device{device}_{case}_TEST_Y"]=y
     np.savez_compressed(out/"TEST_PREDICTIONS.npz",**archive)
-    print(json.dumps({"event":"V44_COMPLETE","n_rows":len(rows),
+    checkpoint_dir=out/"NATIVE_CHECKPOINTS"
+    checkpoint_dir.mkdir()
+    for ckpt in native_checkpoints:
+        torch.save(ckpt,checkpoint_dir/
+                   f"native_K2_device{ckpt['device']}_seed{ckpt['seed']}.pt")
+    if len(list(checkpoint_dir.glob("*.pt")))!=len(trained_models):
+        raise AssertionError("Incomplete frozen native K2 evidence checkpoints")
+    print(json.dumps({"event":"V44_COMPLETE",,"n_rows":len(rows),
                       "healthy_MCAR40":[r for r in summary
                          if r["case"]=="healthy_energy" and r["stress"]=="MCAR40"]}),
           flush=True)
