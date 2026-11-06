@@ -46,11 +46,16 @@ class GaugeSourceFitV36:
         }
 
 
-def _inputs(x, m):
+def _inputs(x, m, *, min_episodes:int=1):
+    """Validate observed measurements at either FIT or INFERENCE time.
+
+    A large TRAIN cohort is required for estimating cross-view moments,
+    NOT for applying the already frozen source model to a single record.
+    """
     x=np.asarray(x,dtype=np.float64)
     m=np.asarray(m,dtype=bool)
     if (x.ndim!=3 or x.shape!=m.shape or x.shape[1]!=16
-        or x.shape[2]!=12 or len(x)<100 or not np.isfinite(x[m]).all()):
+        or x.shape[2]!=12 or len(x)<min_episodes or not np.isfinite(x[m]).all()):
         raise ValueError("ABSTAIN: expected aligned [N,16,12] observations and masks")
     return x,m
 
@@ -122,7 +127,7 @@ def fit_blind_gauge_source_v36(
         raise ValueError("ABSTAIN: cross-view independence needs external provenance")
     if bootstrap not in (24,32):
         raise ValueError("Frozen bootstrap resample count changed")
-    x,m=_inputs(train_x,train_mask)
+    x,m=_inputs(train_x,train_mask,min_episodes=100)
     c0,n0=_cross(x,m,0)
     c1,n1=_cross(x,m,1)
     ratio,a,b=_directions(c0,c1)
