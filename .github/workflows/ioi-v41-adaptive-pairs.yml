@@ -1,0 +1,138 @@
+name: ConceptFAN V41 TRAIN-certified adaptive ON OFF sensor pair consensus
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v41-adaptive-pair-consensus-20261106
+    paths:
+      - '.github/workflows/ioi-v41-adaptive-pairs.yml'
+      - 'src/conceptfan_discovery/adaptive_pair_consensus_v41.py'
+      - 'src/conceptfan_discovery/adaptive_pair_bench_world_v41.py'
+      - 'scripts/experiment_adaptive_pair_v41.py'
+      - 'scripts/audit_adaptive_pair_v41.py'
+      - 'tests/discovery/test_adaptive_pair_consensus_v41.py'
+      - 'docs/medical/CONCEPTFAN_V41_FROZEN_ADAPTIVE_PAIR_CONSENSUS_PROTOCOL_20261106.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  fresh-four-device-adaptive-pairs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU PyTorch native Temporal ConceptFAN and supervised controls
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify TRAIN-only scale certificates, masked timepoints, disagreement refusal
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/adaptive_pair_bench_world_v41.py \
+            src/conceptfan_discovery/adaptive_pair_consensus_v41.py \
+            scripts/experiment_adaptive_pair_v41.py
+          python -m pytest -q \
+            tests/discovery/test_adaptive_pair_consensus_v41.py \
+            tests/discovery/test_difference_baselines_v40.py \
+            tests/discovery/test_paired_isolation_v39.py \
+            tests/discovery/test_native_adaptive_type3_transformer_v34.py
+      - name: Smoke one real ConceptFAN with all missingness/fault and unsafe ablation
+        run: |
+          python scripts/experiment_adaptive_pair_v41.py \
+            --smoke --out-dir V41_SMOKE | tee V41_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V41_SMOKE/STATUS.json').read_text())
+          assert d['status']=='V41_SMOKE_ONLY'
+          assert d['devices']==[20261507]
+          assert d['n_train']==360
+          assert d['n_real_native_K2_fits']==1
+          assert d['n_TEST_metric_rows']==8*10*(6+6)
+          assert d['n_summary']==8*10*12
+          assert d['n_dual_VALID_receipts']==8*5
+          assert d['n_PRE_REGISTERED_AP_CIs']==13
+          assert d['n_condition_measurement_support_receipts']==8*10*4
+          assert d['same_TEST_patient_K2_sensor_mask_across_every_method']
+          assert d['TRAIN_only_monotone_pair_gauge_calibration']
+          assert d['strict_multi_pair_agreement_policy']
+          assert d['selected_single_pair_is_UNCORROBORATED_not_identified']
+          assert len(d['native_concept_explanation_examples'])==1
+          assert Path('V41_SMOKE/FROZEN_TEST_PREDICTIONS.npz').is_file()
+          PY
+      - name: Full 4 fresh linear/nonlinear devices x 3 native K2 fits and 10 missingness modes
+        run: |
+          python scripts/experiment_adaptive_pair_v41.py \
+            --out-dir V41_EVIDENCE | tee V41_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V41_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V41_MATCHED_RAW_DIFFERENCE_NONLINEAR_EXECUTED'
+          assert d['devices']==[20261507,20261509,20261521,20261523]
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(1000,400,400,600)
+          assert d['n_real_native_K2_fits']==12
+          assert d['n_TEST_metric_rows']==4*8*10*(6*3+6)
+          assert d['n_summary']==4*8*10*12
+          assert d['n_dual_VALID_receipts']==4*8*3*5
+          assert d['n_PRE_REGISTERED_AP_CIs']==4*13
+          assert d['n_condition_measurement_support_receipts']==4*8*10*4
+          assert len(d['native_concept_explanation_examples'])==12
+          assert d['no_TEST_y_used_in_feature_fit_or_gate']
+          assert d['source_definition_frozen_before_TEST']
+          assert d['physical_switch_is_external_supervision']
+          assert not d['no_claim_of_clinical_or_physical_source_identity'] is False
+          assert all(x['n_outcome_training_labels'] in (1000,1800)
+                     for x in d['test_metric_rows'])
+          assert all(x['source_use']==0
+                     for x in d['summary']
+                     if x['method'] in ('DIFF_AB','DIFF_ABC',
+                                       'DIFF_ADAPTIVE','DIFF_ANY_UNCHECKED')
+                     and (x['case']=='OFF_reference_unavailable'
+                          or x['stress']=='missing_reference'))
+          assert Path('V41_EVIDENCE/FROZEN_TEST_PREDICTIONS.npz').is_file()
+          assert len(list(Path('V41_EVIDENCE/CHECKPOINTS').glob('native_K2_*.pt')))==12
+          PY
+          git rev-parse HEAD > V41_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independent 7680 prediction/metric, 3840 summary and measured-pair provenance audit
+        run: |
+          python scripts/audit_adaptive_pair_v41.py \
+            --evidence-dir V41_EVIDENCE \
+            --out-file V41_EVIDENCE/INDEPENDENT_TEST_METRIC_NLL_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V41_EVIDENCE/INDEPENDENT_TEST_METRIC_NLL_AUDIT.json').read_text())
+          assert d['status']=='V41_INDEPENDENT_ALL_FROZEN_TEST_METRICS_AUDITED'
+          assert d['n_verified_original_TEST_rows']==7680
+          assert d['n_verified_aggregated_rows']==3840
+          assert d['max_abs_metric_difference']<1e-12
+          assert d['n_verified_exact_missing_OFF_returns_to_original_K2']==816
+          assert d['n_source_measurement_provenance_receipts']==1280
+          assert d['n_illegal_missing_view_pair_choices']==0
+          assert d['n_saved_dual_VALID_risk_receipts']==480
+          assert d['n_registered_paired_AP_intervals']==52
+          assert d['n_exploratory_paired_NLL_intervals']==52
+          assert not d['single_pair_is_measurement_coverage_not_semantic_certification'] is False
+          PY
+      - name: Save complete raw receipts including failures and failed CI attempts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v41-adaptive-train-certified-${{ github.run_number }}
+          path: |
+            V41_SMOKE/
+            V41_EVIDENCE/
+            V41_SMOKE_LOG.jsonl
+            V41_FULL_LOG.jsonl
+          if-no-files-found: ignore
