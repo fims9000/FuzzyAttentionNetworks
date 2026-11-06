@@ -22,6 +22,9 @@ from conceptfan_discovery.exogenous_probe_gate_v38 import (
     fit_sentinel_train_only_v38,fit_probe_intervention_v38,
     source_with_independent_evidence_v38,negative_control_runtime_v38,
 )
+from conceptfan_discovery.source_persistence_v38 import (
+    save_source_state_v38,load_source_state_v38,
+)
 from conceptfan_discovery.threeview_centered_v37 import (
     fit_centered_threeview_v37,threeview_feature_v37,pair_feature_v37,
 )
@@ -182,6 +185,8 @@ def run(output:Path,*,smoke=False):
     resamples=199 if smoke else 399
     all_rows=[];all_gates=[];all_source_fits=[];all_training=[]
     predictions={};labels_by_case={};checkpoints=[];human=[]
+    source_states_to_save={};replay_source_records={}
+    inference_bundles=[]
     n_fit=0
 
     def store_prob(device,case,stress,method,nn_seed,p):
@@ -204,6 +209,7 @@ def run(output:Path,*,smoke=False):
         probe_fit=fit_probe_intervention_v38(
             measured_fit,world["independent_calibration_onoff"],
             seed=20263821+device%101,bootstrap_reps=199)
+        source_states_to_save[device]=(measured_fit,monitor_fit,probe_fit)
         source_train=_source_methods(
             measured_fit,monitor_fit,probe_fit,x[tr],train_mask)
         source_valid1=_source_methods(
@@ -245,6 +251,11 @@ def run(output:Path,*,smoke=False):
                 "test":stress_data,
             }
             labels_by_case[(device,case)]=world["outcomes"][law][te]
+        healthy_case=case_data["healthy"]["test"]["MCAR20"]
+        replay_source_records[device]=(
+            healthy_case["x"][:2].copy(),
+            healthy_case["mask"][:2].copy(),
+        )
 
         # For one and the SAME TEST subject/mask, offset +2 must
         # change neither the physical source energy nor sentinel decision.
@@ -314,6 +325,23 @@ def run(output:Path,*,smoke=False):
                         "gamma_train_only":gamma,
                         "gate":gate.as_dict(),
                     })
+                primary_gamma,primary_gate=trained_gate["ABC_probe_monitor"]
+                inference_bundles.append({
+                    "device_seed":device,"NN_seed":seed,
+                    "outcome_case":case,"outcome_law":law,
+                    "native_checkpoint":(
+                        f"CHECKPOINTS/native_K2_device{device}_seed{seed}.pt"),
+                    "source_model_state":f"SOURCE_STATES/device{device}_V38_source.json",
+                    "two_concept_original_TRAIN_head":{
+                        "weights":[float(v) for v in np.asarray(head.weights)],
+                        "bias":float(head.bias),
+                    },
+                    "new_source_gamma_TRAIN_only":float(primary_gamma),
+                    "new_source_passed_two_independent_VALID":bool(primary_gate.approved),
+                    "new_source_requires_independent_probe_pass":True,
+                    "frozen_old_K2_weights_SHA":sha0,
+                    "source_physically_certified_realworld":False,
+                })
                 for stress in STRESSES:
                     test=case_data[case]["test"][stress]
                     baseline=expit(base_test)
@@ -453,6 +481,9 @@ def run(output:Path,*,smoke=False):
         "n_aggregated_results":len(aggregate),
         "n_two_VALID_risk_gates":len(all_gates),
         "n_paired_AP_contrasts":len(ci),
+        "n_persisted_reopenable_source_models":len(source_states_to_save),
+        "n_saved_outcome_specific_inference_bundles":len(inference_bundles),
+        "source_model_persistence_json_no_pickle":True,
         "assumes_control_sensor10_really_wired_to_shared_artifact":True,
         "assumes_controlled_actuator_physically_targets_one_sim_source":True,
         "calibration_is_external_supervision_not_unsupervised_discovery":True,
@@ -467,6 +498,7 @@ def run(output:Path,*,smoke=False):
         "summary":aggregate,
         "paired_AP_bootstrap":ci,
         "human_model_explanations":human,
+        "outcome_head_and_source_state_manifests_saved":True,
     }
     output.mkdir(parents=True,exist_ok=False)
     for name,record in (
@@ -476,6 +508,7 @@ def run(output:Path,*,smoke=False):
         ("SOURCE_CALIBRATION.json",all_source_fits),
         ("PAIRED_AP_BOOTSTRAP.json",ci),
         ("EXPLANATIONS_RU.json",human),
+        ("INFERENCE_BUNDLES.json",inference_bundles),
     ):
         (output/name).write_text(
             json.dumps(record,ensure_ascii=False,indent=2,allow_nan=False))
@@ -486,6 +519,19 @@ def run(output:Path,*,smoke=False):
     for (dev,case),y in labels_by_case.items():
         stored[f"device{dev}_{case}_TEST_LABELS"]=y
     np.savez_compressed(output/"FROZEN_TEST_PREDICTIONS.npz",**stored)
+    (output/"SOURCE_STATES").mkdir()
+    for device,(fit,monitor,probe) in source_states_to_save.items():
+        source_path=output/"SOURCE_STATES"/f"device{device}_V38_source.json"
+        save_source_state_v38(source_path,fit,monitor,probe)
+        reopened=load_source_state_v38(source_path)
+        measured,mask=replay_source_records[device]
+        before=source_with_independent_evidence_v38(
+            fit,monitor,probe,measured,mask)
+        after=source_with_independent_evidence_v38(
+            reopened.source,reopened.monitor,reopened.probe,
+            measured,mask)
+        np.testing.assert_array_equal(before["q"],after["q"])
+        np.testing.assert_array_equal(before["support"],after["support"])
     (output/"CHECKPOINTS").mkdir()
     for ckpt in checkpoints:
         torch.save(
