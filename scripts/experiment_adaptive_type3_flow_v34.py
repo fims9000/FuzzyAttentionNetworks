@@ -33,6 +33,7 @@ from conceptfan_discovery.adaptive_higher_order_concepts_v34 import (
 )
 from conceptfan_discovery.native_adaptive_type3_transformer_v34 import (
     NativeAuditedFuzzyConceptFANV34,readable_source_explanation,
+    render_concept_explanation_ru,
 )
 from conceptfan_discovery.conditional_source_flow_v34 import (
     train_conditional_measured_source_flow,flow_amplitude_samples,
@@ -524,6 +525,9 @@ def run(output:Path,*,smoke:bool=False):
                                 "report":readable_source_explanation(
                                     full_native,0,
                                     has_independent_external_device_calibration=True),
+                                "human_facing":render_concept_explanation_ru(
+                                    full_native,0,
+                                    observed_source_template=template.phi),
                             })
                             alpha_examples.append({
                                 "family":family,"case":case,"nn_seed":seed,
