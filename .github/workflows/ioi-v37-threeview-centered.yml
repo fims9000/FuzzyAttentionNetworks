@@ -7,9 +7,11 @@ on:
       - '.github/workflows/ioi-v37-threeview-centered.yml'
       - 'src/conceptfan_discovery/threeview_world_v37.py'
       - 'src/conceptfan_discovery/threeview_centered_v37.py'
+      - 'src/conceptfan_discovery/threeview_explanation_v37.py'
       - 'scripts/experiment_threeview_centered_v37.py'
       - 'scripts/audit_v37_paired_test_nll.py'
       - 'tests/discovery/test_threeview_centered_v37.py'
+      - 'tests/discovery/test_threeview_explanation_v37.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -42,6 +44,7 @@ jobs:
             scripts/experiment_threeview_centered_v37.py
           python -m pytest -q \
             tests/discovery/test_threeview_centered_v37.py \
+            tests/discovery/test_threeview_explanation_v37.py \
             tests/discovery/test_gauge_source_v36.py \
             tests/discovery/test_native_adaptive_type3_transformer_v34.py
       - name: Smoke with real native Temporal ConceptFAN and all negative controls
@@ -59,6 +62,7 @@ jobs:
           assert d['n_valid_gates']==9*3
           assert d['n_paired_test_CI']==9
           assert len(d['human_facing_source_passports'])==1
+          assert d['human_facing_source_passports'][0]['human_facing']['no_invented_medical_semantics']
           assert d['source_mixing_H_not_supplied_to_learner']
           assert d['view_partition_fixed_externally']
           assert d['test_outcomes_not_used_for_source_selection']
@@ -81,6 +85,9 @@ jobs:
           assert d['n_valid_gates']==2*9*3*3
           assert d['n_paired_test_CI']==2*9
           assert len(d['human_facing_source_passports'])==6
+          assert all(z['human_facing']['no_invented_medical_semantics']
+                     and 'measured_joint_timesteps' in z['human_facing']
+                     for z in d['human_facing_source_passports'])
           assert all(z['threeview_measured_only']['train_fit_episodes']==700
                      for z in d['source_fits'])
           assert all(not z['physical_semantics_certified']
