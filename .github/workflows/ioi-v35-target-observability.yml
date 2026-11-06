@@ -1,0 +1,55 @@
+name: ConceptFAN V35 target-specific observability and calibrated source selection
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v35-target-observability-20261106
+    paths:
+      - '.github/workflows/ioi-v35-target-observability.yml'
+      - 'src/conceptfan_discovery/target_observability_v35.py'
+      - 'src/conceptfan_discovery/mixed_source_benchmark_v35.py'
+      - 'tests/discovery/test_target_observability_v35.py'
+      - 'scripts/experiment_target_observability_v35.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  v35-identifiability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install scientific requirements and real CPU Temporal ConceptFAN
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test precise nullspace condition and source calibration
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/target_observability_v35.py \
+            src/conceptfan_discovery/mixed_source_benchmark_v35.py
+          python -m pytest -q \
+            tests/discovery/test_target_observability_v35.py \
+            tests/discovery/test_native_adaptive_type3_transformer_v34.py \
+            tests/discovery/test_conditional_source_flow_v34.py
+      - name: Upload frozen evidence if present
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v35-identifiability-${{ github.run_number }}
+          path: |
+            V35_SMOKE/
+            V35_EVIDENCE/
+            V35_SMOKE_LOG.jsonl
+            V35_FULL_LOG.jsonl
+          if-no-files-found: ignore
