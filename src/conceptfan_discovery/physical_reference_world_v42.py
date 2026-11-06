@@ -126,8 +126,9 @@ def generate_device_v42(
     # reference calibration stage may access restricted TRAIN/VALID1/VALID2
     # subject indices, not the TEST reference values.
     train_ix=np.asarray(base["train"],dtype=int)
-    ref_noise_scale=.10*max(.01,float(np.subtract(
-        *np.quantile(energy[train_ix],[.75,.25])[::-1])))
+    reference_train_iqr=float(np.quantile(energy[train_ix],.75)-
+                              np.quantile(energy[train_ix],.25))
+    ref_noise_scale=.10*max(.01,reference_train_iqr)
     rng_reference=np.random.default_rng(device_seed+92042)
     external_reference=(
         energy+rng_reference.normal(0,ref_noise_scale,size=n)
