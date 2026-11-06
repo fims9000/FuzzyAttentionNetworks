@@ -172,6 +172,7 @@ def _candidate_for_mode(
     name,group,template,flow,definition,x,m,
     *,
     draw_seed,
+    generated=None,
 ):
     wls,info,raw=_source_proxy(group,template,x,m)
     if name=="WLS_TYPE1":
@@ -179,9 +180,10 @@ def _candidate_for_mode(
         uncertainty=np.zeros_like(wls)
         sample_source="OBSERVED_ONLY_WLS"
     else:
-        generated=flow_amplitude_samples(
-            flow,template,group,x,m,
-            seed=draw_seed,n_samples=48)
+        if generated is None:
+            generated=flow_amplitude_samples(
+                flow,template,group,x,m,
+                seed=draw_seed,n_samples=48)
         amplitude=generated["amplitude_mean"]
         uncertainty=generated["amplitude_sd"]
         sample_source="SELF_SUPERVISED_GENERATED_AMPLITUDE_MEAN"
@@ -280,6 +282,7 @@ def run(output:Path,*,smoke:bool=False):
             for g in groups
         }
         flow_cache={}
+        flow_draw_cache={}
         synthetic_reference=synthetic_known_reference_training_only(
             seed=20263420+family_index)
         # This traceable input is a SIMULATOR DEVICE PHANTOM, not medical truth
@@ -348,11 +351,19 @@ def run(output:Path,*,smoke:bool=False):
                     fitted={}
                     for split_index,split in enumerate(("train","val1","val2")):
                         bx,bm=shifts[split]
+                        draw_id=(case,split,group.candidate_id)
+                        draw_seed=(20263490+
+                            10000*family_index+1000*case_index+
+                            split_index)
+                        if (method!="WLS_TYPE1" and
+                            draw_id not in flow_draw_cache):
+                            flow_draw_cache[draw_id]=flow_amplitude_samples(
+                                flow,template,group,bx,bm,
+                                seed=draw_seed,n_samples=48)
                         fitted[split]=_candidate_for_mode(
                             method,group,template,flow,definition,bx,bm,
-                            draw_seed=20263490+
-                                10000*family_index+1000*case_index+
-                                100*seed+split_index,
+                            draw_seed=draw_seed,
+                            generated=flow_draw_cache.get(draw_id),
                         )
                     gamma=_train_risk_gamma(
                         base_train,fitted["train"]["q"],y[tr])
@@ -428,12 +439,20 @@ def run(output:Path,*,smoke:bool=False):
                         "metric":metrics(y[te],pred_cbm),
                         "source_use":1.,
                     })
+                    draw_id=(case,stress,group.candidate_id)
+                    draw_seed=(20263950+10000*family_index+
+                        1000*case_index+stress_index)
                     for method in SOURCE_FUZZY_ORDERS:
                         rec=samples_by_method[method]
+                        if (method!="WLS_TYPE1" and
+                            draw_id not in flow_draw_cache):
+                            flow_draw_cache[draw_id]=flow_amplitude_samples(
+                                flow,template,group,tx,tm,
+                                seed=draw_seed,n_samples=48)
                         source=_candidate_for_mode(
                             method,group,template,flow,definition,tx,tm,
-                            draw_seed=20263950+10000*family_index+
-                                1000*case_index+100*seed+stress_index,
+                            draw_seed=draw_seed,
+                            generated=flow_draw_cache.get(draw_id),
                         )
                         actual_slot=AdditiveFuzzySourceSlot(
                             definition,order=SOURCE_FUZZY_ORDERS[method])
