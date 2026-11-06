@@ -1,0 +1,31 @@
+# V36 — independent post-execution scientific and code audit, 2026-11-06
+
+**Original immutable evidence:** [CI 42187348291](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/42187348291), source SHA \`87283f7085e96e3d1bfd98c30e31abb2d087cad6\`, 22 passed, 3 trained native Temporal ConceptFAN, 616 individual method evaluations, 280 summary rows, 42 VALID receipts. The original archive has intact ZIP CRC, synthetic TEST predictions, 3 K2 state_dicts, full source receipts and bootstrap intervals. **No real medical observations.**
+
+**Independent calculation:** all **280/280** reported AUPRC and NLL cells exactly reproduced from the saved subject-level probabilities using the code's \`1e-7\` probability clipping, \`average_precision_score\`, and \`log_loss\`. Across all 8 TEST missingness stress modes and 3 native seeds, simultaneous A+B polarity inversion yields EXACT same V36 predictions, and absence of either view yields EXACT native K2 predictions.
+
+**New significant application defect found and fixed:** before the review \`source_energy_v36\` called a shared \`_inputs\` validator that required \`N>=100\` even at inference, so a single patient/episode could not be scored. Fixed with a \`min_episodes=1\` inference path and a **separate N>=100 TRAIN-fit requirement**; added regression tests for singleton vs batch identity, hidden NaN cells, missing-view neutral fallback and preservation of strict TRAIN minimum. [**Successful post-fix CI 42189732422**](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/42189732422), **24 tests passed**. Full 3-seed study repeats with no changed observation/gate policy; the maximum numerical differences vs first run across 280 summaries are **AUPRC < 0.000006**, NLL **<0.000001**, source-use exactly equal. Do not rewrite or relabel the original evidence artifact.
+
+## What the evidence DOES and DOES NOT establish
+
+| TEST world MCAR20 | Frozen K2 AUPRC | V36 blind lag-energy AUPRC | Best quadratic logistic AUPRC |
+|---|---:|---:|---:|
+| Healthy useful energy | .644227 | .823469 | .833133 |
+| Unseen one-view polarity inversion | .644227 | .644227 (source refused 100%) | .447840 |
+| Unseen COMMON colored noise, both views | .644227 | .659176 (source used 94%) | .595640 |
+
+The energy V36 is **not** the strongest classifier on healthy TEST (NLL .53116 vs raw quadratic .50137). Because this strongest-baseline comparison had not been pre-registered for a paired CI, we computed an **exploratory post-hoc** 800-resample subject-paired bootstrap on the same 600 TEST episodes (conditional on three fitted V36 networks): V36−quadratic ΔAUPRC **−.00966**, interval **[−.03237,+.01386]**, and ΔNLL **+.02978** (worse), interval **[+.00149,+.05585]**. No independent-training or population-wide CI and no confirmatory significance claim from this retrospective contrast.
+
+The cross-view energy's correlation with true simulated source energy (AUDIT ONLY) .861 does **not** establish clinical identity or correctness of a signed physical concept. Independent noise across A and B is a simulator assumption, not a property inferred from observations. The 2x2 latent factor count and partition (4,5) versus (6,7) are preset; **mixing A/B hidden** is not the same as completely blind sensor grouping.
+
+## SCIENTIFIC ISSUES REMAINING — not fixed retrospectively
+
+1. **Covariance/mean mismatch:** V36 theory uses \`C_AB(lag)=Cov(X_A,t,X_B,t−lag)\`, but code's \`_cross\` calculates \`A.T@B / n\` **without subtraction of TRAIN means**. When source/measurement means are exactly zero, this is a consistent second-moment approximation; under an unmodelled sensor baseline offset the estimate can be biased. Diagnostic (off-protocol, not a replacement TEST): adding a constant **+2** to sensors4 and6 on TRAIN changes lag ratios from **[+.748,−.253] to [+.896,+.148]**. Do NOT claim shift-invariant second-order source discovery. Remedy: preregister centering/window offsets, independent calibration or explicit train-mean invariance tests, then re-evaluate on FRESH TEST; do not alter frozen initial observations.
+2. **Protocol mismatch — random mixing:** preregistration said independent fixed *random* full-rank A/B, but code generator uses constant \`[[1.1,.6],[.45,1.2]]\` and \`[[.8,-.7],[1.15,.4]]\`. Only **one** measurement mixing system tested. A cross-device generalization claim would be unsupported.
+3. **Protocol mismatch — threshold scale:** preregistration said \`energy>=.10\` in \`TRAIN-normalized units\`, code gates at **raw energy >=.10**, and only afterwards uses TRAIN median/IQR for membership scaling. Explicitly amend scientific interpretation; do not retroactively redefine threshold.
+4. **Missing pre-registered stress:** a separate single-view **noise-shift control** was specified, but actual \`CASES\` lacks it. Common colored noise across BOTH views is present and shows severe failure (V36 NLL .75223 vs K2 .64117). The missing stress is not covered by that control.
+5. **Human explanation still technical:** V36 receipts list sensor indices, paired observed count, risk percentage-point change and sign ambiguity, but not a validated lay description of a physical mechanism. There is no such verified mechanism in this simulator; use text about **observed temporal covariance/energy**, not invented physiological names.
+
+**Scientific priority:** classical blind second-order source separation is already established (Belouchrani et al., *IEEE TSP* 45(2), 1997, https://doi.org/10.1109/78.554307). Our contribution is the auditable, conditional use/refusal of one **spectrally ordered source energy** in a real ConceptFAN forward graph. On this single synthetic simulator it is demonstrably useful but vulnerable to a shared instrumental artifact. Forthcoming claims require fresh mixes/streams, verified independent-view provenance, correct centering, missing tests, and fair matched-budget published baselines. Keep PR DRAFT and preserve the original pre-TEST protocol unchanged.
+
+**Reproduction of the original evidence:** downloadable source artifact on [CI 42187348291](https://github.com/fims9000/FuzzyAttentionNetworks/actions/runs/42187348291); the archive source SHA and PR head intentionally differ after this post-hoc bugfix and audit. Do not present post-hoc exploratory intervals as frozen protocol results.
