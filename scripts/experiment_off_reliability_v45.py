@@ -113,6 +113,7 @@ def run(out:Path,*,smoke=False):
     bootstrap=199 if smoke else 399
     summary=[];rows=[];gates=[];audits=[];paired=[];predictions={}
     test_labels={};trained_models=[];native_checkpoints=[];off_guard_receipts=[]
+    monitor_evidence={};risk_use_evidence={}
     for device in devices:
         world=fresh_device_v45(device_seed=device,n_train=ntr,n_valid=nva,n_test=nte)
         tr,v1,v2,te=(world[k] for k in ("train","valid1","valid2","test"))
@@ -172,6 +173,24 @@ def run(out:Path,*,smoke=False):
                                mask_seed=20264461+mi,known_TEST_first4=known_test_mask)
                 if stress=="missing_reference": mb[:,:,4:10]=False
                 test_cases[case,stress]=prepare_case(on,off,ma,mb,old_fit,new_fit,off_guard)
+                # Post-TEST read-only provenance: actual OFF sensor condition and
+                # measured source support, no Y or hidden simulator S/H/E/U.
+                observed_test=test_cases[case,stress]
+                stamp=f"device{device}_{case}_{stress}"
+                current=observed_test["off_monitor"]
+                monitor_evidence[stamp+"_off_score"]=np.asarray(
+                    current["score"],dtype=np.float64).copy()
+                monitor_evidence[stamp+"_off_usable"]=np.asarray(
+                    current["usable_for_additional_concept"],dtype=bool).copy()
+                monitor_evidence[stamp+"_off_alarm"]=np.asarray(
+                    current["off_background_alarm"],dtype=bool).copy()
+                monitor_evidence[stamp+"_off_support"]=np.asarray(
+                    current["support"],dtype=bool).copy()
+                for method in CONCEPT_METHODS:
+                    source=observed_test["source"][method]
+                    monitor_evidence[stamp+"_"+method+"_measured_support"]=np.asarray(
+                        source["support"],dtype=bool).copy()
+
         audits.append({
             "device":device,"family":world["family"],"fit_failure":fit_error,
             "v37_train_only":v37.audit() if v37 else None,
@@ -260,6 +279,10 @@ def run(out:Path,*,smoke=False):
                                 approved=gate["approved"],minimum_fraction=.50)
                             np.testing.assert_array_equal(logits[~used],ztest[~used])
                             p=expit(logits)
+                            risk_use_evidence[
+                                f"device{device}_{case}_{stress}_{method}_seed{seed}_used"
+                            ]=np.asarray(used,dtype=bool).copy()
+
                             predictions[device,case,stress,method,seed]=p
                             rows.append({
                                 "device":device,"case":case,"stress":stress,
@@ -320,6 +343,8 @@ def run(out:Path,*,smoke=False):
         "metrics":summary,"test_rows":rows,"gates":gates,
         "source_fits_and_graph_audits":audits,"off_guard_TRAIN_VALID_receipts":off_guard_receipts,"paired_AP_bootstrap":paired,
         "native_training":trained_models,
+        "n_OFF_monitor_condition_receipts":len(monitor_evidence),
+        "n_actual_source_use_decision_arrays":len(risk_use_evidence),
         "measured_OFF_dynamic_energy_gate_is_not_physical_certification":True,
         "physical_source_identity_certified":False,
         "general_predictor_superiority_claim":False,
@@ -334,6 +359,11 @@ def run(out:Path,*,smoke=False):
     for (device,case),y in test_labels.items():
         archive[f"device{device}_{case}_TEST_Y"]=y
     np.savez_compressed(out/"TEST_PREDICTIONS.npz",**archive)
+    np.savez_compressed(
+        out/"TEST_OFF_MONITOR_SOURCE_RECEIPTS.npz",
+        **monitor_evidence,**risk_use_evidence,
+    )
+
     checkpoint_dir=out/"NATIVE_CHECKPOINTS"
     checkpoint_dir.mkdir()
     for ckpt in native_checkpoints:
