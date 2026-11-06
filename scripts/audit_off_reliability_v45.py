@@ -41,6 +41,10 @@ def audit(evidence: Path, output: Path):
     summaries = json.loads((evidence / "SUMMARY.json").read_text())
     paired = json.loads((evidence / "PAIRED_CIS.json").read_text())
     arr = np.load(evidence / "TEST_PREDICTIONS.npz", allow_pickle=False)
+    receipts = np.load(evidence / "TEST_OFF_MONITOR_SOURCE_RECEIPTS.npz", allow_pickle=False)
+    n_episodes = len(status["device_seeds"]) * 7 * 5
+    if len(receipts.files) != n_episodes*6 + n_episodes*2*3:
+        raise AssertionError("Incomplete per-subject sensor monitor/source receipt archive")
     seeds = sorted({r["seed"] for r in rows if r["method"] == "K2"})
     maximum = 0.0
     fallback = 0
@@ -64,6 +68,23 @@ def audit(evidence: Path, output: Path):
             maximum = max(maximum, error)
             if error > 1e-12:
                 raise AssertionError(f"TEST metric mismatch: {d}/{c}/{s}/{m}/{name}")
+        prefix = f"device{d}_{c}_{s}"
+        monitor = receipts[prefix+"_off_usable"]
+        monitored = receipts[prefix+"_off_support"]
+        alarm = receipts[prefix+"_off_alarm"]
+        if (monitor.shape != p.shape or not np.isin(monitor,[0,1]).all()
+                or not np.logical_not(monitor & alarm).all()
+                or not np.all(monitor <= monitored)):
+            raise AssertionError("Malformed current OFF monitor/availability audit")
+        if m in ("V44_PARTIAL_VIEW","V45_OFF_GUARD"):
+            evidence_use=receipts[f"{prefix}_{m}_seed{seed}_used"]
+            supported=receipts[prefix+"_"+m+"_measured_support"]
+            if not np.array_equal(evidence_use,supported & bool(r["gate_approved"])):
+                raise AssertionError("Source intervention acceptance differs from frozen VALID gate")
+            if abs(float(evidence_use.mean())-r["source_use"]) > 1e-12:
+                raise AssertionError("Patient-level source use does not match summary")
+            if m == "V45_OFF_GUARD" and not np.all(supported <= monitor):
+                raise AssertionError("V45 permitted source without measured OFF validation")
         if m in ("V44_PARTIAL_VIEW", "V45_OFF_GUARD") and (
                 s == "missing_reference" or c in ("known_VALID2_OFF_drift", "complete_K2_dictionary")):
             base = arr[f"device{d}_{c}_{s}_K2_seed{seed}"]
@@ -73,8 +94,8 @@ def audit(evidence: Path, output: Path):
         if m == "RAW_DIFF_HGB_ALL1800_OFF_GUARD":
             plain = arr[f"device{d}_{c}_{s}_RAW_DIFF_HGB_ALL1800_seedNone"]
             base = arr[f"device{d}_{c}_{s}_K2_seed{seed}"]
-            if not np.all((p == plain) | (p == base)):
-                raise AssertionError("Raw guard is not exact selection between HGB and frozen K2")
+            if not np.array_equal(p, np.where(monitor, plain, base)):
+                raise AssertionError("Raw guard does not match actual saved OFF gate")
             if s == "missing_reference":
                 if not np.array_equal(p, base):
                     raise AssertionError("No OFF raw-hybrid fallback failed")
@@ -117,6 +138,7 @@ def audit(evidence: Path, output: Path):
         "verified_TEST_summaries": len(summaries),
         "verified_paired_AP_CIs": len(paired),
         "exact_K2_fallback_array_comparisons": fallback,
+        "verified_TEST_sensor_receipt_arrays": len(receipts.files),
         "maximum_absolute_metric_error": maximum,
         "maximum_absolute_paired_CI_error": ci_error,
         "auditor_imported_model_or_generator": False,
