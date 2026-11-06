@@ -85,8 +85,10 @@ def test_model_inference_is_identical_single_vs_batch_without_hidden_payload(
     for i in range(len(x)):
         assert full["episodes"][i]["model_event_probability"]==(
             hidden["episodes"][i]["model_event_probability"])
-    assert full["episodes"][0]["model_event_probability"]==(
-        one["episodes"][0]["model_event_probability"])
+    # BLAS reductions on a singleton and a batch can differ by one ULP;
+    # this is numerical rounding, not a model/mask semantic difference.
+    assert abs(full["episodes"][0]["model_event_probability"]-
+               one["episodes"][0]["model_event_probability"])<1e-12
     assert all(r["uncertainty"]["source_physical_identity_unverified"]
                for r in full["episodes"])
     assert all(r["uncertainty"]["no_imputed_values_used"]
