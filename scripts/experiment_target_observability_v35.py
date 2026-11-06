@@ -234,8 +234,14 @@ def _source_passport(
         "measurement_operator_rank":int(record["rank"][idx]),
         "target_in_measured_rowspace":bool(record["target_in_rowspace"][idx]),
         "target_nullspace_component":float(record["nullspace_target_fraction"][idx]),
-        "target_se_plugin":float(record["target_se"][idx]),
-        "standardized_device_model_residual":float(record["normalized_residual"][idx]),
+        "target_se_plugin":(
+            float(record["target_se"][idx])
+            if np.isfinite(record["target_se"][idx]) else None),
+        "standardized_device_model_residual":(
+            float(record["normalized_residual"][idx])
+            if np.isfinite(record["normalized_residual"][idx]) else None),
+        "null_uncertainty_value_means_NOT_IDENTIFIABLE":(
+            not np.isfinite(record["target_se"][idx])),
         "source_signed_gamma":float(source_gamma),
         "human_facing_explanation":friendly,
         "no_certified_clinical_semantics":True,
