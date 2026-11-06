@@ -104,6 +104,27 @@ jobs:
           assert len(list(Path('V41_EVIDENCE/CHECKPOINTS').glob('native_K2_*.pt')))==12
           PY
           git rev-parse HEAD > V41_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independent 7680 prediction/metric, 3840 summary and measured-pair provenance audit
+        run: |
+          python scripts/audit_adaptive_pair_v41.py \
+            --evidence-dir V41_EVIDENCE \
+            --out-file V41_EVIDENCE/INDEPENDENT_TEST_METRIC_NLL_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V41_EVIDENCE/INDEPENDENT_TEST_METRIC_NLL_AUDIT.json').read_text())
+          assert d['status']=='V41_INDEPENDENT_ALL_FROZEN_TEST_METRICS_AUDITED'
+          assert d['n_verified_original_TEST_rows']==7680
+          assert d['n_verified_aggregated_rows']==3840
+          assert d['max_abs_metric_difference']<1e-12
+          assert d['n_verified_exact_missing_OFF_returns_to_original_K2']==816
+          assert d['n_source_measurement_provenance_receipts']==1280
+          assert d['n_illegal_missing_view_pair_choices']==0
+          assert d['n_saved_dual_VALID_risk_receipts']==480
+          assert d['n_registered_paired_AP_intervals']==52
+          assert d['n_exploratory_paired_NLL_intervals']==52
+          assert not d['single_pair_is_measurement_coverage_not_semantic_certification'] is False
+          PY
       - name: Save complete raw receipts including failures and failed CI attempts
         if: always()
         uses: actions/upload-artifact@v4
