@@ -10,6 +10,7 @@ from conceptfan_discovery.target_observability_v35 import (
     estimate_calibrated_source,measured_target_membership,
     linear_logit_sensitivity_radius,
     nullspace_counterexample,_target_pseudoinverse,
+    source_concept_or_abstain_without_calibration,
 )
 
 
@@ -184,3 +185,25 @@ def test_source_sensitivity_bound_is_algebraic_not_probability_CI():
     assert r[2]==0
     with pytest.raises(ValueError):
         linear_logit_sensitivity_radius(3.,se,train_width=0,eligible=eligible)
+
+
+def test_no_independent_calibration_fails_closed_even_if_all_sensors_present():
+    x,_=_world(n=120)
+    m=np.ones_like(x,dtype=bool)
+    r=source_concept_or_abstain_without_calibration(
+        x,m,None,method="calibrated_target_rowspace",
+        train_tau=0.,train_width=1.)
+    assert r["reason"]=="ABSTAIN_MISSING_INDEPENDENT_EXTERNAL_REFERENCE"
+    np.testing.assert_array_equal(r["q"],np.full(len(x),.5))
+    np.testing.assert_array_equal(r["support"],np.zeros(len(x)))
+    assert not r["used_calibrated_source"].any()
+    assert np.isinf(r["target_se"]).all()
+    assert not r["calibration_verified"]
+    with pytest.raises(ValueError,match="External"):
+        estimate_calibrated_source(x,m,None)
+    approved=source_concept_or_abstain_without_calibration(
+        x,m,_cal(),method="calibrated_target_rowspace",
+        train_tau=0.,train_width=1.)
+    assert approved["used_calibrated_source"].all()
+    assert approved["measurement_operator_known"]
+    assert not approved["physical_semantics_certified"]
