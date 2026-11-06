@@ -73,7 +73,8 @@ def audit_v39(evidence:Path,output:Path,*,bootstrap_reps:int=399):
             repeated[(device,case)]=max(differences)
     missing_exact=0
     for dev in d["devices"]:
-        for case in [c["case"] for c in d["summary"] if c["stress"]=="MCAR20" and c["method"]=="K2"]:
+        for case in sorted({c["case"] for c in d["summary"]
+                            if c["stress"]=="MCAR20" and c["method"]=="K2"}):
             for stress in ("missing_reference",):
                 for seed in SEEDS:
                     k2=archive[f"device{dev}_{case}_{stress}_K2_seed{seed}"]
