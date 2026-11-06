@@ -69,7 +69,7 @@ jobs:
           assert x['type3_discrete_alpha_slice_restricted_not_full_IT3_system']
           assert len(x['explanation_passports'])==1
           assert x['explanation_passports'][0]['report']['membership_is_not_outcome_probability']
-          assert len(x['TEST_patient_paired_AP_bootstrap'])==8
+          assert len(x['TEST_patient_paired_AP_bootstrap'])==16
           assert Path('V34_SMOKE/FROZEN_TEST_PREDICTIONS.npz').exists()
           assert len(list(Path('V34_SMOKE/CHECKPOINTS').glob('native_K2_*.pt')))==1
           PY
