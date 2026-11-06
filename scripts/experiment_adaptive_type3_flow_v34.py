@@ -61,6 +61,9 @@ from conceptfan_discovery.auto_measured_concept_admission import (
 from conceptfan_discovery.isolated_source_admission_v28 import (
     train_source_coefficient,
 )
+from conceptfan_discovery.cross_environment_transport import (
+    paired_test_ap_difference,
+)
 from scripts.experiment_automatic_measured_concepts import (
     train_masked_measured_known_concepts,logit_from_head,
 )
@@ -261,6 +264,14 @@ def run(output:Path,*,smoke:bool=False):
     all_rows,all_gates,all_selections,all_training=[],[],[],[]
     explanations,flow_receipts,alpha_examples=[],[],[]
     source_proposals,anchor_records={},{}
+    test_predictions,test_labels={},{}
+    saved_native_states,saved_flow_states=[],[]
+    CI_CASES=("healthy_physical","UNSEEN_physical_flip")
+    CI_STRESSES=("MCAR20","synchronized_block8")
+    CI_METHODS=(
+        "FROZEN_K2","WLS_TYPE1","FLOW_TYPE1","FLOW_IT2",
+        "FLOW_RESTRICTED_IT3","FLOW_AUTO",
+    )
     for family_index,family in enumerate(
             FAMILIES[:1] if smoke else FAMILIES):
         data,(tr,v1,v2,te),label_map=_data(family,smoke)
@@ -298,6 +309,11 @@ def run(output:Path,*,smoke:bool=False):
             fitting=train_masked_measured_known_concepts(
                 core,x[tr,:,:4],mtr[:,:,:4],seed=seed,epochs=epochs)
             core_sha=sha_state(core)
+            saved_native_states.append({
+                "family":family,"seed":seed,
+                "state_dict":{k:v.detach().cpu().clone()
+                    for k,v in core.state_dict().items()},
+            })
             all_training.append({"family":family,"nn_seed":seed,
                                  "original_encoder_sha":core_sha,**fitting})
             qt=predict_native(core,x[tr,:,:4],mtr[:,:,:4])["concept_summary"]
@@ -310,6 +326,8 @@ def run(output:Path,*,smoke:bool=False):
                     core,tx[:,:,:4],tm[:,:,:4])["concept_summary"]
             for case_index,(case,law,val2_shift,test_shift) in enumerate(SCENARIOS):
                 y=data["outcomes"][label_map[law]]
+                if case in CI_CASES:
+                    test_labels[(family,case)]=y[te].copy()
                 head=refit_linear_concept_head(qt,y[tr])
                 base_train=logit_from_head(head,qt)
                 base_v1=logit_from_head(head,q1)
@@ -426,10 +444,14 @@ def run(output:Path,*,smoke:bool=False):
                         groups,templates,tx,tm)
                     pred_cbm=expit(logit_from_head(
                         cbm,np.column_stack([qknown,raw_group_features])))
+                    base_probability=expit(base)
+                    if case in CI_CASES and stress in CI_STRESSES:
+                        test_predictions[(family,case,stress,
+                                          "FROZEN_K2",seed)]=base_probability.copy()
                     all_rows.append({
                         "family":family,"case":case,"stress":stress,
                         "method":"FROZEN_K2","nn_seed":seed,
-                        "metric":metrics(y[te],expit(base)),
+                        "metric":metrics(y[te],base_probability),
                         "source_use":0.,
                     })
                     all_rows.append({
@@ -510,10 +532,14 @@ def run(output:Path,*,smoke:bool=False):
                                     .detach().numpy().tolist(),
                                 "meaning":"alpha planes are nested membership-grade uncertainty, NOT event-probability intervals",
                             })
+                        predicted_probability=expit(z)
+                        if case in CI_CASES and stress in CI_STRESSES:
+                            test_predictions[(family,case,stress,
+                                              method,seed)]=predicted_probability.copy()
                         all_rows.append({
                             "family":family,"case":case,"stress":stress,
                             "method":method,"nn_seed":seed,
-                            "metric":metrics(y[te],expit(z)),
+                            "metric":metrics(y[te],predicted_probability),
                             "source_use":float(used.mean()),
                             "selected_source":group.candidate_id,
                             "gate_approved":rec["gate"].approved,
@@ -529,6 +555,17 @@ def run(output:Path,*,smoke:bool=False):
                 "known_K2_proxy_only":True,
             }),flush=True)
         for flow_id,flow in flow_cache.items():
+            saved_flow_states.append({
+                "family":family,"source_group":flow_id,
+                "state_dict":{k:v.detach().cpu().clone()
+                    for k,v in flow.model.state_dict().items()},
+                "context_mean":flow.context_mean,
+                "context_std":flow.context_std,
+                "target_mean":flow.target_mean,
+                "target_std":flow.target_std,
+                "pseudo_train_interval_width_multiplier":
+                    flow.heldout_train_width_multiplier,
+            })
             flow_receipts.append({
                 "family":family,"source_group":flow_id,
                 "n_fit":flow.n_fit_samples,
@@ -549,6 +586,33 @@ def run(output:Path,*,smoke:bool=False):
         for stress in TEST_STRESS
         for method in METHODS
     ]
+    paired_uncertainty=[]
+    for family_index,family in enumerate(chosen_families):
+        for case_index,case in enumerate(CI_CASES):
+            yy=test_labels[(family,case)]
+            for stress_index,stress in enumerate(CI_STRESSES):
+                def same_subject_predictions(method):
+                    return np.stack([
+                        test_predictions[(family,case,stress,method,seed)]
+                        for seed in seeds
+                    ])
+                for k,(a,b) in enumerate((
+                    ("FLOW_AUTO","FLOW_TYPE1"),
+                    ("FLOW_AUTO","WLS_TYPE1"),
+                    ("FLOW_RESTRICTED_IT3","FLOW_IT2"),
+                    ("FLOW_AUTO","FROZEN_K2"),
+                )):
+                    delta=paired_test_ap_difference(
+                        yy,same_subject_predictions(a),
+                        same_subject_predictions(b),
+                        seed=20263980+1000*family_index+
+                            100*case_index+10*stress_index+k,
+                        resamples=bootstrap,
+                    )
+                    paired_uncertainty.append({
+                        "family":family,"case":case,"stress":stress,
+                        "method_a":a,"method_b":b,**delta,
+                    })
     result={
         "status":"SMOKE_ONLY" if smoke else "V34_ADAPTIVE_IT3_FLOW_EXECUTED",
         "frozen_protocol":"docs/medical/CONCEPTFAN_V34_FROZEN_ADAPTIVE_IT3_FLOW_PROTOCOL_20261106.md",
@@ -576,6 +640,10 @@ def run(output:Path,*,smoke:bool=False):
         "rows":all_rows,"summary":summary,
         "explanation_passports":explanations,
         "type3_alpha_plane_examples":alpha_examples,
+        "TEST_patient_paired_AP_bootstrap":paired_uncertainty,
+        "CI95_conditional_on_three_fixed_models_and_shared_TEST":True,
+        "saved_source_predictions_for_reanalysis":True,
+        "saved_native_transformer_and_flow_checkpoints":True,
     }
     output.mkdir(parents=True,exist_ok=False)
     for path,data in (
@@ -583,15 +651,36 @@ def run(output:Path,*,smoke:bool=False):
         ("GATES.json",all_gates),("SOURCE_SELECTION.json",all_selections),
         ("FLOW_TRAIN_RECEIPTS.json",flow_receipts),
         ("SOURCE_EXPLANATIONS.json",explanations),
+        ("PAIRED_TEST_BOOTSTRAP.json",paired_uncertainty),
     ):
         (output/path).write_text(
             json.dumps(data,indent=2,ensure_ascii=False,allow_nan=False))
+    saved={"source_probability_recorded_not_physical_truth":np.asarray([1])}
+    for (family,case),yy in test_labels.items():
+        saved[f"{family}_{case}_TEST_Y"]=yy
+    for (family,case,stress,method,seed),p in test_predictions.items():
+        saved[f"{family}_{case}_{stress}_{method}_seed{seed}"]=p
+    np.savez_compressed(output/"FROZEN_TEST_PREDICTIONS.npz",**saved)
+    checkpoints=output/"CHECKPOINTS"
+    checkpoints.mkdir(exist_ok=False)
+    for model in saved_native_states:
+        torch.save(
+            {"family":model["family"],"seed":model["seed"],
+             "architecture":"real native K2 Transformer ConceptFAN",
+             "model_state_dict":model["state_dict"]},
+            checkpoints/f"native_K2_{model['family']}_seed{model['seed']}.pt",
+        )
+    for model in saved_flow_states:
+        torch.save(model,checkpoints/(
+            f"conditional_flow_{model['family']}_{model['source_group']}.pt"))
     print(json.dumps({
         "event":"V34_COMPLETE","status":result["status"],
         "trained_native_transformers":len(all_training),
         "rows":len(all_rows),"summary":len(summary),
         "gate_receipts":len(all_gates),
         "flow_models":len(flow_receipts),
+        "n_paired_CI_rows":len(paired_uncertainty),
+        "paired_AP_comparisons":paired_uncertainty,
         "healthy_MCAR20":[x for x in summary if
             x["case"]=="healthy_physical" and x["stress"]=="MCAR20"],
         "synchronized_missing":[x for x in summary if
