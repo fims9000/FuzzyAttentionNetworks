@@ -102,6 +102,24 @@ jobs:
           assert len(list(Path('V40_EVIDENCE/CHECKPOINTS').glob('native_K2_*.pt')))==12
           PY
           git rev-parse HEAD > V40_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independent recomputation of every frozen TEST probability and proper scoring rule
+        run: |
+          python scripts/audit_matched_difference_v40.py \
+            --evidence-dir V40_EVIDENCE \
+            --out-file V40_EVIDENCE/INDEPENDENT_TEST_METRIC_NLL_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V40_EVIDENCE/INDEPENDENT_TEST_METRIC_NLL_AUDIT.json').read_text())
+          assert d['status']=='V40_INDEPENDENT_ALL_TEST_METRIC_RECOMPUTATION'
+          assert d['verified_original_TEST_metric_rows']==3240
+          assert d['verified_aggregated_method_rows']==1800
+          assert d['max_absolute_metric_recomputation_error']<1e-12
+          assert d['verified_exact_K2_missing_reference_fallbacks']==312
+          assert d['n_preregistered_matched_AP_contrasts']==32
+          assert d['n_additional_exploratory_paired_NLL_intervals']==32
+          assert d['no_H_S_or_TEST_borne_training']
+          PY
       - name: Archive actual evidence, positive results and prespecified negative worlds
         if: always()
         uses: actions/upload-artifact@v4
