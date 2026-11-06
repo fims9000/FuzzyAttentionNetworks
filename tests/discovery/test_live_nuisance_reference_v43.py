@@ -179,3 +179,97 @@ def test_equal_R300_raw_baseline_and_mask_firewall(prepared):
         assert np.all(p>=0)
     with pytest.raises(ValueError,match="EXACT"):
         fit_raw_reference_v43("RAW_HGB_R700",f,R)
+
+
+
+def test_actual_external_8_array_NPZ_to_JSON_reopens_frozen_monitor_and_ref(
+    prepared,tmp_path,
+):
+    from conceptfan_discovery.threeview_centered_v37 import (
+        fit_centered_threeview_v37,
+    )
+    from conceptfan_discovery.adaptive_pair_consensus_v41 import (
+        fit_adaptive_source_v41,
+    )
+    from conceptfan_discovery.physical_reference_certificate_v42 import (
+        fit_physical_reference_v42,save_physical_reference_v42,
+        predict_physical_reference_v42,
+        measured_external_on_off_difference_v42,
+    )
+    from conceptfan_discovery.live_nuisance_monitor_v43 import (
+        gate_physical_reference_v43,
+    )
+    from scripts.infer_live_nuisance_reference_v43 import (
+        infer_live_nuisance_v43,
+    )
+    import inspect
+    import scripts.infer_live_nuisance_reference_v43 as runtime
+    assert "live_nuisance_world_v43" not in inspect.getsource(runtime)
+    w,monitor,_=prepared
+    def source(ids,seed):
+        on,off=render_observed_v43(
+            w,ids,fault="none",seed=seed)
+        ma,mb=masks_v43(
+            on,off,"MCAR20",device_seed=20261707,mask_seed=211)
+        d,md=measured_external_on_off_difference_v42(on,off,ma,mb)
+        return on,off,ma,mb,d,md
+    tr=w["train"];v1=w["valid1"];v2=w["valid2"]
+    *_,td,tm=source(tr,91)
+    fit=fit_centered_threeview_v37(
+        td,tm,independent_view_noise_documented=True,
+        seed=20264821,bootstrap=24)
+    adapted=fit_adaptive_source_v41(fit,td,tm)
+    R=w["independent_reference_readout_CALIBRATION_ONLY"]
+    *_,tt,mt=source(tr[:300],92)
+    *_,t1,m1=source(v1[:200],93)
+    *_,t2,m2=source(v2[:200],94)
+    ref=fit_physical_reference_v42(
+        adapted,tt,mt,R[tr[:300]],
+        t1,m1,R[v1[:200]],t2,m2,R[v2[:200]])
+    refpath=tmp_path/"trained_ref.json"
+    monitorpath=tmp_path/"trained_monitor.json"
+    save_physical_reference_v42(refpath,ref)
+    save_live_monitor_v43(monitorpath,monitor)
+    ix=w["test"][:14]
+    on,off,ma,mb,d,md=source(ix,101)
+    c_on,c_off,cm_on,cm_off=measured_current_nuisance_monitor_v43(
+        w,ix,physical_fault="none",monitor_fault="honest",
+        same_seed_as_ON_OFF=101)
+    c_on[0,:]=np.nan
+    cm_on[0,:]=False
+    a=predict_physical_reference_v42(ref,d,md)
+    b=evaluate_live_nuisance_monitor_v43(
+        monitor,c_on,c_off,cm_on,cm_off)
+    expected=gate_physical_reference_v43(a,b)
+    on[~ma]=np.nan;off[~mb]=np.nan
+    inp=tmp_path/"real_matched_only.npz"
+    np.savez_compressed(
+        inp,on=on,off=off,
+        observed_on=ma,observed_off=mb,
+        nuisance_on=c_on,nuisance_off=c_off,
+        observed_nuisance_on=cm_on,observed_nuisance_off=cm_off)
+    result=infer_live_nuisance_v43(
+        reference_model=refpath,monitor_model=monitorpath,
+        input_npz=inp,output_json=tmp_path/"predictions.json")
+    assert result["input_episode_count"]==14
+    assert result["patient_results"][0][
+        "physical_reference_model_available_after_current_live_check"] is False
+    for i,rec in enumerate(result["patient_results"]):
+        yes=bool(expected["physical_reference_allowed"][i])
+        assert rec["physical_reference_model_available_after_current_live_check"]==yes
+        assert rec["does_not_guarantee_sensor_integrity_or_causal_semantics"]
+        if yes:
+            assert abs(rec["estimated_independent_noisy_R_energy"]-
+                expected["physical_reference_estimated_energy"][i])<1e-10
+        else:
+            assert rec["estimated_independent_noisy_R_energy"] is None
+    bad=tmp_path/"bad_mask.npz"
+    np.savez_compressed(
+        bad,on=on,off=off,
+        observed_on=ma.astype(np.uint8),observed_off=mb,
+        nuisance_on=c_on,nuisance_off=c_off,
+        observed_nuisance_on=cm_on,observed_nuisance_off=cm_off)
+    with pytest.raises(ValueError,match="Boolean|BOOL|masks"):
+        infer_live_nuisance_v43(
+            reference_model=refpath,monitor_model=monitorpath,
+            input_npz=bad,output_json=tmp_path/"wrong.json")
