@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 
 from conceptfan_discovery.physical_reference_world_v42 import (
-    generate_device_v42,render_observed_v42,masks_v42,STRESSES,
+    generate_device_v42,render_observed_v42,masks_v42,
 )
 from scripts.infer_physical_reference_v42 import (
     inference_physical_reference_npz_v42,
@@ -32,6 +32,14 @@ CASES={
     "OFF_reference_unavailable":("no_reference","none"),
     "VALID2_known_OFF_drift":("off_drift","off_drift"),
 }
+# Compare against original frozen EXPERIMENT's named stress ordering,
+# not the WORLD module's older 10-stress inventory. The RNG seed depends
+# on this exact preregistered 7-stress order; previous incorrect QA lookup
+# generated DIFFERENT physical missingness masks for missing_view_A.
+REGISTERED_STRESS_ORDER=(
+    "complete","MCAR20","MCAR40","MCAR50",
+    "missing_view_A","missing_view_B","missing_view_C",
+)
 MASKS=("MCAR20","MCAR40","missing_view_A")
 
 
@@ -59,7 +67,7 @@ def qa(evidence:Path,out:Path):
             for stress in MASKS:
                 mo,mr=masks_v42(
                     on,off,stress,device_seed=dev,
-                    mask_seed=20264650+STRESSES.index(stress))
+                    mask_seed=20264650+REGISTERED_STRESS_ORDER.index(stress))
                 if testfault=="no_reference":
                     mr[:,:,4:10]=False
                 # Use ONLY measured samples. Any unknown TEST input
