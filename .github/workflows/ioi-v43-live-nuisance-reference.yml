@@ -11,6 +11,7 @@ on:
       - 'scripts/experiment_live_nuisance_reference_v43.py'
       - 'scripts/audit_live_nuisance_reference_v43.py'
       - 'scripts/infer_live_nuisance_reference_v43.py'
+      - 'scripts/verify_live_nuisance_external_v43.py'
       - 'tests/discovery/test_live_nuisance_reference_v43.py'
       - 'docs/medical/CONCEPTFAN_V43_FROZEN_LIVE_NUISANCE_VS_RAW_REFERENCE_PROTOCOL_20261106.md'
   workflow_dispatch:
@@ -44,7 +45,9 @@ jobs:
             src/conceptfan_discovery/live_nuisance_monitor_v43.py \
             src/conceptfan_discovery/physical_reference_raw_baselines_v43.py \
             scripts/experiment_live_nuisance_reference_v43.py \
-            scripts/audit_live_nuisance_reference_v43.py
+            scripts/audit_live_nuisance_reference_v43.py \
+            scripts/infer_live_nuisance_reference_v43.py \
+            scripts/verify_live_nuisance_external_v43.py
           python -m pytest -q \
             tests/discovery/test_live_nuisance_reference_v43.py \
             tests/discovery/test_physical_reference_v42.py \
@@ -119,6 +122,22 @@ jobs:
           assert d['n_confirmed_no_OFF_concept_source_refusals']==4*4*2*600
           assert d['n_confirmed_no_live_monitor_gated_refusals']==4*4*5*600
           assert d['no_TEST_physical_R_used_for_R300_R700_baseline_fit']
+          PY
+      - name: Exact user-path measured 8-array external NPZ-to-JSON source and monitor replay
+        run: |
+          python scripts/verify_live_nuisance_external_v43.py \
+            --evidence-dir V43_EVIDENCE \
+            --out-dir V43_EVIDENCE/EXTERNAL_REAL_SENSOR_INFERENCE_QA
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V43_EVIDENCE/EXTERNAL_REAL_SENSOR_INFERENCE_QA/EXTERNAL_INFERENCE_QA.json').read_text())
+          assert d['status']=='V43_REAL_INSTRUMENT_NPZ_JSON_PUBLIC_INFERENCE_PARITY'
+          assert d['number_of_independent_reopened_NPZ_to_JSON_calls']==64
+          assert d['number_of_replayed_TEST_subject_observations']==640
+          assert d['max_original_vs_reloaded_source_energy_error']<1e-8
+          assert d['source_and_nuisance_models_from_TRAIN_VALID_ONLY']
+          assert d['no_hidden_TEST_reference_or_latent_target_passed']
           PY
       - name: Preserve full scientific artifacts and failures
         if: always()
