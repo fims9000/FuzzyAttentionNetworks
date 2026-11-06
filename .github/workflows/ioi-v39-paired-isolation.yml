@@ -7,6 +7,7 @@ on:
       - '.github/workflows/ioi-v39-paired-isolation.yml'
       - 'src/conceptfan_discovery/paired_isolation_world_v39.py'
       - 'scripts/experiment_paired_isolation_v39.py'
+      - 'scripts/audit_paired_isolation_v39.py'
       - 'tests/discovery/test_paired_isolation_v39.py'
       - 'docs/medical/CONCEPTFAN_V39_FROZEN_PAIRED_SOURCE_ISOLATION_PROTOCOL_20261106.md'
   workflow_dispatch:
@@ -95,6 +96,23 @@ jobs:
           assert len(list(Path('V39_EVIDENCE/CHECKPOINTS').glob('native_K2_*.pt')))==6
           PY
           git rev-parse HEAD > V39_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independently recalculate all 2380 TEST metrics and 20 paired subject NLL contrasts
+        run: |
+          python scripts/audit_paired_isolation_v39.py \
+            --evidence-dir V39_EVIDENCE \
+            --out-file V39_EVIDENCE/INDEPENDENT_METRIC_NLL_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V39_EVIDENCE/INDEPENDENT_METRIC_NLL_AUDIT.json').read_text())
+          assert d['status']=='V39_INDEPENDENT_METRIC_AUDIT'
+          assert d['verified_test_rows']==2380
+          assert d['verified_summary_rows']==980
+          assert d['max_metric_error']<1e-12
+          assert d['n_exact_missing_reference_preserved_K2_forecasts']==120
+          assert d['n_paired_NLL_bootstrap_exploratory']==20
+          assert d['scientific_limitations']['new_EXTERNAL_physical_source_isolation_required']
+          PY
       - name: Keep positive and negative complete experimental receipts
         if: always()
         uses: actions/upload-artifact@v4
