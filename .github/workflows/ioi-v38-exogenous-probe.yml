@@ -1,0 +1,180 @@
+name: ConceptFAN V38 externally calibrated probe and instrument negative control
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v38-exogenous-probe-negative-control-20261106
+    paths:
+      - '.github/workflows/ioi-v38-exogenous-probe.yml'
+      - 'src/conceptfan_discovery/exogenous_probe_world_v38.py'
+      - 'src/conceptfan_discovery/exogenous_probe_gate_v38.py'
+      - 'src/conceptfan_discovery/source_persistence_v38.py'
+      - 'src/conceptfan_discovery/inference_v38.py'
+      - 'scripts/infer_exogenous_source_v38.py'
+      - 'scripts/verify_npz_inference_v38.py'
+      - 'scripts/experiment_exogenous_probe_v38.py'
+      - 'scripts/replay_exogenous_source_v38.py'
+      - 'scripts/audit_exogenous_probe_v38.py'
+      - 'tests/discovery/test_exogenous_probe_gate_v38.py'
+      - 'tests/discovery/test_source_persistence_v38.py'
+      - 'tests/discovery/test_inference_v38.py'
+      - 'docs/medical/CONCEPTFAN_V38_FROZEN_INSTRUMENTED_CONCEPT_PROTOCOL_20261106.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  v38-independent-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install actual native ConceptFAN and CPU torch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify instrument probe, sentinel, single-record masking and V37 core regression
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/exogenous_probe_world_v38.py \
+            src/conceptfan_discovery/exogenous_probe_gate_v38.py \
+            src/conceptfan_discovery/source_persistence_v38.py \
+            src/conceptfan_discovery/inference_v38.py \
+            scripts/infer_exogenous_source_v38.py \
+            scripts/verify_npz_inference_v38.py \
+            scripts/experiment_exogenous_probe_v38.py \
+            scripts/replay_exogenous_source_v38.py
+          python -m pytest -q \
+            tests/discovery/test_exogenous_probe_gate_v38.py \
+            tests/discovery/test_source_persistence_v38.py \
+            tests/discovery/test_inference_v38.py \
+            tests/discovery/test_threeview_centered_v37.py \
+            tests/discovery/test_threeview_explanation_v37.py \
+            tests/discovery/test_native_adaptive_type3_transformer_v34.py
+      - name: Smoke one true native Transformer on all 10 registered fault worlds
+        run: |
+          python scripts/experiment_exogenous_probe_v38.py \
+            --smoke --out-dir V38_SMOKE | tee V38_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V38_SMOKE/STATUS.json').read_text())
+          assert d['status']=='V38_SMOKE_ONLY'
+          assert d['n_real_native_models']==1
+          assert d['n_test_method_rows']==10*7*(5+2)
+          assert d['n_aggregated_results']==10*7*7
+          assert d['n_two_VALID_risk_gates']==10*4
+          assert d['n_paired_AP_contrasts']==9
+          assert d['n_persisted_reopenable_source_models']==1
+          assert d['n_saved_outcome_specific_inference_bundles']==10
+          assert Path('V38_SMOKE/SOURCE_STATES/device20261231_V38_source.json').is_file()
+          assert len(d['human_model_explanations'])==1
+          assert d['calibration_is_external_supervision_not_unsupervised_discovery']
+          assert not d['no_clinical_or_causal_semantics_certified'] is False
+          assert Path('V38_SMOKE/FROZEN_TEST_PREDICTIONS.npz').exists()
+          PY
+      - name: Full frozen 2 fresh random devices x 3 native K2 fits
+        run: |
+          python scripts/experiment_exogenous_probe_v38.py \
+            --out-dir V38_EVIDENCE | tee V38_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V38_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V38_INSTRUMENTED_CONCEPT_EXECUTED'
+          assert d['devices']==[20261231,20261301]
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(1000,400,400,600)
+          assert d['n_independent_probe_pairs_per_type']==240
+          assert d['n_real_native_models']==6
+          assert d['n_test_method_rows']==2*10*7*(5*3+2)
+          assert d['n_aggregated_results']==2*10*7*7
+          assert d['n_two_VALID_risk_gates']==2*10*3*4
+          assert d['n_paired_AP_contrasts']==2*9
+          assert d['n_persisted_reopenable_source_models']==2
+          assert d['n_saved_outcome_specific_inference_bundles']==60
+          assert len(list(Path('V38_EVIDENCE/SOURCE_STATES').glob('*.json')))==2
+          assert len(json.loads(Path('V38_EVIDENCE/INFERENCE_BUNDLES.json').read_text()))==60
+          assert len(d['human_model_explanations'])==6
+          assert all(not rec['physical_semantics_verified']
+                     for rec in d['source_models'])
+          assert all(not explanation['signed_physical_source_certified']
+                     for explanation in d['human_model_explanations'])
+          assert all(z['source_use']==0.
+                     for z in d['summary']
+                     if z['method']=='ABC_probe_monitor'
+                     and z['stress'] in ('missing_sentinel','missing_C','missing_all_views'))
+          assert d['source_fit_has_no_privileged_latent_truth_or_mixing_H']
+          assert not d['no_TEST_outcome_used_in_calibration_or_thresholds'] is False
+          assert Path('V38_EVIDENCE/FROZEN_TEST_PREDICTIONS.npz').exists()
+          assert len(list(Path('V38_EVIDENCE/CHECKPOINTS').glob('native_K2_*.pt')))==6
+          PY
+          git rev-parse HEAD > V38_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independent 2380-row TEST metric and 18 paired NLL bootstrap audit
+        run: |
+          python scripts/audit_exogenous_probe_v38.py \
+            --evidence-dir V38_EVIDENCE \
+            --out-file V38_EVIDENCE/INDEPENDENT_METRIC_NLL_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V38_EVIDENCE/INDEPENDENT_METRIC_NLL_AUDIT.json').read_text())
+          assert d['n_exactly_reproduced_TEST_rows']==2380
+          assert d['n_exactly_reproduced_summary_rows']==980
+          assert d['max_abs_error_all_4_metrics']<1e-12
+          assert d['n_pairwise_subject_bootstrap_NLL_receipts']==18
+          assert d['n_exact_probe_pass_ablation_equivalences']==420
+          assert not d['external_probe_certificate_changes_prediction_if_passes']
+          assert d['frozen_TEST_thresholds_and_VALID_decisions_unchanged']
+          PY
+      - name: Reopen saved native Transformer, outcome head, source JSON and independent gate
+        run: |
+          python scripts/replay_exogenous_source_v38.py \
+            --evidence-dir V38_EVIDENCE \
+            --out-file V38_EVIDENCE/REOPEN_INFERENCE_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V38_EVIDENCE/REOPEN_INFERENCE_AUDIT.json').read_text())
+          assert d['status']=='V38_REOPENED_FULL_NATIVE_AND_SOURCE_INFERENCE_VERIFIED'
+          assert d['n_outcome_specific_bundles']==60
+          assert d['n_reopened_real_K2_and_source_forward_passes']==30
+          assert d['max_abs_reopen_prediction_difference']<1e-6
+          assert d['no_dataset_labels_read_for_replay']
+          assert d['source_model_loaded_from_safe_JSON']
+          assert d['original_native_K2_loaded_from_snapshot']
+          PY
+      - name: External measured NPZ to JSON CLI must match 30 frozen trained predictions
+        run: |
+          python scripts/verify_npz_inference_v38.py \
+            --evidence-dir V38_EVIDENCE \
+            --out-dir V38_EVIDENCE/EXTERNAL_NPZ_INFERENCE_QA
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V38_EVIDENCE/EXTERNAL_NPZ_INFERENCE_QA/EXTERNAL_INFERENCE_PARITY_AUDIT.json').read_text())
+          assert d['status']=='V38_EXTERNAL_NPZ_JSON_INFERENCE_PARITY_VERIFIED'
+          assert d['n_reopened_CLI_inferences']==30
+          assert d['maximum_difference_vs_original_predictions']<1e-6
+          assert d['model_cli_has_no_latent_H_S_or_TEST_labels']
+          assert d['every_missing_sentinel_or_view_abstains']
+          PY
+      - name: Preserve all conditions, partial negative findings and checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v38-exogenous-negative-control-${{ github.run_number }}
+          path: |
+            V38_SMOKE/
+            V38_EVIDENCE/
+            V38_SMOKE_LOG.jsonl
+            V38_FULL_LOG.jsonl
+          if-no-files-found: ignore
