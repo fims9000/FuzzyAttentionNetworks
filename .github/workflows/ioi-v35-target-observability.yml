@@ -87,6 +87,8 @@ jobs:
               human=passport['human_facing_explanation']
               assert human['name'].startswith('Калиброванный временной компонент')
               assert human['technical_audit']['source_observed_information_fraction'] is None
+              assert human['technical_audit']['independent_device_calibration_available']
+              assert human['technical_audit']['type3_boundary_calibration_available'] is False
               assert human['technical_audit']['source_measured_fraction']==passport['observed_measurement_fraction']
               assert 'Наблюдались' in human['measurement_evidence']
               assert human['scientific_limitation'].startswith('Физический смысл')
