@@ -319,13 +319,14 @@ def run(output:Path,*,smoke:bool=False):
                     flow_cache,group,template,x[tr],mtr,
                     seed=20263440+family_index*17+len(flow_cache),
                     smoke=smoke)
+                train_amp,train_info,_=_source_proxy(
+                    group,template,x[tr],mtr)
+                measured_sd=np.sqrt(
+                    template.train_residual_variance/
+                    np.maximum(1.,16.*train_info))
                 definition=fit_measured_definition(
                     group.candidate_id,group.sensor_indices,
-                    *[np.asarray(p) for p in
-                      (lambda a,info:
-                         (a,np.sqrt(template.train_residual_variance/
-                                   np.maximum(1,16*info))))(
-                         *_source_proxy(group,template,x[tr],mtr)[:2])],
+                    train_amp,measured_sd,
                     independently_calibrated_boundary_spread=
                         synthetic_reference.half_difference_boundary_uncertainty,
                     certified_environments=2,
@@ -522,14 +523,13 @@ def run(output:Path,*,smoke:bool=False):
                 "training_uses_oracle_latent":flow.training_used_latent_source_truth,
                 "nominal_interval_is_clinical":False,
             })
-    summary=[_summarize(
-        all_rows,family,case,stress,method,len(seeds))
-        for family in FAMILIES[:1] if smoke or family in FAMILIES
-        for case,_,_,_ in SCENARIOS
-        for stress in TEST_STRESS for method in METHODS] if smoke else [
+    chosen_families=FAMILIES[:1] if smoke else FAMILIES
+    summary=[
         _summarize(all_rows,family,case,stress,method,len(seeds))
-        for family in FAMILIES for case,_,_,_ in SCENARIOS
-        for stress in TEST_STRESS for method in METHODS
+        for family in chosen_families
+        for case,_,_,_ in SCENARIOS
+        for stress in TEST_STRESS
+        for method in METHODS
     ]
     result={
         "status":"SMOKE_ONLY" if smoke else "V34_ADAPTIVE_IT3_FLOW_EXECUTED",
