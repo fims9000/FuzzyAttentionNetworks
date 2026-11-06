@@ -1,4 +1,4 @@
-"""V44 preregistered paired TEST experiment; never tune by TEST outcomes."""
+"""V46 preregistered paired ON/OFF measurement condition TEST; never tune by TEST outcomes."""
 from __future__ import annotations
 import argparse, json
 from pathlib import Path
@@ -220,17 +220,17 @@ def run(out:Path,*,smoke=False):
                     current["off_background_alarm"],dtype=bool).copy()
                 monitor_evidence[stamp+"_off_support"]=np.asarray(
                     current["support"],dtype=bool).copy()
-                paired=observed_test["paired_monitor"]
+                pair_status=observed_test["paired_monitor"]
                 monitor_evidence[stamp+"_paired_off_score"]=np.asarray(
-                    paired["score"],dtype=np.float64).copy()
+                    pair_status["score"],dtype=np.float64).copy()
                 monitor_evidence[stamp+"_paired_diff_score"]=np.asarray(
-                    paired["difference_score"],dtype=np.float64).copy()
+                    pair_status["difference_score"],dtype=np.float64).copy()
                 monitor_evidence[stamp+"_paired_usable"]=np.asarray(
-                    paired["usable_for_additional_concept"],dtype=bool).copy()
+                    pair_status["usable_for_additional_concept"],dtype=bool).copy()
                 monitor_evidence[stamp+"_paired_alarm"]=np.asarray(
-                    paired["joint_condition_alarm"],dtype=bool).copy()
+                    pair_status["joint_condition_alarm"],dtype=bool).copy()
                 monitor_evidence[stamp+"_paired_support"]=np.asarray(
-                    paired["condition_support"],dtype=bool).copy()
+                    pair_status["condition_support"],dtype=bool).copy()
                 for method in CONCEPT_METHODS:
                     source=observed_test["source"][method]
                     monitor_evidence[stamp+"_"+method+"_measured_support"]=np.asarray(
