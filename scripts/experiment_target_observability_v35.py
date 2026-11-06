@@ -219,8 +219,36 @@ def _source_passport(
     model_output,raw,record,idx, *,
     calibration,method,mode,source_gamma,
 ):
-    friendly=render_concept_explanation_ru(model_output,idx,
-              observed_source_template=PHI.tolist())
+    # V35 source coordinates are tied to EXTERNAL DEVICE PHANTOM
+    # calibration, not automatically identified TRAIN physiology. V34's
+    # generic membership metadata passes the boolean eligibility as 1.0;
+    # never misrepresent it as 100% actually measured source coverage.
+    friendly=render_concept_explanation_ru(
+        model_output,idx,observed_source_template=None)
+    measured_fraction=float(record["measured_fraction"][idx])
+    measured_rows=int(record["n_rows"][idx])
+    target_identifiable=bool(record["target_in_rowspace"][idx])
+    friendly["name"]=(
+        "Калиброванный временной компонент измерений: датчики 4, 5 и 6")
+    friendly["what_was_observed"]=(
+        "Внешний измерительный эталон определяет форму отклика: "
+        "положительная ранняя и отрицательная поздняя фазы. "
+        "Это не доказательство физиологического смысла.")
+    friendly["measurement_evidence"]=(
+        f"Наблюдались {measured_rows} из 48 потенциальных "
+        f"измерений ({measured_fraction*100:.1f}%). "
+        f"Нужный компонент {'определим' if target_identifiable else 'не определим'} "
+        "по имеющимся измерениям при принятой калибровке.")
+    friendly["what_was_inferred"]=(
+        "Амплитуда рассчитана по наблюдаемым отсчётам с помощью "
+        "внешне калиброванной линейной модели. Пропущенные значения "
+        "не объявляются реальными измерениями. Диффузия не применялась."
+        if measured_rows else
+        "Нет измерений источника: амплитуда не восстановлена.")
+    friendly["technical_audit"]["v34_source_support_field_was_boolean_gate"]=True
+    friendly["technical_audit"]["source_observed_information_fraction"]=None
+    friendly["technical_audit"]["source_measured_fraction"]=measured_fraction
+    friendly["technical_audit"]["device_calibration_is_external"]=True
     return {
         "version":"V35_TARGET_ROWSPACE",
         "method":method,"stress":mode,
