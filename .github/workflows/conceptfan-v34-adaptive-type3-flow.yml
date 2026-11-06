@@ -1,0 +1,118 @@
+name: ConceptFAN V34 adaptive IT3 and conditional measured-source flow
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v34-adaptive-type3-flow-prototype-20261106
+    paths:
+      - '.github/workflows/conceptfan-v34-adaptive-type3-flow.yml'
+      - 'src/conceptfan_discovery/adaptive_higher_order_concepts_v34.py'
+      - 'src/conceptfan_discovery/conditional_source_flow_v34.py'
+      - 'src/conceptfan_discovery/independent_device_anchor_v34.py'
+      - 'src/conceptfan_discovery/native_adaptive_type3_transformer_v34.py'
+      - 'tests/discovery/test_adaptive_higher_order_concepts_v34.py'
+      - 'tests/discovery/test_native_adaptive_type3_transformer_v34.py'
+      - 'tests/discovery/test_independent_device_anchor_v34.py'
+      - 'tests/discovery/test_conditional_source_flow_v34.py'
+      - 'scripts/experiment_adaptive_type3_flow_v34.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  v34-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install matched CPU torch and repository scientific requirements
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify fuzzy alpha-plane algebra and conditional-flow provenance
+        run: |
+          python -m compileall -q src/conceptfan_discovery/adaptive_higher_order_concepts_v34.py src/conceptfan_discovery/conditional_source_flow_v34.py
+          python -m compileall -q src/conceptfan_discovery/native_adaptive_type3_transformer_v34.py src/conceptfan_discovery/independent_device_anchor_v34.py scripts/experiment_adaptive_type3_flow_v34.py
+          python -m pytest -q \
+            tests/discovery/test_adaptive_higher_order_concepts_v34.py \
+            tests/discovery/test_conditional_source_flow_v34.py \
+            tests/discovery/test_independent_device_anchor_v34.py \
+            tests/discovery/test_native_adaptive_type3_transformer_v34.py \
+            tests/discovery/test_masked_temporal_template.py \
+            tests/discovery/test_sync_outages_and_interventions_v33.py
+      - name: 'Smoke - one REAL Temporal ConceptFAN and source flow, no TEST tuning'
+        run: |
+          python scripts/experiment_adaptive_type3_flow_v34.py \
+            --smoke --out-dir V34_SMOKE | tee V34_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('V34_SMOKE/STATUS.json').read_text())
+          assert x['status']=='SMOKE_ONLY'
+          assert x['families']==['pulse_order']
+          assert x['n_unique_native_transformer_fits']==1
+          assert x['n_summary']==5*5*9
+          assert x['n_rows']==5*5*9
+          assert x['n_gate_receipts']==5*5
+          assert x['source_slot_added_to_real_native_torch_forward']
+          assert x['conditional_flow_trained_on_train_measured_proxy_not_latent']
+          assert x['fuzzy_order_chosen_only_from_train_and_independent_device_reference']
+          assert x['type3_discrete_alpha_slice_restricted_not_full_IT3_system']
+          assert len(x['explanation_passports'])==1
+          assert x['explanation_passports'][0]['report']['membership_is_not_outcome_probability']
+          assert len(x['TEST_patient_paired_AP_bootstrap'])==16
+          assert Path('V34_SMOKE/FROZEN_TEST_PREDICTIONS.npz').exists()
+          assert len(list(Path('V34_SMOKE/CHECKPOINTS').glob('native_K2_*.pt')))==1
+          PY
+      - name: Full independent fresh draw in TWO synthetic generator families
+        run: |
+          python scripts/experiment_adaptive_type3_flow_v34.py \
+            --out-dir V34_EVIDENCE | tee V34_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('V34_EVIDENCE/STATUS.json').read_text())
+          assert x['status']=='V34_ADAPTIVE_IT3_FLOW_EXECUTED'
+          assert x['families']==['pulse_order','nonlinear_switching']
+          assert x['n_unique_native_transformer_fits']==6
+          assert x['n_summary']==2*5*5*9
+          assert x['n_rows']==2*5*5*(7*3+2)
+          assert x['n_gate_receipts']==2*3*5*5
+          assert len(x['explanation_passports'])==6
+          assert all(not z['source_physical_semantics_verified']
+                     for z in x['selections'])
+          assert all(not z['training_uses_outcomes']
+                     and not z['training_uses_oracle_latent']
+                     and not z['nominal_interval_is_clinical']
+                     for z in x['flow'])
+          assert all(z['report']['algebraic_interval_is_not_statistical_confidence']
+                     for z in x['explanation_passports'])
+          assert all(z['n_per_regime']==[240,240]
+                     for z in x['calibration_anchors_simulator_known_reference'].values())
+          assert len(x['TEST_patient_paired_AP_bootstrap'])==32
+          assert x['CI95_conditional_on_three_fixed_models_and_shared_TEST']
+          assert Path('V34_EVIDENCE/FROZEN_TEST_PREDICTIONS.npz').exists()
+          assert len(list(Path('V34_EVIDENCE/CHECKPOINTS').glob('native_K2_*.pt')))==6
+          assert len(list(Path('V34_EVIDENCE/CHECKPOINTS').glob('conditional_flow_*.pt')))==len(x['flow'])
+          PY
+          git rev-parse HEAD > V34_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Save available smoke and full study receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v34-type3-flow-${{ github.run_number }}
+          path: |
+            V34_SMOKE/
+            V34_EVIDENCE/
+            V34_SMOKE_LOG.jsonl
+            V34_FULL_LOG.jsonl
+          if-no-files-found: ignore
