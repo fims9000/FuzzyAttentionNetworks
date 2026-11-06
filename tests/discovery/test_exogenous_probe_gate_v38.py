@@ -131,3 +131,36 @@ def test_sentinel_provenance_is_not_inferable_from_X_without_external_wiring():
     assert not mon.physical_source_identity_certified
     assert not s.true_physical_semantics_certified
     assert probe.known_actuator_mapping_externally_supplied
+
+
+
+def test_theoretically_indistinguishable_source_vs_unmonitored_aligned_artifact():
+    """Falsifier: the same observed X can have different actual source energy.
+
+    The original mixing H is used ONLY by the simulator creating TWO
+    structural worlds; no new algorithm, risk head, calibration, or TEST
+    selection gets access to it.
+    """
+    from conceptfan_discovery.observational_equivalence_v38 import (
+        source_vs_unmonitored_aligned_error,
+    )
+    worlds=source_vs_unmonitored_aligned_error(seed=20263870,n=240)
+    a=worlds["physical_world_observed_X"]
+    b=worlds["artifact_world_observed_X"]
+    np.testing.assert_allclose(a,b,atol=1e-12,rtol=0)
+    power_gap=(
+        worlds["physical_source_energy_with_perturbation"]-
+        worlds["source_energy_without_perturbation"])
+    assert float(np.median(power_gap))>1.0
+    assert worlds["sentinel_cannot_see_aligned_artifact"]
+    assert worlds["calibration_from_previous_time_can_be_identical"]
+    assert worlds["known_external_actuator_is_not_run_at_TEST"]
+    # Apply the real calibrated ConceptFAN measurement path to both
+    # worlds; it cannot distinguish identical observed patient data.
+    _,source,monitor,probe=_fixture()
+    m=mask_world_v38(a,"MCAR20",seed=77,known_seed=17)
+    pred1=source_with_independent_evidence_v38(source,monitor,probe,a,m)
+    pred2=source_with_independent_evidence_v38(source,monitor,probe,b,m)
+    np.testing.assert_allclose(pred1["q"],pred2["q"],atol=1e-12,rtol=0)
+    np.testing.assert_array_equal(pred1["support"],pred2["support"])
+    assert not pred1["source_physically_causal_or_biologically_named"]
