@@ -83,6 +83,13 @@ jobs:
           assert s['n_VALID_candidate_gates']==5*3*5
           assert s['n_paired_TEST_bootstrap_comparisons']==5
           assert len(s['human_explanation_passports'])==4
+          for passport in s['human_explanation_passports']:
+              human=passport['human_facing_explanation']
+              assert human['name'].startswith('Калиброванный временной компонент')
+              assert human['technical_audit']['source_observed_information_fraction'] is None
+              assert human['technical_audit']['source_measured_fraction']==passport['observed_measurement_fraction']
+              assert 'Наблюдались' in human['measurement_evidence']
+              assert human['scientific_limitation'].startswith('Физический смысл')
           assert s['train_valid_test_disjoint'] if 'train_valid_test_disjoint' in s else True
           assert s['TEST_used_to_tune_source_policy'] is False
           assert s['calibrated_true_H_is_not_fed_to_inverse']
