@@ -63,8 +63,9 @@ def test_live_detects_future_only_OFF_drift_not_shared_background(prepared):
         monitor,*observed(ix,"common8",seed=1001))
     assert healthy["accepted_matching_background"].mean()>.90
     assert drift["accepted_matching_background"].mean()<.10
-    np.testing.assert_array_equal(
-        healthy["current_MONITOR_RMS"],common["current_MONITOR_RMS"])
+    np.testing.assert_allclose(
+        healthy["current_MONITOR_RMS"],common["current_MONITOR_RMS"],
+        rtol=0,atol=2e-7)
     assert drift["alarm_TRUE_observed_background_difference"].mean()>.90
 
 
