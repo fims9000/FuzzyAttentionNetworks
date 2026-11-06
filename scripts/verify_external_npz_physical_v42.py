@@ -25,6 +25,9 @@ from conceptfan_discovery.physical_reference_world_v42 import (
 from scripts.infer_physical_reference_v42 import (
     inference_physical_reference_npz_v42,
 )
+from scripts.experiment_physical_validity_v42 import (
+    STRESSES as ORIGINAL_FROZEN_TEST_STRESSES,
+)
 
 CASES={
     "healthy_energy":("none","none"),
@@ -44,6 +47,8 @@ MASKS=("MCAR20","MCAR40","missing_view_A")
 
 
 def qa(evidence:Path,out:Path):
+    if REGISTERED_STRESS_ORDER!=ORIGINAL_FROZEN_TEST_STRESSES:
+        raise AssertionError("QA physical test-mask seed order diverged from actual frozen study")
     if out.exists():
         raise FileExistsError("Never overwrite user-path physical inference audit")
     d=json.loads((evidence/"STATUS.json").read_text())
