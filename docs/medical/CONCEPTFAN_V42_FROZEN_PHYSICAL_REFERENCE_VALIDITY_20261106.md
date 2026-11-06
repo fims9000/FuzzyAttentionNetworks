@@ -1,0 +1,44 @@
+# V42 preregistration — observable source vs physically measured concept, 2026-11-06
+
+**FROZEN BEFORE any V42 TEST evaluation.** Previous: [V41 PR #38](https://github.com/fims9000/FuzzyAttentionNetworks/pull/38). This research is synthetic only, no medical clinical use, no independent real physics verification. None of V41 TEST seeds 202615xx or records may be used to pick V42 parameters.
+
+## Research question / falsifier
+
+V41 increases usable sensor-pair coverage, especially with a single available pair, but pair consistency and AUPRC cannot demonstrate that its "source energy" equals the physically intended factor. V42 **introduces a genuinely independent measurement channel** R for a controlled small external calibration subset (not available at TEST inference) and examines whether its historical physical-reference evidence is predictive of true latent slow-source energy on unseen devices, both under healthy and broken instrument assumptions. The experiment is explicitly **NOT unsupervised semantic recovery**: independently calibrated reference instrumentation is extra side information, assumed in simulator.
+
+## Exactly specified independent reference
+
+Sensor-group source model remains V41 \`fit_centered_threeview_v37\` + \`fit_adaptive_source_v41\`. No external reference R, simulator H, S, original Y, or source energy is passed to V41 pair fitting. Separately simulated **reference instrument** observes
+\[
+R_i = E_i + \eta_i,\qquad E_i=\frac1{16}\sum_{t=1}^{16}(S_{i,0}(t)-\bar S_{i,0})^2,\quad
+\eta_i\sim N(0, 0.10\operatorname{IQR}(E_{\mathrm{TRAIN}})) .
+\]
+R is a **simulated reference reading built from generator truth**, not proof that any physical instrument exists. A real application would require independent calibration and validation of that instrument. The model may inspect R only on **300 TRAIN** subjects and **200 VALID1 + 200 VALID2** subjects per device; no R is input at TEST. Those reference measurements are independent of Y labels, but are still **physically privileged supervised measurements**. Underlying true E remains accessible ONLY to the TEST audit, never fit/calibration.
+
+Train: fit **separate monotone isotonic mappings** \`m_pair(q_pair) -> reference energy R\` using first 300 TRAIN subjects with actual pair support. A pair is provisionally valid only if >=80 measured supported TRAIN reference cases and positive Spearman rho >=0.35 vs R. Do not fit on TEST truth. VALID1: among first200 reference cases, fit **90% split-conformal-style symmetric interval radius** for R around m(q), using order statistic \`ceil((n+1)*0.90)\` (capped), require >=50 supported. VALID2: independently verify at least 75% empirical noisy reference coverage, positive Spearman rho>=0.25, normalized reference MAE <=.65 TRAIN IQR with >=50 supported. **Do not call this a finite-sample conditional guarantee on true E.** At TEST, physical calibration is historically certified only under the simulator's reference validity and exchangeability assumptions; no independent current reference corroboration exists. Validation is not tuning of new Y-related risk model.
+
+For each TEST episode, start with full V41 adaptive *actual* measured-pair choice+multi-pair consistency (max observed time, never highest q). V42 uses the corresponding anchored map ONLY if that pair passed TRAIN, VALID1, VALID2. If no calibration, return **no physical energy** and an explicit refusal. V41 statistical q remains available separately, not silently treated as E. Return \`estimated_reference_energy\`, interval [estimate±radius] (lower clipped at0), name of actually used pair, actual paired time count, single-pair uncorroborated flag, physical conditional meaning and fail-closed reason. The interval is a split-calibrated interval for **R under exchangeability**, not a certified causal or per-episode interval for E; on TEST truth E used only audit.
+
+## Fresh independent TEST devices and worlds
+
+Four entirely new devices: two linear-AR \`20261607\`, \`20261609\`, two nonlinear switching + nonlinearly responsive sensors \`20261621\`, \`20261623\`. Same synthetic generator families as V40/V41 (not a new independently validated physics family); patient samples independently generated and split into TRAIN1000/VALID1=400/VALID2=400/TEST600 with identical 16×12 ON/OFF sensors. Reference instrument follows E, independent noisy response. 12 native K2 fits **not needed**: this stage studies source semantics, not Y risk prediction, and inherits frozen K2 behaviour already validated in V41. No inference model outcome labels Y in V42 training. More K2 fits would add no evidence of physical correctness and waste compute.
+
+8 immutable physical fault/outcome scenarios already specified BEFORE test: healthy energy, large same ON+OFF source-aligned U×8, OFF-only U drift, 50% source leakage in OFF, missing whole OFF reference measurement, K2-complete outcome law, known VALID2 OFF drift (test OFF drift), unknown inversion ON A. **7 observation conditions**: complete, MCAR20, MCAR40, MCAR50, missing view A/B/C. These are preregistered subset of V41; all masks from fresh V42 seeds and pairwise intersection of actual ON and OFF data, no imputation. Use *same sensor masks per subject across physical fault worlds* for comparability.
+
+## Outcomes and negatives
+
+Primary: (a) \`physical_reference_anchored_coverage\` and \`V41_statistical_pair_coverage\`, (b) mean absolute error \`|m_pair(q)−E|\` in actual physical units, normalized by TRAIN IQR E; (c) fraction of **accepted** TEST episodes with absolute physical error >.5 TRAIN IQR E ("wrong physics" audit threshold); (d) true E interval inclusion rate, where interval was calibrated for **noisy R**, not E; (e) Spearman rho and rank agreement of true E vs estimated reference energy among accepted episodes only, with counts and selection bias; (f) separate single-pair vs 2+ corroborated and pair-name AB/AC/BC breakdown; (g) same-episode healthy vs changed-fault estimate delta (selected pair may change, and fault data cannot change true E); (h) under unknown OFF drift or inversion, fraction of **wrong accepted concepts** with honest refusal rate. All metrics per physical fault and missingness and per generator; NEVER claim that a lower wrong fraction among accepted automatically improves all-subject accuracy. Report correct-rejected tradeoff.
+
+Mandatory negative checks: physical reference absent at deployment => **NOT** new calibrated energy, even if V41 q predicts Y; prior reference TRAIN/VALID missing or corrupted => no physical certificate. ON/OFF missing => no pair and exactly no extra physical energy. Reference calibration may be valid on historical data but **NOT** detect future shared OFF-only drift: its physical error must be reported, and intervals can fail. Pair agreement without oracle does not prove correctness; single view uncorroborated cannot be called independently confirmed. Under 50% MCAR, near-zero accepted count -> mark accuracy as insufficient support, not zero error.
+
+Confidence: 399 paired TEST-subject bootstrap repetitions per *prespecified* comparison healthy vs matched artifact and healthy vs OFF drift, for normalized absolute physical error difference **on subjects accepted in both worlds** (intersection support). No confidence guarantee for devices/population and no posthoc threshold tuning. Strict 2 VALID have only 200 reference readings each, not full 400 (budget explicit). Plot reliability/coverage frontier, errors vs missingness, fraction wrong under OFF drift, quiet refusals, all with true denominators.
+
+## Deliverable and integrity
+
+- \`src/conceptfan_discovery/physical_reference_certificate_v42.py\` pure estimation, history certificate, batch inference, JSON state save/load, explicit reference source assumptions and refusal reasons;
+- 4 fresh-world generator \`physical_reference_world_v42.py\` with R used only by audit/calibration builder, not passed to V41 learner;
+- \`scripts/experiment_physical_validity_v42.py\` frozen outcomes and per-patient TEST audit (q/Rhat/E/selected pair/counts/wrong/interval), no Y consumed in source model;
+- tests: TRAIN-only data contract, no hidden/unobserved value use, single vs batch, missing OFF, unavailable reference, corrupted/failed VALID, physical drift falsifiers, safe JSON reopen;
+- GitHub Actions first smoke then full four-device, complete raw artefact, independent audit and final Russian report; keep PR DRAFT, no master merge.
+
+**Interpretation bound:** physical correctness is judged here against *simulator-defined* hidden E. By construction, the extra independently simulated R is correlated with E, which is privileged physical supervision, not recovered autonomously; physical relevance in actual datasets would require building/calibrating a real independent instrument, and the finite-sample interval covers R only under assumptions. V41 q remains an observational concept without this side information.
