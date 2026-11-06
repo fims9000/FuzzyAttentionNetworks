@@ -299,7 +299,7 @@ def run(out:Path,*,smoke:bool=False):
             for mi,stress in enumerate(STRESSES):
                 mo,mr=_masks(
                     onte,offte,stress,device,
-                    mask_seed=20264141+mi,
+                    seed=20264141+mi,
                     known_mask=shared_test_known,
                 )
                 if testfault=="no_reference":
