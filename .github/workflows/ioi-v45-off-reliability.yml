@@ -47,6 +47,9 @@ jobs:
           assert len(d['paired_AP_bootstrap'])==6
           assert len(d['gates'])==8
           assert len(d['off_guard_TRAIN_VALID_receipts'])==1
+          assert d['n_OFF_monitor_condition_receipts']==7*5*6
+          assert d['n_actual_source_use_decision_arrays']==7*5*2
+          assert Path('V45_SMOKE/TEST_OFF_MONITOR_SOURCE_RECEIPTS.npz').is_file()
           assert len(list(Path('V45_SMOKE/NATIVE_CHECKPOINTS').glob('*.pt')))==1
           PY
       - name: Full four completely new devices, twelve real native K2 and six methods
@@ -65,6 +68,9 @@ jobs:
           assert len(d['paired_AP_bootstrap'])==4*6
           assert len(d['gates'])==4*3*2*2*2
           assert len(d['off_guard_TRAIN_VALID_receipts'])==4
+          assert d['n_OFF_monitor_condition_receipts']==4*7*5*6
+          assert d['n_actual_source_use_decision_arrays']==4*7*5*2*3
+          assert Path('V45_EVIDENCE/TEST_OFF_MONITOR_SOURCE_RECEIPTS.npz').is_file()
           assert len(list(Path('V45_EVIDENCE/NATIVE_CHECKPOINTS').glob('*.pt')))==12
           assert not d['physical_source_identity_certified']
           assert d['measured_OFF_dynamic_energy_gate_is_not_physical_certification']
@@ -85,6 +91,7 @@ jobs:
           assert (r['verified_TEST_method_rows'],r['verified_TEST_metrics'])==(1960,11760)
           assert (r['verified_TEST_summaries'],r['verified_paired_AP_CIs'])==(840,24)
           assert r['exact_K2_fallback_array_comparisons']==444
+          assert r['verified_TEST_sensor_receipt_arrays']==1680
           assert r['maximum_absolute_metric_error']<1e-12
           assert r['maximum_absolute_paired_CI_error']<1e-12
           PY
