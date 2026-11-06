@@ -13,7 +13,7 @@ def test_monotone_and_finite_for_edges_and_symmetry():
     assert (np.diff(e)>=0).all()
     assert (e>=-.5).all() and (e<=.5).all()
     np.testing.assert_allclose(e+e[::-1],np.zeros_like(e),atol=1e-12,rtol=0.)
-    assert e[6-1]==0
+    assert e[6]==0
 
 
 def test_two_registered_links_match_exact_centering_and_no_prob_interpretation():
