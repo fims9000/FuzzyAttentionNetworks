@@ -120,6 +120,8 @@ class NativeAuditedFuzzyConceptFANV34(nn.Module):
             "new_concept_risk_lower":additional["source_contribution_lower"],
             "new_concept_risk_upper":additional["source_contribution_upper"],
             "source_definition":self.source_definition,
+            "source_gate_approved_independent_VALID":bool(
+                extra_source_gate_approved),
             "new_source_input_is_inferred_not_oracle":True,
             "original_native_transformer_frozen":True,
             "raw_source_input_risk_bypass":False,
@@ -172,4 +174,90 @@ def readable_source_explanation(
         "membership_is_not_outcome_probability":True,
         "algebraic_interval_is_not_statistical_confidence":True,
         "unobserved_real_values_are_not_proven_to_exist":True,
+    }
+
+
+def render_concept_explanation_ru(
+    native_output:dict,index:int,
+    *,
+    observed_source_template:list[float]|tuple[float,...]|None=None,
+)->dict:
+    """Readable FIRST-PERSON-NEUTRAL user report; numbers only for risk effect.
+
+    Fuzzy membership degrees and alpha planes remain in a separate
+    technical audit and are NEVER presented as patient event probabilities.
+    Description is based on measured TRAIN source template, not an LLM
+    guessed medical label. The actual generator truth is not available.
+    """
+    raw=readable_source_explanation(
+        native_output,index,
+        has_independent_external_device_calibration=(
+            native_output["source_definition"].external_anchor_verified))
+    risk=native_output["probability"].detach().cpu()
+    baseline=torch.sigmoid(native_output["old_k2_logit"].detach().cpu())
+    n=len(risk)
+    if not 0<=index<n:
+        raise IndexError("Observation outside native ConceptFAN inference")
+    delta_pp=100.*float(risk[index]-baseline[index])
+    channels=", ".join(str(j) for j in raw["source_sensor_channels"])
+    t="Временная структура источника определяется по TRAIN-измерениям."
+    if observed_source_template is not None:
+        phi=np.asarray(observed_source_template,dtype=float)
+        if phi.shape!=(16,) or not np.isfinite(phi).all():
+            raise ValueError("Only complete TRAIN-derived 16-step templates")
+        early=float(phi[:8].mean())
+        late=float(phi[8:].mean())
+        if early-late>0.35:
+            t="В исходных TRAIN-данных наблюдался более высокий сигнал в начале ряда, затем снижение."
+        elif late-early>0.35:
+            t="В исходных TRAIN-данных наблюдалось повышение сигнала к концу ряда."
+        else:
+            t="Устойчивого направления раннего и позднего участка не установлено."
+    info=raw["source_observed_information_fraction"]
+    source_used=raw["new_source_used"]
+    if not source_used:
+        if info<.50:
+            explanation=("Новый временной источник не использован: "
+                         "фактических измерений недостаточно для оценки.")
+        else:
+            explanation=("Новый временной источник не использован: "
+                         "его вклад не прошёл независимую проверку.")
+        decision="Оставлен прогноз исходных двух концептов."
+    else:
+        if delta_pp>=.2:
+            action="повысил"
+        elif delta_pp<=-.2:
+            action="снизил"
+        else:
+            action="практически не изменил"
+        explanation=(
+            f"Группа датчиков {channels} показывает согласованную "
+            f"временную структуру. {t} Часть скрытой траектории "
+            f"представлена модельными оценками, а не измерениями.")
+        decision=(f"Добавленный источник {action} оценку вероятности "
+                  f"события данной моделью. Это не доказательство причины.")
+    return {
+        "name":f"Автоматически найденный временной паттерн: датчики {channels}",
+        "what_was_observed":t,
+        "source_channels":raw["source_sensor_channels"],
+        "measurement_evidence":(
+            f"По доступным измерениям определяется {100*info:.0f}% "
+            "информации об обученном временном шаблоне."),
+        "what_was_inferred":(
+            "Ненаблюдаемые участки оцениваются статистической моделью; "
+            "они не выдаются за реальные измерения."),
+        "what_the_model_did":explanation,
+        "how_prediction_changed":decision,
+        "before_after_model_probabilities":{
+            "without_added_source":round(float(baseline[index]),4),
+            "with_added_source":round(float(risk[index]),4),
+            "difference_in_percentage_points":round(delta_pp,2),
+        },
+        "insufficient_evidence_causes_abstention":not source_used,
+        "scientific_limitation":(
+            "Физический смысл источника не подтверждён. Изменение "
+            "прогноза не является причинным эффектом."),
+        "technical_audit":raw,
+        "fuzzy_membership_not_event_probability":True,
+        "no_invented_medical_label":True,
     }
