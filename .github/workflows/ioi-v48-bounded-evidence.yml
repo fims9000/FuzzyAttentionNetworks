@@ -1,0 +1,116 @@
+name: ConceptFAN V48 bounded logodds concept evidence vs linear and HGB
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v48-logodds-concept-evidence-20261106
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  independent-joint-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install native Temporal ConceptFAN CPU and baseline dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Joint concept gradient, no raw input bypass, mask invariance and previous regressions
+        run: |
+          python -m compileall -q src/conceptfan_discovery/anchored_joint_bottleneck_v47.py src/conceptfan_discovery/logodds_world_v48.py scripts/experiment_bounded_source_evidence_v48.py scripts/audit_bounded_source_evidence_v48.py
+          python -m pytest -q tests/discovery/test_bounded_source_evidence_v48.py tests/discovery/test_anchored_joint_bottleneck_v47.py tests/discovery/test_partial_view_concept_v44.py tests/discovery/test_native_adaptive_type3_transformer_v34.py
+      - name: Smoke one fresh sensor with real source and end-to-end native concept training
+        run: |
+          python scripts/experiment_bounded_source_evidence_v48.py --smoke --out-dir V48_SMOKE | tee V48_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V48_SMOKE/STATUS.json').read_text())
+          assert d['status']=='V48_SMOKE'
+          assert d['device_seeds']==[20262707]
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(360,150,150,240)
+          assert (d['n_real_pretrained_native_fits'],d['n_real_joint_fits'])==(1,2)
+          assert len(d['TEST_rows'])==4*4*(4*1+2)
+          assert len(d['TEST_summary'])==4*4*6
+          assert len(d['prespecified_paired_AP_intervals'])==5
+          assert len(d['dual_VALID_gate_receipts'])==3
+          assert d['n_saved_source_support_arrays']==4*4
+          assert d['n_saved_decision_use_arrays']==4*4*3
+          assert d['n_saved_known_concept_arrays']==2
+          assert d['n_saved_bounded_source_evidence_arrays']==4*4*3
+          assert d['risk_evidence_includes_untouched_outcome_blind_original_q']
+          assert Path('V48_SMOKE/FROZEN_RISK_EVIDENCE.npz').is_file()
+
+          assert len(list(Path('V48_SMOKE/CHECKPOINTS').glob('*.pt')))==3
+          PY
+      - name: Full four unseen devices, 12 native original K2 plus 24 genuine joint Transformer runs
+        run: |
+          python scripts/experiment_bounded_source_evidence_v48.py --out-dir V48_EVIDENCE | tee V48_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V48_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V48_BOUND_LOGODDS_EVIDENCE_EXECUTED'
+          assert d['device_seeds']==[20262707,20262709,20262721,20262723]
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(1000,400,400,600)
+          assert (d['n_real_pretrained_native_fits'],d['n_real_joint_fits'])==(12,24)
+          assert len(d['TEST_rows'])==4*4*4*(4*3+2)
+          assert len(d['TEST_summary'])==4*4*4*6
+          assert len(d['prespecified_paired_AP_intervals'])==20
+          assert len(d['dual_VALID_gate_receipts'])==4*3*3
+          assert len(d['stability_without_y_labels'])==4*2
+          assert d['n_saved_source_support_arrays']==4*4*4
+          assert d['n_saved_decision_use_arrays']==4*4*4*3*3
+          assert d['n_saved_known_concept_arrays']==4*2*3
+          assert d['n_saved_bounded_source_evidence_arrays']==4*4*4*3
+          assert d['risk_evidence_includes_untouched_outcome_blind_original_q']
+          assert Path('V48_EVIDENCE/FROZEN_RISK_EVIDENCE.npz').is_file()
+
+          assert len(list(Path('V48_EVIDENCE/CHECKPOINTS').glob('*.pt')))==36
+          assert d['train_known_proxy_only_not_latent_oracle']
+          assert d['no_raw_input_direct_risk_bypass']
+          assert d['no_TEST_label_used_for_training_or_admission']
+          assert all(x['source_use']==0 for x in d['TEST_summary']
+             if x['method'] in ('V44_FROZEN','V47_JOINT_PROXY','V47_JOINT_CONSISTENCY')
+             and x['stress']=='missing_reference')
+          PY
+          git rev-parse HEAD > V48_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independent audit of frozen TEST predictions, CI and concept consistency
+        run: |
+          python scripts/audit_bounded_source_evidence_v48.py --evidence-dir V48_EVIDENCE --out-file V48_EVIDENCE/INDEPENDENT_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V48_EVIDENCE/INDEPENDENT_AUDIT.json').read_text())
+          assert d['status']=='V48_ALL_TEST_FITS_EVIDENCE_METRICS_CIS_INDEPENDENTLY_VERIFIED'
+          assert (d['n_TEST_rows'],d['n_verified_TEST_metrics'])==(896,5376)
+          assert (d['n_summary'],d['n_preregistered_paired_CIs'])==(384,20)
+          assert (d['n_direct_source_fallback_comparisons'],d['n_exact_no_OFF_K2_fallbacks'])==(576,144)
+          assert (d['n_stability_receipts'],d['n_saved_source_support_and_use_arrays'])==(8,640)
+          assert d['n_original_q_and_risk_evidence_arrays']==192
+          assert d['max_risk_link_arithmetic_error']<1e-12
+          assert d['max_numerical_error']<1e-12
+          PY
+      - name: Archive all positive and negative paths including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v48-bounded-logodds-concept-evidence
+          path: |
+            V48_SMOKE/
+            V48_EVIDENCE/
+            V48_SMOKE_LOG.jsonl
+            V48_FULL_LOG.jsonl
+          if-no-files-found: ignore
