@@ -217,3 +217,70 @@ def test_conditional_physical_reference_cert_does_not_solve_unknown_OFF_drift(
     # A historically valid calibration cannot, by itself, establish
     # that TEST OFF drift is absent.
     assert cert.current_healthy_sensor_inference_not_certified
+
+
+
+def test_external_npz_to_json_runtime_is_generator_free_and_matches_native_reference(
+    ready,tmp_path,
+):
+    from scripts.infer_physical_reference_v42 import (
+        inference_physical_reference_npz_v42,
+    )
+    from conceptfan_discovery.physical_reference_certificate_v42 import (
+        measured_external_on_off_difference_v42,
+    )
+    import scripts.infer_physical_reference_v42 as cli_module
+    # No import of physical_reference_world_v42 or hidden simulators in
+    # the actual public inference module.
+    import inspect
+    assert "physical_reference_world_v42" not in inspect.getsource(cli_module)
+    w,src,fit,_=ready
+    model=tmp_path/"trained_safe_reference.json"
+    save_physical_reference_v42(model,fit)
+    on,off=render_observed_v42(
+        w,w["test"][:17],fault="none",seed=119)
+    mo,mr=masks_v42(
+        on,off,"MCAR20",device_seed=20261607,mask_seed=211)
+    d_old,mask_old=measured_difference_v42(on,off,mo,mr)
+    direct=predict_physical_reference_v42(fit,d_old,mask_old)
+    hidden_on=on.copy();hidden_off=off.copy()
+    hidden_on[~mo]=np.nan;hidden_off[~mr]=np.nan
+    d_new,mask_new=measured_external_on_off_difference_v42(
+        hidden_on,hidden_off,mo,mr)
+    np.testing.assert_array_equal(d_old,d_new)
+    np.testing.assert_array_equal(mask_old,mask_new)
+    input_npz=tmp_path/"external_17_onoff_only.npz"
+    np.savez_compressed(
+        input_npz,on=hidden_on,off=hidden_off,
+        observed_on=mo,observed_off=mr)
+    outfile=tmp_path/"physical_source_estimates.json"
+    result=inference_physical_reference_npz_v42(
+        model_path=model,input_npz=input_npz,output_json=outfile)
+    assert result["research_only_not_clinical_diagnostic"]
+    assert result["number_of_input_episodes"]==17
+    assert result==json.loads(outfile.read_text())
+    for i,row in enumerate(result["episodes"]):
+        accepted=bool(direct["physical_reference_allowed"][i])
+        assert row["historically_calibrated_source_value_available"]==accepted
+        assert row["realworld_physical_identity_or_current_fault_exclusion_PROVEN"] is False
+        assert row["single_pair_not_independently_confirmed_for_this_episode"]==bool(
+            direct["single_pair_uncorroborated"][i])
+        assert row["physical_reference_decision"]==str(
+            direct["physical_reference_reason"][i])
+        if accepted:
+            assert abs(row["model_estimated_physical_reference_energy"]-
+                direct["physical_reference_estimated_energy"][i])<1e-10
+            assert row["selected_real_ON_OFF_sensor_pair"]==str(
+                direct["selected_pair"][i])
+        else:
+            assert row["model_estimated_physical_reference_energy"] is None
+    with pytest.raises(FileExistsError):
+        inference_physical_reference_npz_v42(
+            model_path=model,input_npz=input_npz,output_json=outfile)
+    bad=tmp_path/"invalid_observed_uint8.npz"
+    np.savez_compressed(
+        bad,on=on,off=off,
+        observed_on=mo.astype(np.uint8),observed_off=mr)
+    with pytest.raises(ValueError,match="strict BOOL masks"):
+        inference_physical_reference_npz_v42(
+            model_path=model,input_npz=bad,output_json=tmp_path/"bad.json")
