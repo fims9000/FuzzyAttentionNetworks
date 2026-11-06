@@ -1,0 +1,110 @@
+name: ConceptFAN V46 measured paired ON/OFF reliability monitor and matched HGB controls
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v46-paired-condition-reliability-20261106
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  fresh-synthetic-v46:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU native Temporal ConceptFAN and baselines
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Guard algebra and frozen V44 source regressions
+        run: |
+          python -m compileall -q src/conceptfan_discovery/paired_condition_monitor_v46.py src/conceptfan_discovery/paired_condition_world_v46.py scripts/experiment_paired_condition_v46.py
+          python -m pytest -q tests/discovery/test_paired_condition_monitor_v46.py tests/discovery/test_partial_view_concept_v44.py tests/discovery/test_native_adaptive_type3_transformer_v34.py
+      - name: Smoke new device with source OFF guard and matched HGB
+        run: |
+          python scripts/experiment_paired_condition_v46.py --smoke --out-dir V46_SMOKE | tee V46_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V46_SMOKE/STATUS.json').read_text())
+          assert d['status']=='V46_SMOKE'
+          assert d['device_seeds']==[20262107]
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(360,150,150,240)
+          assert d['n_real_native_fits']==1
+          assert len(d['metrics'])==7*5*7
+          assert len(d['test_rows'])==7*5*(5*1+2)
+          assert len(d['paired_AP_bootstrap'])==6
+          assert len(d['gates'])==12
+          assert len(d['off_guard_TRAIN_VALID_receipts'])==1
+          assert len(d['paired_condition_TRAIN_VALID_receipts'])==1
+          assert d['n_OFF_monitor_condition_receipts']==7*5*12
+          assert d['n_actual_source_use_decision_arrays']==7*5*3
+          assert Path('V46_SMOKE/TEST_PAIRED_CONDITION_SOURCE_RECEIPTS.npz').is_file()
+          assert len(list(Path('V46_SMOKE/NATIVE_CHECKPOINTS').glob('*.pt')))==1
+          PY
+      - name: Full four completely new devices, twelve real native K2 and seven methods
+        run: |
+          python scripts/experiment_paired_condition_v46.py --out-dir V46_EVIDENCE | tee V46_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V46_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V46_EXECUTED_NO_POST_TEST_TUNING'
+          assert d['device_seeds']==[20262107,20262109,20262121,20262123]
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(1000,400,400,600)
+          assert d['n_real_native_fits']==12
+          assert len(d['metrics'])==4*7*5*7
+          assert len(d['test_rows'])==4*7*5*(5*3+2)
+          assert len(d['paired_AP_bootstrap'])==4*6
+          assert len(d['gates'])==4*3*2*2*3
+          assert len(d['off_guard_TRAIN_VALID_receipts'])==4
+          assert len(d['paired_condition_TRAIN_VALID_receipts'])==4
+          assert d['n_OFF_monitor_condition_receipts']==4*7*5*12
+          assert d['n_actual_source_use_decision_arrays']==4*7*5*3*3
+          assert Path('V46_EVIDENCE/TEST_PAIRED_CONDITION_SOURCE_RECEIPTS.npz').is_file()
+          assert len(list(Path('V46_EVIDENCE/NATIVE_CHECKPOINTS').glob('*.pt')))==12
+          assert not d['physical_source_identity_certified']
+          assert d['paired_condition_is_not_physical_certification']
+          assert all(x['source_use']==0 for x in d['metrics']
+              if x['method']=='V46_PAIRED_CONCORDANCE' and
+                  (x['stress']=='missing_reference' or x['case']=='known_VALID2_OFF_drift'))
+          assert Path('V46_EVIDENCE/TEST_PREDICTIONS.npz').is_file()
+          PY
+          git rev-parse HEAD > V46_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independently recalculate all TEST scores, paired CIs and raw-gate fallbacks
+        run: |
+          python scripts/audit_paired_condition_v46.py --evidence-dir V46_EVIDENCE --out-file V46_EVIDENCE/INDEPENDENT_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('V46_EVIDENCE/INDEPENDENT_AUDIT.json').read_text())
+          assert r['status']=='V46_ALL_FROZEN_TEST_PREDICTIONS_INDEPENDENTLY_RECALCULATED'
+          assert (r['verified_TEST_method_rows'],r['verified_TEST_metrics'])==(2380,14280)
+          assert (r['verified_TEST_summaries'],r['verified_paired_AP_CIs'])==(980,24)
+          assert r['exact_K2_fallback_array_comparisons']==624
+          assert r['verified_TEST_sensor_receipt_arrays']==2940
+          assert r['maximum_absolute_metric_error']<1e-12
+          assert r['maximum_absolute_paired_CI_error']<1e-12
+          PY
+      - name: Archive source and negative findings, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v46-paired-condition
+          path: |
+            V46_SMOKE/
+            V46_EVIDENCE/
+            V46_SMOKE_LOG.jsonl
+            V46_FULL_LOG.jsonl
+          if-no-files-found: ignore
