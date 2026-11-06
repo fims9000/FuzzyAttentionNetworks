@@ -97,3 +97,41 @@ def test_invariance_does_not_extend_to_one_view_flip():
     b=source_energy_v36(f,corrupt_views_v36(x,"A_flip"),m)
     assert np.mean(abs(a["estimated_crossview_energy"]-
                        b["estimated_crossview_energy"]))>.3
+
+
+
+def test_frozen_source_predicts_one_observation_without_requiring_training_batch():
+    """Regression: original V36 accidentally rejected N<100 even at inference."""
+    d,fit=_fit()
+    x=d["x"][d["test"]]
+    m=mask_views_v36(x,"MCAR20",seed=81)
+    batch=source_energy_v36(fit,x,m)
+    one=source_energy_v36(fit,x[:1],m[:1])
+    assert one["q"].shape==(1,)
+    assert one["support"].shape==(1,)
+    np.testing.assert_array_equal(one["q"],batch["q"][:1])
+    np.testing.assert_array_equal(one["support"],batch["support"][:1])
+    np.testing.assert_array_equal(
+        one["paired_sensor_times"],batch["paired_sensor_times"][:1])
+    # Hidden cells never become part of the reported evidence.
+    nan_hidden=x[:1].copy()
+    nan_hidden[~m[:1]]=float("nan")
+    one_hidden=source_energy_v36(fit,nan_hidden,m[:1])
+    np.testing.assert_array_equal(one["q"],one_hidden["q"])
+    no_view=m[:1].copy()
+    no_view[:,:,4:6]=False
+    refused=source_energy_v36(fit,nan_hidden,no_view)
+    assert not refused["support"].any()
+    np.testing.assert_array_equal(refused["q"],np.array([.5]))
+
+
+def test_blind_fit_still_requires_sufficient_independent_train_episodes():
+    """Single-observation inference must not weaken TRAIN recovery conditions."""
+    d,_=_fit()
+    x=d["x"][d["train"]][:1]
+    m=mask_views_v36(x,"complete",seed=12)
+    with pytest.raises(ValueError,match="aligned"):
+        fit_blind_gauge_source_v36(
+            x,m,independent_view_errors_documented=True,bootstrap=24)
+    with pytest.raises(ValueError,match="aligned"):
+        source_energy_v36(_fit()[1],x[:0],m[:0])
