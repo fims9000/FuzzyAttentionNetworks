@@ -1,0 +1,92 @@
+name: ConceptFAN V51 sparse physical-assay energy bias correction with 72 paired TEST controls
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v51-train-only-energy-debias-20261106
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  source-energy-calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install numeric and native ConceptFAN dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test source energy debias, no TEST oracle leakage and strict fallback
+        run: |
+          python -m compileall -q src/conceptfan_discovery/train_only_energy_debias_v51.py src/conceptfan_discovery/observational_twins_v51.py scripts/experiment_train_only_energy_debias_v51.py scripts/audit_train_only_energy_debias_v51.py
+          python -m pytest -q tests/discovery/test_train_only_energy_debias_v51.py tests/discovery/test_observational_twins_anchor_v50.py tests/discovery/test_verified_concept_intervention_v49.py
+      - name: Completely fresh one-device smoke and independent audit
+        run: |
+          python scripts/experiment_train_only_energy_debias_v51.py --smoke --out-dir V51_SMOKE | tee V51_SMOKE_LOG.jsonl
+          python scripts/audit_train_only_energy_debias_v51.py --evidence-dir V51_SMOKE --out-file V51_SMOKE/INDEPENDENT_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V51_SMOKE/STATUS.json').read_text())
+          a=json.loads(Path('V51_SMOKE/INDEPENDENT_AUDIT.json').read_text())
+          assert d['status']=='V51_ENERGY_DEBIAS_SMOKE'
+          assert d['new_device_seeds']==[20263307]
+          assert (d['n_external_source_calibrations'],d['n_frozen_TEST_source_energy_rows'])==(6,54)
+          assert d['n_preregistered_paired_MAE_CIs']==18
+          assert (a['n_refitted_source_estimates_and_energy_calibrations'],
+                  a['n_recalculated_paired_TEST_MAE_CIs'])==(6,18)
+          assert a['max_numerical_error']<1e-10
+          PY
+      - name: Four fresh unseen physical devices, two gauges and 24 calibrated reference fits
+        run: |
+          python scripts/experiment_train_only_energy_debias_v51.py --out-dir V51_EVIDENCE | tee V51_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V51_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V51_TRAIN_ONLY_ENERGY_DEBIAS_EXECUTED'
+          assert d['new_device_seeds']==[20263307,20263309,20263321,20263323]
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(1200,400,400,600)
+          assert (d['n_external_source_calibrations'],d['n_frozen_TEST_source_energy_rows'])==(24,216)
+          assert d['n_preregistered_paired_MAE_CIs']==72
+          assert d['all_energy_correction_parameters_from_TRAIN_only']
+          assert d['both_VALID_energy_gates_fixed_before_TEST']
+          assert Path('V51_EVIDENCE/FROZEN_TEST_SOURCE_ENERGY_AND_ASSAY_RECEIPTS.npz').is_file()
+          PY
+          git rev-parse HEAD > V51_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independent refit of every source/energy map, TEST MAEs, 72 paired CIs
+        run: |
+          python scripts/audit_train_only_energy_debias_v51.py --evidence-dir V51_EVIDENCE --out-file V51_EVIDENCE/INDEPENDENT_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('V51_EVIDENCE/INDEPENDENT_AUDIT.json').read_text())
+          assert a['status']=='V51_ALL_SOURCE_FITS_MAEs_AND_72_PAIRED_CIs_INDEPENDENTLY_VERIFIED'
+          assert (a['n_independent_new_devices'],a['n_refitted_source_estimates_and_energy_calibrations'])==(4,24)
+          assert (a['n_recalculated_TEST_rows'],a['n_recalculated_TEST_energy_metric_values'])==(216,648)
+          assert a['n_recalculated_paired_TEST_MAE_CIs']==72
+          assert a['max_numerical_error']<1e-10
+          assert a['audit_did_not_import_simulator_or_train_predictor']
+          PY
+      - name: Preserve negative devices and primary arrays including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v51-train-only-energy-calibration
+          path: |
+            V51_SMOKE/
+            V51_EVIDENCE/
+            V51_SMOKE_LOG.jsonl
+            V51_FULL_LOG.jsonl
+          if-no-files-found: ignore
