@@ -146,7 +146,7 @@ def run(out:Path,*,smoke:bool=False):
     ntr,nva,nte=(360,300,240) if smoke else (1000,800,600)
     n_boot=199 if smoke else 399
     summary=[];test_rows=[];gates=[];source_audits=[];training=[]
-    ckpts=[];predictions={};y_tests={};stability={};explanations=[]
+    ckpts=[];predictions={};y_tests={};stability={};explanations=[];use_flags={};sensor_support={};known_concept_arrays={}
     for device in devices:
         world=fresh_device_v47(device_seed=device,n_train=ntr,n_valid=nva,n_test=nte)
         tr,v1,v2,te=(world[k] for k in ("train","valid1","valid2","test"))
@@ -182,6 +182,9 @@ def run(out:Path,*,smoke:bool=False):
                 if stress=="missing_reference":
                     mask_off[:,:,4:10]=False
                 cases[name,stress]=source_case(on,off,mask_on,mask_off,src_fit)
+                sensor_support[f"device{device}_{name}_{stress}_measured_source"]=( 
+                    cases[name,stress]["support"].copy())
+
         source_audits.append({
             "device":device,"family":world["family"],"TRAIN_source_fit_failure":error,
             "TRAIN_V37_audit":v37.audit() if v37 is not None else None,
@@ -290,6 +293,7 @@ def run(out:Path,*,smoke:bool=False):
                     z44,used44=safe_joint_logits_v47(
                         ztest,ztest+gamma44*(c["q"]-.5)*c["support"],
                         c["support"],approved=gate44["approved"])
+                    use_flags[f"device{device}_{name}_{stress}_V44_FROZEN_seed{seed}_used"]=used44.copy()
                     p44=expit(z44)
                     predictions[device,name,stress,"V44_FROZEN",seed]=p44
                     test_rows.append({"device":device,"case":name,"stress":stress,
@@ -305,6 +309,7 @@ def run(out:Path,*,smoke:bool=False):
                             ztest,jr["logits"],c["support"],approved=gate["approved"])
                         if not np.array_equal(logit[~used],ztest[~used]):
                             raise AssertionError("Broken exact K2 fallback for unsupported source")
+                        use_flags[f"device{device}_{name}_{stress}_{method}_seed{seed}_used"]=used.copy()
                         p=expit(logit)
                         predictions[device,name,stress,method,seed]=p
                         test_rows.append({
@@ -318,6 +323,9 @@ def run(out:Path,*,smoke:bool=False):
                         })
                         if name=="healthy_energy" and stress=="MCAR40":
                             stability[device,seed,method]=jr["known_concepts"]
+                            known_concept_arrays[
+                                f"device{device}_healthy_MCAR40_{method}_seed{seed}_known"
+                            ]=jr["known_concepts"].copy()
                         if (name=="healthy_energy" and stress=="MCAR20"):
                             explanations.append({
                                 "device":device,"seed":seed,"method":method,
@@ -399,6 +407,9 @@ def run(out:Path,*,smoke:bool=False):
         "methods":list(METHODS),"stress":list(STRESS),"cases":[x[0] for x in CASES],
         "n_real_pretrained_native_fits":len(devices)*len(nn_seeds),
         "n_real_joint_fits":len(training),
+        "n_saved_source_support_arrays":len(sensor_support),
+        "n_saved_decision_use_arrays":len(use_flags),
+        "n_saved_known_concept_arrays":len(known_concept_arrays),
         "training":training,"TEST_rows":test_rows,"TEST_summary":summary,
         "dual_VALID_gate_receipts":gates,"source_fits":source_audits,
         "stability_without_y_labels":stability_report,
@@ -422,6 +433,12 @@ def run(out:Path,*,smoke:bool=False):
     for (dev,name),label in y_tests.items():
         freezed[f"device{dev}_{name}_TEST_Y"]=label
     np.savez_compressed(out/"FROZEN_TEST_PREDICTIONS.npz",**freezed)
+    np.savez_compressed(
+        out/"FROZEN_SOURCE_AND_USE_FLAGS.npz",**sensor_support,**use_flags,
+    )
+    if known_concept_arrays:
+        np.savez_compressed(out/"FROZEN_KNOWN_CONCEPTS.npz",**known_concept_arrays)
+
     ckptdir=out/"CHECKPOINTS";ckptdir.mkdir()
     for item in ckpts:
         filename=f"native_device{item['device']}_seed{item['seed']}_{item['method']}.pt"
