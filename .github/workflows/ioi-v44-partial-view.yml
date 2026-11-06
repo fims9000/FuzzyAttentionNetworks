@@ -69,6 +69,20 @@ jobs:
           assert Path('V44_EVIDENCE/TEST_PREDICTIONS.npz').is_file()
           PY
           git rev-parse HEAD > V44_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independent audit of all primary TEST scores and 20 paired CIs
+        run: |
+          python scripts/audit_partial_view_v44.py --evidence-dir V44_EVIDENCE --out-file V44_EVIDENCE/INDEPENDENT_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('V44_EVIDENCE/INDEPENDENT_AUDIT.json').read_text())
+          assert a['status']=='V44_ALL_FROZEN_TEST_PREDICTIONS_INDEPENDENTLY_RECALCULATED'
+          assert (a['verified_TEST_method_rows'],a['verified_TEST_metrics'])==(1540,9240)
+          assert (a['verified_TEST_summaries'],a['verified_paired_AP_CIs'])==(700,20)
+          assert a['exact_K2_fallback_array_comparisons']==360
+          assert a['maximum_absolute_metric_error']<1e-12
+          assert a['maximum_absolute_paired_CI_error']<1e-12
+          PY
       - name: Preserve primary results and failures
         if: always()
         uses: actions/upload-artifact@v4
