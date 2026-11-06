@@ -188,6 +188,8 @@ def run(out:Path,*,smoke:bool=False):
                     cases[name,stress]["support"].copy())
                 # Store the full prospectively defined q->risk evidence for every
                 # TEST subject; labels are never used for these transformations.
+                risk_evidence[f"device{device}_${name}_${stress}_source_q"]=(
+                    cases[name,stress]["q"].copy())
                 for joint_method in JOINT_METHODS:
                     link=("linear_membership" if joint_method=="V47_JOINT_LINEAR"
                           else "bounded_logodds")
@@ -436,6 +438,7 @@ def run(out:Path,*,smoke:bool=False):
         "n_saved_decision_use_arrays":len(use_flags),
         "n_saved_known_concept_arrays":len(known_concept_arrays),
         "n_saved_bounded_source_evidence_arrays":len(risk_evidence),
+        "risk_evidence_includes_untouched_outcome_blind_original_q":True,
         "training":training,"TEST_rows":test_rows,"TEST_summary":summary,
         "dual_VALID_gate_receipts":gates,"source_fits":source_audits,
         "stability_without_y_labels":stability_report,
