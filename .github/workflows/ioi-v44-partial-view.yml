@@ -1,0 +1,98 @@
+name: ConceptFAN V44 partial measured pair concept and matched risk tests
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v44-partial-observation-20261106
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  v44-matched-study:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU torch and experiment dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Run masked-covariance and previous source regression tests
+        run: |
+          python -m compileall -q src/conceptfan_discovery/partial_view_concept_v44.py src/conceptfan_discovery/partial_view_world_v44.py scripts/experiment_partial_view_v44.py
+          python -m pytest -q tests/discovery/test_partial_view_concept_v44.py tests/discovery/test_threeview_centered_v37.py tests/discovery/test_adaptive_pair_consensus_v41.py tests/discovery/test_native_adaptive_type3_transformer_v34.py
+      - name: New-device smoke with native K2 and strong raw HGB
+        run: |
+          python scripts/experiment_partial_view_v44.py --smoke --out-dir V44_SMOKE | tee V44_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V44_SMOKE/STATUS.json').read_text())
+          assert d['status']=='SMOKE'
+          assert d['device_seeds']==[20261807]
+          assert d['n_real_native_fits']==1
+          assert len(d['metrics'])==7*5*5
+          assert len(d['paired_AP_bootstrap'])==5
+          assert len(d['gates'])==1*1*2*2*2
+          assert Path('V44_SMOKE/TEST_PREDICTIONS.npz').is_file()
+          assert len(list(Path('V44_SMOKE/NATIVE_CHECKPOINTS').glob('*.pt')))==1
+          PY
+      - name: Full 4 NEW devices and 12 real Temporal ConceptFAN fits
+        run: |
+          python scripts/experiment_partial_view_v44.py --out-dir V44_EVIDENCE | tee V44_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V44_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='EXECUTED_NO_POST_TEST_TUNING'
+          assert d['device_seeds']==[20261807,20261809,20261821,20261823]
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(1000,400,400,600)
+          assert d['n_real_native_fits']==12
+          assert len(d['metrics'])==4*7*5*5
+          assert len(d['test_rows'])==4*7*5*(3*3+2)
+          assert len(d['paired_AP_bootstrap'])==4*5
+          assert len(d['gates'])==4*3*2*2*2
+          assert all(x['source_use']==0 for x in d['metrics']
+              if x['method'] in ('V41_STRICT_ADAPTIVE','V44_PARTIAL_VIEW')
+              and x['stress']=='missing_reference')
+          assert not d['physical_source_identity_certified']
+          assert not d['general_predictor_superiority_claim']
+          assert Path('V44_EVIDENCE/TEST_PREDICTIONS.npz').is_file()
+          assert len(list(Path('V44_EVIDENCE/NATIVE_CHECKPOINTS').glob('*.pt')))==12
+          PY
+          git rev-parse HEAD > V44_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independent audit of all primary TEST scores and 20 paired CIs
+        run: |
+          python scripts/audit_partial_view_v44.py --evidence-dir V44_EVIDENCE --out-file V44_EVIDENCE/INDEPENDENT_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('V44_EVIDENCE/INDEPENDENT_AUDIT.json').read_text())
+          assert a['status']=='V44_ALL_FROZEN_TEST_PREDICTIONS_INDEPENDENTLY_RECALCULATED'
+          assert (a['verified_TEST_method_rows'],a['verified_TEST_metrics'])==(1540,9240)
+          assert (a['verified_TEST_summaries'],a['verified_paired_AP_CIs'])==(700,20)
+          assert a['exact_K2_fallback_array_comparisons']==360
+          assert a['maximum_absolute_metric_error']<1e-12
+          assert a['maximum_absolute_paired_CI_error']<1e-12
+          PY
+      - name: Preserve primary results and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v44-partial-view
+          path: |
+            V44_SMOKE/
+            V44_EVIDENCE/
+            V44_SMOKE_LOG.jsonl
+            V44_FULL_LOG.jsonl
+          if-no-files-found: ignore
