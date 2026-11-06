@@ -179,7 +179,7 @@ def test_oracle_conditional_risk_matches_generator_definition():
         physical_amplitude=d["amplitude_CONCEPTS_AUDIT_ONLY"]["physical"],
         artifact_amplitude=d["amplitude_CONCEPTS_AUDIT_ONLY"]["artifact"],
     )
-    trueq=z.mean(axis=1)
+    trueq=np.asarray(z,dtype=np.float64).mean(axis=1)
     np.testing.assert_allclose(
         p0,expit(3.7*(trueq[:,0]-.5)-3.6*(trueq[:,1]-.5)-.10))
     p1=generator_conditional_probability(
