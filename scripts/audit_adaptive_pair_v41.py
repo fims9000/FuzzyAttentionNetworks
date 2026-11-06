@@ -93,7 +93,7 @@ def audit_v41(directory:Path,output:Path,*,reps=399):
                             f"device{device}_{case}_{stress}_{method}_seed{seed}"]
                         np.testing.assert_array_equal(candidate,baseline)
                         fallback+=1
-    if fallback!=4*(8+7)*3*4:
+    if fallback!=4*(8+9)*3*4:
         raise AssertionError("At least one missing ON/OFF reference kept novel source")
     receipts=data["per_condition_source_receipts"]
     violations=[]
