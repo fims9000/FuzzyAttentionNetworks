@@ -133,8 +133,7 @@ def _device_intervention(x,mode):
 
 
 def _test_mask(x,stress,seed):
-    mode="block8" if stress=="independent_block8" else stress
-    return synchronized_outage_mask(x,mode,seed=seed)
+    return synchronized_outage_mask(x,stress,seed=seed)
 
 
 def _raw_logistic(x,m,y):
