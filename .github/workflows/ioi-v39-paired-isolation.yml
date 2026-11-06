@@ -1,0 +1,108 @@
+name: ConceptFAN V39 paired ON OFF source isolation with unmonitored aligned noise
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v39-paired-source-isolation-20261106
+    paths:
+      - '.github/workflows/ioi-v39-paired-isolation.yml'
+      - 'src/conceptfan_discovery/paired_isolation_world_v39.py'
+      - 'scripts/experiment_paired_isolation_v39.py'
+      - 'tests/discovery/test_paired_isolation_v39.py'
+      - 'docs/medical/CONCEPTFAN_V39_FROZEN_PAIRED_SOURCE_ISOLATION_PROTOCOL_20261106.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  v39-active-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install real CPU PyTorch ConceptFAN
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify reference nuisance cancellation, missingness and original V38 core
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/paired_isolation_world_v39.py \
+            scripts/experiment_paired_isolation_v39.py
+          python -m pytest -q \
+            tests/discovery/test_paired_isolation_v39.py \
+            tests/discovery/test_exogenous_probe_gate_v38.py \
+            tests/discovery/test_inference_v38.py \
+            tests/discovery/test_native_adaptive_type3_transformer_v34.py
+      - name: Smoke genuine Temporal ConceptFAN on new paired reference world
+        run: |
+          python scripts/experiment_paired_isolation_v39.py \
+            --smoke --out-dir V39_SMOKE | tee V39_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V39_SMOKE/STATUS.json').read_text())
+          assert d['status']=='V39_SMOKE_ONLY'
+          assert d['n_real_native_models']==1
+          assert d['n_test_rows']==10*7*(5+2)
+          assert d['n_summary']==10*7*7
+          assert d['n_two_VALID_source_gates']==10*4
+          assert d['n_paired_TEST_AP_CIs']==10
+          assert len(d['human_explanations'])==1
+          assert d['source_inferred_only_from_jointly_measured_ON_and_OFF']
+          assert d['external_source_isolation_switch_assumed_not_proven']
+          assert not d['no_real_world_clinical_semantics'] is False
+          PY
+      - name: Full 2 independent devices x 3 real native K2 fits x 10 fault worlds
+        run: |
+          python scripts/experiment_paired_isolation_v39.py \
+            --out-dir V39_EVIDENCE | tee V39_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V39_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V39_PAIRED_ACTIVE_SOURCE_ISOLATION_EXECUTED'
+          assert d['devices']==[20261317,20261319]
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(1000,400,400,600)
+          assert d['n_real_native_models']==6
+          assert d['n_test_rows']==2*10*7*(5*3+2)
+          assert d['n_summary']==2*10*7*7
+          assert d['n_two_VALID_source_gates']==2*10*3*4
+          assert d['n_paired_TEST_AP_CIs']==2*10
+          assert len(d['human_explanations'])==6
+          assert all(not z['source_physical_identity_certified']
+                     for z in d['source_fits'])
+          assert all(z['no_true_H_or_S_in_source_fit']
+                     for z in d['source_fits'])
+          assert all(not z['human_facing']['not_an_estimated_clinical_causal_effect'] is False
+                     for z in d['human_explanations'])
+          assert all(z['source_use']==0
+                     for z in d['summary'] if z['method'] in
+                     ('DIFFERENCE_AB','DIFFERENCE_ABC')
+                     and (z['case']=='TEST_reference_missing'
+                          or z['stress']=='missing_reference'))
+          assert d['source_inferred_only_from_jointly_measured_ON_and_OFF']
+          assert Path('V39_EVIDENCE/FROZEN_TEST_PREDICTIONS.npz').is_file()
+          assert len(list(Path('V39_EVIDENCE/CHECKPOINTS').glob('native_K2_*.pt')))==6
+          PY
+          git rev-parse HEAD > V39_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Keep positive and negative complete experimental receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v39-ON-OFF-isolation-${{ github.run_number }}
+          path: |
+            V39_SMOKE/
+            V39_EVIDENCE/
+            V39_SMOKE_LOG.jsonl
+            V39_FULL_LOG.jsonl
+          if-no-files-found: ignore
