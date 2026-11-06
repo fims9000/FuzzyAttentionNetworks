@@ -74,6 +74,20 @@ jobs:
           assert Path('V45_EVIDENCE/TEST_PREDICTIONS.npz').is_file()
           PY
           git rev-parse HEAD > V45_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independently recalculate all TEST scores, paired CIs and raw-gate fallbacks
+        run: |
+          python scripts/audit_off_reliability_v45.py --evidence-dir V45_EVIDENCE --out-file V45_EVIDENCE/INDEPENDENT_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('V45_EVIDENCE/INDEPENDENT_AUDIT.json').read_text())
+          assert r['status']=='V45_ALL_FROZEN_TEST_PREDICTIONS_INDEPENDENTLY_RECALCULATED'
+          assert (r['verified_TEST_method_rows'],r['verified_TEST_metrics'])==(1960,11760)
+          assert (r['verified_TEST_summaries'],r['verified_paired_AP_CIs'])==(840,24)
+          assert r['exact_K2_fallback_array_comparisons']==444
+          assert r['maximum_absolute_metric_error']<1e-12
+          assert r['maximum_absolute_paired_CI_error']<1e-12
+          PY
       - name: Archive source and negative findings, including failures
         if: always()
         uses: actions/upload-artifact@v4
