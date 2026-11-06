@@ -188,7 +188,7 @@ def run(out:Path,*,smoke:bool=False):
                     cases[name,stress]["support"].copy())
                 # Store the full prospectively defined q->risk evidence for every
                 # TEST subject; labels are never used for these transformations.
-                risk_evidence[f"device{device}_${name}_${stress}_source_q"]=(
+                risk_evidence[f"device{device}_{name}_{stress}_source_q"]=(
                     cases[name,stress]["q"].copy())
                 for joint_method in JOINT_METHODS:
                     link=("linear_membership" if joint_method=="V47_JOINT_LINEAR"
