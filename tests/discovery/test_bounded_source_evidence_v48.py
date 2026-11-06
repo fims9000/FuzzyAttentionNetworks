@@ -7,7 +7,7 @@ from conceptfan_discovery.bounded_source_evidence_v48 import (
 
 
 def test_monotone_and_finite_for_edges_and_symmetry():
-    q=np.array([0,.0001,.001,.01,.1,.2,.5,.8,.9,.99,.999,1.])
+    q=np.array([0,.0001,.001,.01,.1,.2,.5,.8,.9,.99,.999,.9999,1.])
     e=bounded_membership_logodds_v48(q)
     assert np.isfinite(e).all()
     assert (np.diff(e)>=0).all()
