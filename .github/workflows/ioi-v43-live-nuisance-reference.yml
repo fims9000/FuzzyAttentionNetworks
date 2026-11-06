@@ -1,0 +1,133 @@
+name: ConceptFAN V43 live independent nuisance control and matched physical reference
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v43-live-nuisance-sentinel-vs-raw-ref-20261106
+    paths:
+      - '.github/workflows/ioi-v43-live-nuisance-reference.yml'
+      - 'src/conceptfan_discovery/live_nuisance_world_v43.py'
+      - 'src/conceptfan_discovery/live_nuisance_monitor_v43.py'
+      - 'src/conceptfan_discovery/physical_reference_raw_baselines_v43.py'
+      - 'scripts/experiment_live_nuisance_reference_v43.py'
+      - 'scripts/audit_live_nuisance_reference_v43.py'
+      - 'scripts/infer_live_nuisance_reference_v43.py'
+      - 'tests/discovery/test_live_nuisance_reference_v43.py'
+      - 'docs/medical/CONCEPTFAN_V43_FROZEN_LIVE_NUISANCE_VS_RAW_REFERENCE_PROTOCOL_20261106.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  study:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: CPU PyTorch and physical reference regression dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Check real measured control, physical reference baselines and prior regression
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/live_nuisance_world_v43.py \
+            src/conceptfan_discovery/live_nuisance_monitor_v43.py \
+            src/conceptfan_discovery/physical_reference_raw_baselines_v43.py \
+            scripts/experiment_live_nuisance_reference_v43.py \
+            scripts/audit_live_nuisance_reference_v43.py
+          python -m pytest -q \
+            tests/discovery/test_live_nuisance_reference_v43.py \
+            tests/discovery/test_physical_reference_v42.py \
+            tests/discovery/test_adaptive_pair_consensus_v41.py
+      - name: Smoke one new device using all ten physical faults and four stress modes
+        run: |
+          python scripts/experiment_live_nuisance_reference_v43.py \
+            --smoke --out-dir V43_SMOKE | tee V43_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V43_SMOKE/STATUS.json').read_text())
+          assert d['status']=='V43_SMOKE_ONLY'
+          assert d['devices']==[20261707]
+          assert d['n_test']==220
+          assert d['n_method_condition_metrics']==10*4*10
+          assert d['n_pre_registered_same_subject_comparisons']==5*2*3
+          assert d['n_raw_models_fit']==2*4
+          assert d['n_monitor_calibrations']==1
+          assert d['n_historical_reference_calibrations']==2
+          assert d['reference_R_never_available_for_TEST_inference']
+          assert d['new_current_nuisance_control_is_external_side_information']
+          PY
+      - name: Full four independent new physical instruments, 1600 method conditions and registered negatives
+        run: |
+          python scripts/experiment_live_nuisance_reference_v43.py \
+            --out-dir V43_EVIDENCE | tee V43_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V43_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V43_LIVE_NUISANCE_AND_MATCHED_RAW_REFERENCE_EXECUTED'
+          assert d['devices']==[20261707,20261709,20261721,20261723]
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(1000,400,400,600)
+          assert (d['n_physical_reference_labels_TRAIN'],
+                  d['n_physical_reference_labels_VALID1'],
+                  d['n_physical_reference_labels_VALID2'])==(300,200,200)
+          assert d['n_worlds']==10
+          assert d['n_stresses']==4
+          assert d['n_methods']==10
+          assert d['n_method_condition_metrics']==1600
+          assert d['n_pre_registered_same_subject_comparisons']==120
+          assert d['n_raw_models_fit']==32
+          assert d['n_monitor_calibrations']==4
+          assert d['n_historical_reference_calibrations']==8
+          assert len(list(Path('V43_EVIDENCE/FROZEN_MODELS').glob('*.json')))==12
+          assert len(list(Path('V43_EVIDENCE/FROZEN_MODELS').glob('*.joblib')))==32
+          assert d['true_physical_E_used_ONLY_in_post_test_audit']
+          assert d['new_current_nuisance_control_is_external_side_information']
+          assert d['raw_reference_regressors_use_same_300_or_700_R_label_budgets']
+          assert not any(x['n_accepted'] for x in d['summary'] if
+              x['case']=='monitor_missing' and (
+              x['method']=='V43_LIVE_MONITORED' or x['method'].endswith('_GATED')))
+          assert not any(x['n_accepted'] for x in d['summary'] if
+              x['case']=='OFF_missing' and
+              x['method'] in ('V42_HISTORICAL','V43_LIVE_MONITORED'))
+          PY
+          git rev-parse HEAD > V43_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independently recompute physical correctness and 120 paired subject comparisons
+        run: |
+          python scripts/audit_live_nuisance_reference_v43.py \
+            --evidence-dir V43_EVIDENCE \
+            --out-file V43_EVIDENCE/INDEPENDENT_PHYSICAL_ERROR_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V43_EVIDENCE/INDEPENDENT_PHYSICAL_ERROR_AUDIT.json').read_text())
+          assert d['status']=='V43_INDEPENDENT_PHYSICAL_ERROR_AND_CI_VERIFIED'
+          assert d['verified_1600_original_synthetic_TEST_method_conditions']==1600
+          assert d['verified_120_prespecified_paired_patient_contrasts']==120
+          assert d['max_abs_original_vs_recalculated_error']<1e-12
+          assert d['n_confirmed_no_OFF_concept_source_refusals']==4*4*2*600
+          assert d['n_confirmed_no_live_monitor_gated_refusals']==4*4*5*600
+          assert d['no_TEST_physical_R_used_for_R300_R700_baseline_fit']
+          PY
+      - name: Preserve full scientific artifacts and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v43-live-control-and-matched-R-regressors-${{ github.run_number }}
+          path: |
+            V43_SMOKE/
+            V43_EVIDENCE/
+            V43_SMOKE_LOG.jsonl
+            V43_FULL_LOG.jsonl
+          if-no-files-found: ignore
