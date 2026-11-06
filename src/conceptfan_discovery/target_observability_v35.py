@@ -202,6 +202,10 @@ def estimate_calibrated_source(
         or not 0<se_limit<=1
         or (residual_limit is not None and not 0<residual_limit<=10)):
         raise ValueError("Source estimator needs 16 measured times, 12 sensors, calibrated mask")
+    if not isinstance(calibration,ReferenceCalibration):
+        raise ValueError(
+            "External independently verified device calibration is mandatory "
+            "for target-specific source identity")
     n=len(v)
     output={k:[] for k in (
         "estimated_target","target_se","rank","target_in_rowspace",
@@ -287,4 +291,62 @@ def nullspace_counterexample()->dict:
         "target_a1_world_B":float(b[0]),
         "both_worlds_exactly_observationally_indistinguishable":True,
         "calibrated_mixture_does_not_identify_a1":True,
+    }
+
+
+def source_concept_or_abstain_without_calibration(
+    x:np.ndarray,
+    mask:np.ndarray,
+    calibration:ReferenceCalibration|None,
+    *,
+    method:str,
+    train_tau:float,
+    train_width:float,
+    residual_limit:float|None=None,
+)->dict:
+    """Safe public source inference. No phantom -> exact neutral refusal.
+
+    The existing trained K2 may still predict and explain its previously
+    defined two coordinates. The additional PHYSICAL-labelled source is
+    not asserted when its measurement operator has no verified orientation.
+    A descriptive raw statistical pattern might still be useful, but must
+    be kept separate and not misnamed an identified source.
+    """
+    xx=np.asarray(x)
+    mm=np.asarray(mask)
+    if (xx.ndim!=3 or xx.shape[1:]!=(16,12) or xx.shape!=mm.shape
+        or mm.dtype!=bool or not np.isfinite(xx[mm]).all()
+        or method not in METHODS
+        or not np.isfinite(train_tau) or not 0<train_width):
+        raise ValueError("Invalid observed source or registered concept definition")
+    if calibration is None:
+        return {
+            "q":np.full(len(xx),.5,dtype=float),
+            "support":np.zeros(len(xx),dtype=float),
+            "used_calibrated_source":np.zeros(len(xx),dtype=bool),
+            "reason":"ABSTAIN_MISSING_INDEPENDENT_EXTERNAL_REFERENCE",
+            "calibration_verified":False,
+            "physical_semantics_certified":False,
+            "estimated_target":np.zeros(len(xx)),
+            "target_se":np.full(len(xx),np.inf),
+            "measurement_operator_known":False,
+            "not_a_generative_imputation":True,
+        }
+    estimation=estimate_calibrated_source(
+        xx,mm,calibration,se_limit=.15,
+        residual_limit=residual_limit)
+    q,s=measured_target_membership(
+        estimation,method,train_tau=train_tau,
+        train_width=train_width)
+    return {
+        "q":q,
+        "support":s,
+        "used_calibrated_source":s.astype(bool),
+        "reason":"CALIBRATED_TARGET_OBSERVABILITY_ONLY_NO_SEMANTIC_CERTIFICATION",
+        "calibration_verified":True,
+        "physical_semantics_certified":False,
+        "estimated_target":estimation["estimated_target"],
+        "target_se":estimation["target_se"],
+        "measurement_operator_known":True,
+        "not_a_generative_imputation":True,
     }
