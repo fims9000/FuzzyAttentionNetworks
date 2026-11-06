@@ -24,6 +24,9 @@ from conceptfan_discovery.threeview_centered_v37 import (
     fit_centered_threeview_v37,threeview_feature_v37,pair_feature_v37,
     raw_ab_v36_feature,
 )
+from conceptfan_discovery.threeview_explanation_v37 import (
+    explain_threeview_source_v37,
+)
 from conceptfan_discovery.gauge_source_v36 import fit_blind_gauge_source_v36
 from conceptfan_discovery.auto_measured_concept_admission import (
     evaluate_two_independent_environments,admitted_test_logit,
@@ -323,6 +326,12 @@ def run(output:Path,*,smoke=False):
                                 "physical_semantics_certified":False,
                                 "view_noise_independence_is_external_assumption":True,
                                 "native_K2_SHA_unchanged":original_hash,
+                                "human_facing":explain_threeview_source_v37(
+                                    f,baseline,probs,
+                                    approved_by_two_valid_environments=gate.approved,
+                                    trained_pair_discrepancy_limit=(
+                                        fit.train_max_pairwise_q_discrepancy_q95),
+                                    index=0),
                             })
                 if sha_state(native)!=native_sha:
                     raise AssertionError("Original native K2 modified by additive source")
