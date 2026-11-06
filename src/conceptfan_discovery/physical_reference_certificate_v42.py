@@ -27,6 +27,29 @@ from .adaptive_pair_consensus_v41 import (
     adaptive_pair_feature_v41,_gauge_transform,
 )
 
+def measured_external_on_off_difference_v42(on,off,observed_on,observed_off):
+    """Pure inference-time actual paired subtraction; no simulator import."""
+    x=np.asarray(on)
+    z=np.asarray(off)
+    ma=np.asarray(observed_on)
+    mb=np.asarray(observed_off)
+    if (x.ndim!=3 or x.shape[1:]!=(16,12) or z.shape!=x.shape
+        or ma.shape!=x.shape or mb.shape!=x.shape
+        or ma.dtype!=np.bool_ or mb.dtype!=np.bool_
+        or len(x)<1
+        or not np.issubdtype(x.dtype,np.number)
+        or not np.issubdtype(z.dtype,np.number)
+        or not np.isfinite(x[ma]).all()
+        or not np.isfinite(z[mb]).all()):
+        raise ValueError("Observed ON/OFF [N,16,12] and strict Boolean masks required")
+    supported=ma&mb
+    a=np.asarray(x,dtype=np.float32)
+    b=np.asarray(z,dtype=np.float32)
+    d=np.where(supported,a,0.)-np.where(supported,b,0.)
+    d[~supported]=0.
+    return d.astype(np.float32,copy=False),supported
+
+
 REFERENCE_TRAIN=300
 REFERENCE_VALID=200
 TRAIN_MIN=80
