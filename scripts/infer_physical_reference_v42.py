@@ -25,11 +25,9 @@ import argparse,json
 from pathlib import Path
 import numpy as np
 
-from conceptfan_discovery.physical_reference_world_v42 import (
-    measured_difference_v42,
-)
 from conceptfan_discovery.physical_reference_certificate_v42 import (
     load_physical_reference_v42,predict_physical_reference_v42,
+    measured_external_on_off_difference_v42,
 )
 
 
@@ -57,7 +55,7 @@ def inference_physical_reference_npz_v42(
         raise ValueError(
             "Malformed paired [N,16,12] finite observed readings and strict BOOL masks")
     model=load_physical_reference_v42(model_path)
-    diff,observed=measured_difference_v42(x,z,ma,mb)
+    diff,observed=measured_external_on_off_difference_v42(x,z,ma,mb)
     f=predict_physical_reference_v42(model,diff,observed)
     result=[]
     for i in range(len(x)):
