@@ -8,6 +8,7 @@ on:
       - 'src/conceptfan_discovery/exogenous_probe_world_v38.py'
       - 'src/conceptfan_discovery/exogenous_probe_gate_v38.py'
       - 'scripts/experiment_exogenous_probe_v38.py'
+      - 'scripts/audit_exogenous_probe_v38.py'
       - 'tests/discovery/test_exogenous_probe_gate_v38.py'
       - 'docs/medical/CONCEPTFAN_V38_FROZEN_INSTRUMENTED_CONCEPT_PROTOCOL_20261106.md'
   workflow_dispatch:
@@ -96,6 +97,23 @@ jobs:
           assert len(list(Path('V38_EVIDENCE/CHECKPOINTS').glob('native_K2_*.pt')))==6
           PY
           git rev-parse HEAD > V38_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independent 2380-row TEST metric and 18 paired NLL bootstrap audit
+        run: |
+          python scripts/audit_exogenous_probe_v38.py \
+            --evidence-dir V38_EVIDENCE \
+            --out-file V38_EVIDENCE/INDEPENDENT_METRIC_NLL_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V38_EVIDENCE/INDEPENDENT_METRIC_NLL_AUDIT.json').read_text())
+          assert d['n_exactly_reproduced_TEST_rows']==2380
+          assert d['n_exactly_reproduced_summary_rows']==980
+          assert d['max_abs_error_all_4_metrics']<1e-12
+          assert d['n_pairwise_subject_bootstrap_NLL_receipts']==18
+          assert d['n_exact_probe_pass_ablation_equivalences']==420
+          assert not d['external_probe_certificate_changes_prediction_if_passes']
+          assert d['frozen_TEST_thresholds_and_VALID_decisions_unchanged']
+          PY
       - name: Preserve all conditions, partial negative findings and checkpoints
         if: always()
         uses: actions/upload-artifact@v4
