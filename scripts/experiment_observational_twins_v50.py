@@ -82,6 +82,15 @@ def run(out:Path,*,smoke:bool=False):
             "healthy_MCAR40":(xhealthy40,masks["TEST_MCAR40"][te]),
             "amplifier_shift_MCAR20":(xshift,masks["TEST_MCAR20"][te]),
         }
+        # Audit-only measured TRAIN/VALID inputs and independent sensor anchors
+        # permit a second implementation to re-fit every calibrated readout.
+        arrays[f"device{device_seed}_TRAIN_X"]=x[tr].copy()
+        arrays[f"device{device_seed}_TRAIN_mask"]=masks["TRAIN_MCAR20"][tr].copy()
+        arrays[f"device{device_seed}_VALID1_X"]=x[v1].copy()
+        arrays[f"device{device_seed}_VALID1_mask"]=masks["VALID1_MCAR20"][v1].copy()
+        arrays[f"device{device_seed}_VALID2_X"]=x[v2].copy()
+        arrays[f"device{device_seed}_VALID2_mask"]=masks["VALID2_MCAR40"][v2].copy()
+        arrays[f"device{device_seed}_TEST_shifted_X"]=xshift.copy()
         arrays[f"device{device_seed}_shared_TEST_Y"]=ytest.copy()
         arrays[f"device{device_seed}_shared_TEST_X"]=x[te].copy()
         arrays[f"device{device_seed}_explicitly_identical_twin_TEST_X"]=x[te].copy()
@@ -138,6 +147,9 @@ def run(out:Path,*,smoke:bool=False):
         for physical_world in world["worlds"]:
             gauge=physical_world["gauge_id"]
             assay=physical_world["attested_external_assay"]
+            arrays[f"device{device_seed}_gauge{gauge}_TRAIN_assay_ONLY"]=assay[tr].copy()
+            arrays[f"device{device_seed}_gauge{gauge}_VALID1_assay_ONLY"]=assay[v1].copy()
+            arrays[f"device{device_seed}_gauge{gauge}_VALID2_assay_ONLY"]=assay[v2].copy()
             identity=physical_world["physical_device_id"]
             ref=physical_world["external_reference_id"]
             true_energy=physical_world[
