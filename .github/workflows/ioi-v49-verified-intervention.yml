@@ -1,0 +1,115 @@
+name: ConceptFAN V49 verified human concept correction on frozen joint model
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v49-verified-interventions-20261106
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  frozen-review-study:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install native ConceptFAN and registered strong baselines
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Expert correction algebra, no hidden leakage, measured source regressions
+        run: |
+          python -m compileall -q src/conceptfan_discovery/verified_concept_intervention_v49.py src/conceptfan_discovery/expert_intervention_world_v49.py scripts/experiment_expert_base_v49.py scripts/experiment_verified_concept_review_v49.py scripts/audit_verified_concept_review_v49.py
+          python -m pytest -q tests/discovery/test_verified_concept_intervention_v49.py tests/discovery/test_bounded_source_evidence_v48.py tests/discovery/test_anchored_joint_bottleneck_v47.py tests/discovery/test_partial_view_concept_v44.py
+      - name: Run one fresh-device native smoke and seal synthetic expert reference
+        run: |
+          python scripts/experiment_expert_base_v49.py --smoke --out-dir V49_SMOKE_BASE | tee V49_SMOKE_BASE_LOG.jsonl
+          python scripts/experiment_verified_concept_review_v49.py --smoke --base-dir V49_SMOKE_BASE --out-dir V49_SMOKE_REVIEW | tee V49_SMOKE_REVIEW_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          b=json.loads(Path('V49_SMOKE_BASE/STATUS.json').read_text())
+          r=json.loads(Path('V49_SMOKE_REVIEW/STATUS.json').read_text())
+          assert b['status']=='V49_SMOKE'
+          assert b['device_seeds']==[20262907] and b['n_saved_external_assay_arrays']==4
+          assert r['status']=='V49_SMOKE_REVIEW'
+          assert r['n_test_method_rows']==4*4*12
+          assert r['n_summary_rows']==4*4*8
+          assert r['n_expert_action_arrays']==4*4*18
+          assert r['n_preregistered_paired_CIs']==5
+          assert len(list(Path('V49_SMOKE_BASE/CHECKPOINTS').glob('*.pt')))==3
+          assert Path('V49_SMOKE_REVIEW/FROZEN_REVIEW_PREDICTIONS.npz').is_file()
+          PY
+      - name: Four new devices with 12 native K2 and 24 joint ConceptFAN fits
+        run: |
+          python scripts/experiment_expert_base_v49.py --out-dir V49_BASE_EVIDENCE | tee V49_BASE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          b=json.loads(Path('V49_BASE_EVIDENCE/STATUS.json').read_text())
+          assert b['status']=='V49_BASE_FROZEN_PREDICTIONS_EXECUTED'
+          assert b['device_seeds']==[20262907,20262909,20262921,20262923]
+          assert (b['n_train'],b['n_valid1'],b['n_valid2'],b['n_test'])==(1000,400,400,600)
+          assert (b['n_real_pretrained_native_fits'],b['n_real_joint_fits'])==(12,24)
+          assert b['n_saved_external_assay_arrays']==16
+          assert len(list(Path('V49_BASE_EVIDENCE/CHECKPOINTS').glob('*.pt')))==36
+          assert b['no_raw_input_direct_risk_bypass']
+          assert b['sealed_external_assay_only_after_prediction']
+          PY
+      - name: Equal-budget active/random human reviews on frozen test predictions
+        run: |
+          python scripts/experiment_verified_concept_review_v49.py --base-dir V49_BASE_EVIDENCE --out-dir V49_REVIEW_EVIDENCE | tee V49_REVIEW_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V49_REVIEW_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V49_REGISTERED_IDEALIZED_EXPERT_REVIEW_EXECUTED'
+          assert d['device_seeds']==[20262907,20262909,20262921,20262923]
+          assert d['n_test_method_rows']==4*3*4*4*12
+          assert d['n_summary_rows']==4*4*4*8
+          assert d['n_expert_action_arrays']==4*3*4*4*18
+          assert d['n_preregistered_paired_CIs']==4*5
+          assert d['real_model_weights_not_retrained_at_review']
+          assert d['model_review_selection_uses_no_label_y_or_reference_energy']
+          assert d['external_assay_not_present_in_real_data']
+          PY
+      - name: Independent audit of frozen selection, TEST Y and expert responses
+        run: |
+          python scripts/audit_verified_concept_review_v49.py --base-dir V49_BASE_EVIDENCE --review-dir V49_REVIEW_EVIDENCE --out-file V49_REVIEW_EVIDENCE/INDEPENDENT_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V49_REVIEW_EVIDENCE/INDEPENDENT_AUDIT.json').read_text())
+          assert d['status']=='V49_ASSAY_AND_REVIEW_TEST_INDEPENDENTLY_RECALCULATED'
+          assert (d['verified_test_method_rows'],d['verified_test_metrics'])==(2304,11520)
+          assert (d['verified_review_summary_rows'],d['verified_preregistered_AP_intervals'])==(512,20)
+          assert d['verified_selection_and_action_arrays']==3456
+          assert d['max_absolute_numeric_error']<1e-12
+          assert d['selection_reconstructed_from_labels'] is False
+          PY
+          git rev-parse HEAD > V49_REVIEW_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve every positive and negative outcome, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v49-independent-expert-intervention
+          path: |
+            V49_SMOKE_BASE/
+            V49_SMOKE_REVIEW/
+            V49_BASE_EVIDENCE/
+            V49_REVIEW_EVIDENCE/
+            V49_SMOKE_BASE_LOG.jsonl
+            V49_SMOKE_REVIEW_LOG.jsonl
+            V49_BASE_LOG.jsonl
+            V49_REVIEW_LOG.jsonl
+          if-no-files-found: ignore
