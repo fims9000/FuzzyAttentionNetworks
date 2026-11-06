@@ -58,6 +58,15 @@ def test_known_reference_calibration_recovers_topology_and_calibration_error():
         u,x,physically_verified_routing_support=untrusted,
         independent_reference=True)
     assert alt.response[2,1]!=0
+    # Independent reference excitation with finite noisy samples does not
+    # CERTIFY an exact structural zero. Without external wiring metadata,
+    # sensor6 has estimated nonzero nuisance cross-talk: rank1 does not
+    # uniquely identify a1 under the strict rowspace definition.
+    sample,_=_world(n=140)
+    observed=_single_sensor(sample,6)
+    unverified=estimate_calibrated_source(sample,observed,alt)
+    assert not unverified["target_in_rowspace"].any()
+    assert not unverified["calibrated_target_rowspace"].any()
 
 
 def test_mixture_not_identifiable_even_with_all_16_measured_timepoints():
