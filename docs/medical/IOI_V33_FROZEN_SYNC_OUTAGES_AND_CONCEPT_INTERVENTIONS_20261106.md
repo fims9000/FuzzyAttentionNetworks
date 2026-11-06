@@ -1,0 +1,51 @@
+# IOI V33 frozen protocol — synchronized source outages and partial interventions
+
+**Registered before any V33 experiment or TEST inspection, 2026-11-06.** Parent: V32 executed and sealed in PR #29 / run 42128853336. This branch does not alter V32, V31, accepted PIERE or IITI results. The proposed observation-coverage rule is a simple, transparent **conservative heuristic**, not a new theorem or certified clinical method.
+
+## Research questions and constraints
+
+**Question A:** V32's ~99% use under 8-timepoint blocks arose when sensor4,5,6 had **independent** outage start positions. What happens when ALL sensors in the group have one synchronous early, late, middle, or whole-series outage? Does the rank1 temporal model infer from a single still-visible phase and how much does that reliance on an assumed waveform harm predictions if phase structure changes after VALID?
+
+**Question B:** An exactly additive ConceptFAN permits one-concept correction by changing its term. Does replacing one of the 2 KNOWN concept coordinates by a simulator's TRUE corresponding state improve outcomes? What fraction of synthetic cases suffer increased sample NLL or **expected NLL under the generator's conditional p(y|latent)** after a single-coordinate oracle correction? This latter quantity is the meaningful harm test; it must not be confused with random outcome noise, model faithfulness or causal intervention. For the newly discovered concepts, no certified semantic/correct-coordinate concept exists, so no "gold" partial human intervention is fabricated.
+
+## Fresh data and prior frozen hyperparameters
+
+- Fresh simulation seed **20261120**, drawn from the SAME non-AR V31/V32 two-phase pulse family, TRAIN=1500, VALID1=500, VALID2=500, TEST=800. ALL subject indices disjoint, 12 channels and 16 times, three actual native temporal K2 fits seeds 11/23/37, epochs14 AdamW .002. This is no independent hospital data and no new family-level external validation. All methods receive the same TRAIN and VALID cases.
+- TRAIN mask MCAR20 20271301; VALID1 MCAR20 20271302; VALID2 MCAR20 20271303. TEST MCAR/other masks seeds **20271900 + stress ordinal**. Same TEST800 identities used across stress masks, not independent cohorts. VALID2 benign measured-device transform \`1.10 x + .05\` for source channels except prespecified known-fault scenarios.
+- Original K2 concept path reads ONLY measured channels0..3 and mask; first-stage targets are TRAIN-observed pair means, not synthetic true concept states or outcome labels. Fit original K2 risk head only on TRAIN outcome labels, then freeze both concept model and b,w1,w2. New source proposal from TRAIN-only unlabeled measurements via three disjoint folds; TRAIN-only masked rank1 template SVD+5 weighted ALS, same code as V32, orientation, normalization, and gamma fitted to TRAIN labels. Source admission is two disjoint VALID500 cohorts, min paired NLL gain .003 and 1% empirical bootstrap lower bound >0 (399 draws), >=75% source eligibility in each, max one accepted, otherwise original risk EXACT.
+- Original STRESS 5: \`complete\`, \`MCAR20\`, \`MCAR40\`, \`MNAR\`, \`independent_block8\`; additional four **synchronous measured source4..6 dropout** modes defined before TEST:
+  * \`synchronized_early8\`: source4..6 missing all first 8 steps;
+  * \`synchronized_late8\`: source4..6 missing all last 8 steps;
+  * \`synchronized_block8\`: each TEST episode gets ONE shared 8-step start for source4..6, all other channels' MCAR20 unchanged;
+  * \`synchronized_full16\`: source4..6 absent for all 16 steps;
+  These masks are made by the synthetic TEST evaluation only, using simulator group4..6 to specify a held-out fault; the TRAIN source proposer, templates, gamma and selection never receive the true group metadata. Do not use TEST labels for any tuning.
+- Five registered outcome/fault scenarios: \`healthy_physical\` (benign VALID2, normal TEST), \`known_physical_flip\` (source4..6 flipped in VALID2 and TEST), \`known_recording_artifact_flip\` (device source9..10 flipped in VALID2 and TEST), \`unseen_physical_flip\` (only TEST4..6 sign flip), \`complete_dictionary\` (no needed extra source). An additional \`unseen_pulse_shape_drift\` (TEST-only physical-source pulse changepoint t3 instead of t8) tests shape assumptions, as in V32. The six worlds share the 800 TEST subjects, masks and Bernoulli draw, not six independent experimental samples.
+
+## Experimental architectural policy — no TEST tuning
+
+V32 returns candidate from observed-only template amplitude, with >=50% normalized template Fisher information. Add a separate **phase corroboration rule**, fixed here:
+- \`AUTO_TEMPLATE\`: exact unchanged V32 template and support (main comparator).
+- \`AUTO_PHASE_CORROBORATED\`: same learned TRAIN-only template; per TEST subject in addition to >=50% total template information, require observed source timepoints in **each** of [0,8) and [8,16): at least **2 out of 8 positions** with >=1 actually observed source-group sensor (25% observed-time coverage) in EACH half. If this fails, candidate q=0.5, support=0, no contribution, exact original K2 score. No truth, TEST labels, or guessed unobserved values may enter. Gamma is separately TRAIN-fitted and gate uses IDENTICAL two VALID cohorts; no monitoring source-reliability by outcome on TEST.
+- \`AUTO_HALF_CONTRAST\` unchanged V31 temporal contrast and unchanged V32 \`AUTO_BANK\` of old three candidate operators (static_mean, half_contrast, masked_rank1_template); a separate \`AUTO_PHASE_CORROBORATED\` is NOT silently added to old bank, so comparisons are controlled.
+- All-group ordinary additive CBM head refit TRAIN1500 and all TRAIN+VALID2500 labels, strong raw temporal logistic early/late/whole mask features train1500 and all2500 labels. They have same TOTAL labelled cases but unlike our gated approach use labels for fitting; not compute-equal. Oracle true latent K2/extras used only in explicit privileged post-hoc audit.
+
+Evaluate all TEST800 subjects, for every scenario and mask, metrics AUPRC, AUROC, NLL, Brier, source-use/refusal fractions and full aggregate; show risk gains and losses even if the phase rule reduces quality on stable signals. Store frozen template hashes, source masks, extra selected candidate ID, K2 parameter SHA.
+
+## Single-concept oracle interventions (evaluation only)
+
+Take held-out TEST K2 predicted coordinates \`q_k\` and exactly the **corresponding** simulator-known concept state \`q_true,k = mean_t sigmoid(true latent known source_k(t))\` (privileged TEST audit; never used in TRAIN concept targets, source selection or thresholds). For each k=0 or1 separately, and optionally BOTH:
+- Given model original additive head \`z=b+w1*q1+w2*q2\` and auto-source contribution \`delta\`, correct one coordinate \`z'_k=z+w_k*(q_true,k-q_k)\`. No retraining of w, no change to other concept, source effect, mask or b. Original prediction and corrected predictions all logged. This is **synthetic oracle correction**, NOT a human intervention, causal \`do()\` operator, or independently validated expert meaning. Avoid evaluating a guessed "correct" value for the automatically discovered K3 because it is not semantically aligned to the true simulator amplitude.
+- Report whole-cohort observed NLL before/after intervention, mean expected Bernoulli log-loss under generator \`p_true=expit(3.7*(true_q1-.5)-3.6*(true_q2-.5)-.10 +2.5*extra_amplitude_if_applicable)\`, and **fraction of TEST subjects for whom expected log-loss increases** under a single correction (plus sample NLL harm rate). Compute these rates over all 800, not just cases where the corrected prediction helped. Report q-prediction absolute error. A partial correction may worsen overall loss because the risk head was calibrated to predicted proxy-coordinates; NEVER interpret this as proof the ground-truth concept labels are wrong.
+- Use held-out TEST targets only to *report* metrics, not select a correction threshold or choose which concept to correct. For comparison with original K2/no-source, compute interventions on both unextended and extended predictor using identical K2 head and source status, and preserve additive reconstruction.
+- Exact noninterference tests: changing a known concept leaves all other known contributions and auto-source contribution unchanged; replacing q with itself causes a bitwise identical logit; applying none yields baseline; changing unobserved sensor values under a false mask cannot change the intervention result.
+
+## Interpretation boundaries / falsification
+
+- Synchronized half outages can leave a correctly inferred phase under the frozen *known* waveform; a strict phase-support rule may abstain more but have worse AUPRC. Report that as a tradeoff, not "the more abstention the safer."
+- All-sensor whole-series outage **must** yield q=0.5, no selected source use, and logits exactly K2.
+- A counterfactual pair with IDENTICAL observed histories and masks but opposite unobserved pulses/hidden outcome laws must produce IDENTICAL predictions. This is a basic observational impossibility, not a new identification theorem; no zero-label method can resolve a future-only change that leaves observed history unchanged.
+- Synchronized outage, sign flip or pulse shape drift can fool the same frozen waveform: do not claim universal safety or clinical reliability.
+- Any TEST difference must be accompanied by 399 paired TEST patient bootstrap CI95 for \`AUTO_PHASE_CORROBORATED−AUTO_TEMPLATE\` on healthy source \`synchronized_block8\` and \`independent_block8\`, conditional on the 3 fitted models and the same 800 TEST cases. Never claim independent replications across masks or scenarios.
+- No claim that ConceptFAN supersedes published CBM/IB-CBM/residual CBMs or that this basic phase policy is novel. PIERE cross-run explanation reproducibility is already separately accepted, and remains distinct from completeness/partial observability.
+
+Deliver successful GitHub Actions code+tests, status and source/TEST probability receipts, all intervention expected-loss/harm counts, and written scientific summary. If the frozen experiment fails, publish the failure and improve implementation only; do not adjust thresholds based on TEST.

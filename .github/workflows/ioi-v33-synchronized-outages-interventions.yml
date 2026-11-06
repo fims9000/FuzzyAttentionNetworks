@@ -1,0 +1,115 @@
+name: IOI V33 synchronized source outages and known-concept corrections
+on:
+  push:
+    branches:
+      - experiment/ioi-synchronized-outages-concept-interventions-v33-20261106
+    paths:
+      - '.github/workflows/ioi-v33-synchronized-outages-interventions.yml'
+      - 'docs/medical/IOI_V33_FROZEN_SYNC_OUTAGES_AND_CONCEPT_INTERVENTIONS_20261106.md'
+      - 'src/conceptfan_discovery/synchronized_source_outages_v33.py'
+      - 'src/conceptfan_discovery/concept_intervention_audit_v33.py'
+      - 'scripts/experiment_synchronized_outages_interventions_v33.py'
+      - 'tests/discovery/test_sync_outages_and_interventions_v33.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  synchronous-missingness-and-interventions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU torch and ConceptFAN scientific requirements
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test synchronized all-source masks, observational identity and concept corrections
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/synchronized_source_outages_v33.py \
+            src/conceptfan_discovery/concept_intervention_audit_v33.py \
+            scripts/experiment_synchronized_outages_interventions_v33.py
+          python -m pytest -q \
+            tests/discovery/test_sync_outages_and_interventions_v33.py \
+            tests/discovery/test_masked_temporal_template.py \
+            tests/discovery/test_temporal_source_bank_v31.py
+      - name: 'Smoke - actual native Temporal ConceptFAN and source phase support gate'
+        run: |
+          python scripts/experiment_synchronized_outages_interventions_v33.py \
+            --smoke --out-dir IOI_V33_SMOKE | tee IOI_V33_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('IOI_V33_SMOKE/STATUS.json').read_text())
+          assert d['status']=='SMOKE_ONLY'
+          assert d['split_sizes']=={'TRAIN':300,'VALID1':150,'VALID2':150,'TEST':240}
+          assert d['n_unique_native_K2_models']==1
+          assert len(d['temporal_bank_spec'])==12
+          assert len(d['summary'])==6*9*12
+          assert len(d['rows'])==6*9*12
+          assert len(d['gates'])==6*12
+          assert len(d['selections'])==6
+          assert len(d['known_concept_intervention_audits'])==6*3*3*3
+          assert len(d['confidence_intervals'])==2*5*2
+          assert d['oracle_known_concept_interventions_ONLY_on_TEST']
+          assert d['phase_corroboration_two_measured_times_each_half']
+          assert all(not r['causal_intervention_certified']
+                    for r in d['known_concept_intervention_audits'])
+          PY
+      - name: Full frozen fresh draw with 3 native models 800 TEST episodes and 9 mask modes
+        run: |
+          python scripts/experiment_synchronized_outages_interventions_v33.py \
+            --out-dir IOI_V33_EVIDENCE | tee IOI_V33_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('IOI_V33_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='SYNCHRONIZED_SOURCE_OUTAGES_INTERVENTIONS_V33_EXECUTED'
+          assert d['generator_seed']==20261120
+          assert d['split_sizes']=={'TRAIN':1500,'VALID1':500,'VALID2':500,'TEST':800}
+          assert d['n_unique_native_K2_models']==3
+          assert len(d['summary'])==6*9*12
+          assert len(d['rows'])==6*9*(8*3+4)
+          assert len(d['temporal_bank_spec'])==12
+          assert len(d['gates'])==3*6*12
+          assert len(d['selections'])==18
+          assert len(d['known_concept_intervention_audits'])==3*6*3*3*3
+          assert len(d['confidence_intervals'])==2*5*2
+          assert d['known_concepts_trained_from_observable_proxies_only']
+          assert not d['target_gradients_to_concept_path']
+          assert not d['TEST_outcomes_used_for_training_or_source_gate']
+          assert not d['oracle_true_latent_concepts_for_training']
+          assert all(not v['template_used_target_outcomes']
+                    for v in d['source_temporal_templates'].values())
+          assert all(r['max_exact_intervention_reconstruction_error']<2e-12
+                    for r in d['known_concept_intervention_audits'])
+          assert Path('IOI_V33_EVIDENCE/FROZEN_TEST_PREDICTIONS_AND_INTERVENTIONS.npz').exists()
+          # No all-source measurement is ever accepted as a new concept:
+          for r in d['rows']:
+              if r['stress']=='synchronized_full16' and r['case']=='healthy_physical':
+                  if r['method'] in ('AUTO_TEMPLATE','AUTO_PHASE_CORROBORATED'):
+                      assert r['source_usage']==0.0
+          PY
+          git rev-parse HEAD > IOI_V33_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Archive masks, selected sources, uncertainty and harmful interventions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ioi-v33-synchronous-source-outages-${{ github.run_number }}
+          path: |
+            IOI_V33_SMOKE/
+            IOI_V33_EVIDENCE/
+            IOI_V33_SMOKE_LOG.jsonl
+            IOI_V33_FULL_LOG.jsonl
+          if-no-files-found: warn
