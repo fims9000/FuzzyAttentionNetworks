@@ -93,7 +93,7 @@ def known_concept_intervention_audit(
     additional=np.asarray(additional_source_contribution,dtype=np.float64).reshape(-1)
     yy=np.asarray(observed_test_outcomes,dtype=np.float64).reshape(-1)
     pt=np.asarray(true_conditional_event_probability,dtype=np.float64).reshape(-1)
-    if (known.ndim!=2 or known.shape[1]!=2 or true.shape!=known or w.shape!=(2,)
+    if (known.ndim!=2 or known.shape[1]!=2 or true.shape!=known.shape or w.shape!=(2,)
         or len(additional)!=len(known) or len(yy)!=len(known)
         or len(pt)!=len(known) or not np.isin(yy,[0,1]).all()
         or not np.isfinite(known).all() or not np.isfinite(true).all()
