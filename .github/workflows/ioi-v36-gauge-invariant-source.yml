@@ -1,0 +1,102 @@
+name: ConceptFAN V36 blind two-view lag-order source energy
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v36-gauge-invariant-crossview-20261106
+    paths:
+      - '.github/workflows/ioi-v36-gauge-invariant-source.yml'
+      - 'src/conceptfan_discovery/gauge_source_v36.py'
+      - 'src/conceptfan_discovery/crossview_world_v36.py'
+      - 'scripts/experiment_gauge_source_v36.py'
+      - 'tests/discovery/test_gauge_source_v36.py'
+      - 'docs/medical/CONCEPTFAN_V36_FROZEN_GAUGE_INVARIANT_SOURCE_PROTOCOL_20261106.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  v36-multiview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install actual native ConceptFAN and CPU torch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test independent-view source recovery and unavoidable sign ambiguity
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/gauge_source_v36.py \
+            src/conceptfan_discovery/crossview_world_v36.py \
+            scripts/experiment_gauge_source_v36.py
+          python -m pytest -q \
+            tests/discovery/test_gauge_source_v36.py \
+            tests/discovery/test_target_observability_v35.py \
+            tests/discovery/test_native_adaptive_type3_transformer_v34.py
+      - name: Smoke actual native Temporal ConceptFAN and mask-specific refusal
+        run: |
+          python scripts/experiment_gauge_source_v36.py \
+            --smoke --out-dir V36_SMOKE | tee V36_SMOKE_LOG.jsonl
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          d=json.loads(Path('V36_SMOKE/STATUS.json').read_text())
+          assert d['status']=='V36_SMOKE_ONLY'
+          assert d['n_native_K2_fits']==1
+          assert d['n_summary']==7*8*5
+          assert d['n_results']==7*8*(1*3+2)
+          assert d['n_valid_candidate_gates']==7*2
+          assert len(d['human_concept_passports'])==1
+          assert d['source_directions_trained_without_latent_or_mixing_or_Y']
+          assert not d['physical_signed_source_identity_certified']
+          assert Path('V36_SMOKE/FROZEN_TEST_PREDICTIONS.npz').is_file()
+          PY
+      - name: Full frozen 3 native Transformer fits and 600 shared TEST episodes
+        run: |
+          python scripts/experiment_gauge_source_v36.py \
+            --out-dir V36_EVIDENCE | tee V36_FULL_LOG.jsonl
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          d=json.loads(Path('V36_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V36_BLIND_MULTIVIEW_ENERGY_EXECUTED'
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(1200,400,400,600)
+          assert d['n_native_K2_fits']==3
+          assert d['n_summary']==7*8*5
+          assert d['n_results']==7*8*(3*3+2)
+          assert d['n_valid_candidate_gates']==7*2*3
+          assert len(d['paired_test_bootstrap_CI'])==6
+          assert len(d['human_concept_passports'])==3
+          assert d['source_directions_trained_without_latent_or_mixing_or_Y']
+          assert not d['physical_signed_source_identity_certified']
+          assert not d['source_fit']['original_mixing_matrix_supplied']
+          assert d['AUDIT_ONLY_true_source_energy_corr']>.5
+          assert all(x['source_use']==0. for x in d['summary']
+                     if x['method']=='blind_crossview_energy'
+                     and x['stress'] in ('missing_view_A','missing_view_B','no_views'))
+          assert Path('V36_EVIDENCE/FROZEN_TEST_PREDICTIONS.npz').is_file()
+          assert len(list(Path('V36_EVIDENCE/CHECKPOINTS').glob('native_K2_*.pt')))==3
+          PY
+          git rev-parse HEAD > V36_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Upload real benchmark receipts, no claims if full experiment fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v36-crossview-${{ github.run_number }}
+          path: |
+            V36_SMOKE/
+            V36_EVIDENCE/
+            V36_SMOKE_LOG.jsonl
+            V36_FULL_LOG.jsonl
+          if-no-files-found: ignore
