@@ -69,6 +69,9 @@ jobs:
           assert x['type3_discrete_alpha_slice_restricted_not_full_IT3_system']
           assert len(x['explanation_passports'])==1
           assert x['explanation_passports'][0]['report']['membership_is_not_outcome_probability']
+          assert len(x['TEST_patient_paired_AP_bootstrap'])==8
+          assert Path('V34_SMOKE/FROZEN_TEST_PREDICTIONS.npz').exists()
+          assert len(list(Path('V34_SMOKE/CHECKPOINTS').glob('native_K2_*.pt')))==1
           PY
       - name: Full independent fresh draw in TWO synthetic generator families
         run: |
@@ -95,6 +98,11 @@ jobs:
                      for z in x['explanation_passports'])
           assert all(z['n_per_regime']==[240,240]
                      for z in x['calibration_anchors_simulator_known_reference'].values())
+          assert len(x['TEST_patient_paired_AP_bootstrap'])==32
+          assert x['CI95_conditional_on_three_fixed_models_and_shared_TEST']
+          assert Path('V34_EVIDENCE/FROZEN_TEST_PREDICTIONS.npz').exists()
+          assert len(list(Path('V34_EVIDENCE/CHECKPOINTS').glob('native_K2_*.pt')))==6
+          assert len(list(Path('V34_EVIDENCE/CHECKPOINTS').glob('conditional_flow_*.pt')))==len(x['flow'])
           PY
           git rev-parse HEAD > V34_EVIDENCE/SOURCE_COMMIT_SHA.txt
       - name: Save available smoke and full study receipts
