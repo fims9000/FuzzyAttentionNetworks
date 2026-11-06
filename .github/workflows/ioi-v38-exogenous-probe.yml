@@ -8,11 +8,14 @@ on:
       - 'src/conceptfan_discovery/exogenous_probe_world_v38.py'
       - 'src/conceptfan_discovery/exogenous_probe_gate_v38.py'
       - 'src/conceptfan_discovery/source_persistence_v38.py'
+      - 'src/conceptfan_discovery/inference_v38.py'
+      - 'scripts/infer_exogenous_source_v38.py'
       - 'scripts/experiment_exogenous_probe_v38.py'
       - 'scripts/replay_exogenous_source_v38.py'
       - 'scripts/audit_exogenous_probe_v38.py'
       - 'tests/discovery/test_exogenous_probe_gate_v38.py'
       - 'tests/discovery/test_source_persistence_v38.py'
+      - 'tests/discovery/test_inference_v38.py'
       - 'docs/medical/CONCEPTFAN_V38_FROZEN_INSTRUMENTED_CONCEPT_PROTOCOL_20261106.md'
   workflow_dispatch:
 permissions:
@@ -44,11 +47,14 @@ jobs:
             src/conceptfan_discovery/exogenous_probe_world_v38.py \
             src/conceptfan_discovery/exogenous_probe_gate_v38.py \
             src/conceptfan_discovery/source_persistence_v38.py \
+            src/conceptfan_discovery/inference_v38.py \
+            scripts/infer_exogenous_source_v38.py \
             scripts/experiment_exogenous_probe_v38.py \
             scripts/replay_exogenous_source_v38.py
           python -m pytest -q \
             tests/discovery/test_exogenous_probe_gate_v38.py \
             tests/discovery/test_source_persistence_v38.py \
+            tests/discovery/test_inference_v38.py \
             tests/discovery/test_threeview_centered_v37.py \
             tests/discovery/test_threeview_explanation_v37.py \
             tests/discovery/test_native_adaptive_type3_transformer_v34.py
