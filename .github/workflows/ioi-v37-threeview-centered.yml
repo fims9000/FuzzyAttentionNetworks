@@ -1,0 +1,106 @@
+name: ConceptFAN V37 center-corrected three-view independent-device corroboration
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v37-threeview-centered-corroboration-20261106
+    paths:
+      - '.github/workflows/ioi-v37-threeview-centered.yml'
+      - 'src/conceptfan_discovery/threeview_world_v37.py'
+      - 'src/conceptfan_discovery/threeview_centered_v37.py'
+      - 'scripts/experiment_threeview_centered_v37.py'
+      - 'tests/discovery/test_threeview_centered_v37.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  independent-threeview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install actual native ConceptFAN and CPU torch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify full code plus previous V36 core invariants
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/threeview_world_v37.py \
+            src/conceptfan_discovery/threeview_centered_v37.py \
+            scripts/experiment_threeview_centered_v37.py
+          python -m pytest -q \
+            tests/discovery/test_threeview_centered_v37.py \
+            tests/discovery/test_gauge_source_v36.py \
+            tests/discovery/test_native_adaptive_type3_transformer_v34.py
+      - name: Smoke with real native Temporal ConceptFAN and all negative controls
+        run: |
+          python scripts/experiment_threeview_centered_v37.py \
+            --smoke --out-dir V37_SMOKE | tee V37_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V37_SMOKE/STATUS.json').read_text())
+          assert d['status']=='V37_SMOKE_ONLY'
+          assert d['n_native_fits']==1
+          assert d['n_summary']==9*8*6
+          assert d['n_rows']==9*8*(4+2)
+          assert d['n_valid_gates']==9*3
+          assert d['n_paired_test_CI']==9
+          assert len(d['human_facing_source_passports'])==1
+          assert d['source_mixing_H_not_supplied_to_learner']
+          assert d['view_partition_fixed_externally']
+          assert d['test_outcomes_not_used_for_source_selection']
+          assert Path('V37_SMOKE/FROZEN_TEST_PREDICTIONS.npz').exists()
+          PY
+      - name: Full frozen 2 independent random-mixing devices x 3 real K2 fits
+        run: |
+          python scripts/experiment_threeview_centered_v37.py \
+            --out-dir V37_EVIDENCE | tee V37_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V37_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V37_CENTERED_THREEVIEW_EXECUTED'
+          assert d['mix_seeds']==[20261217,20261219]
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(1000,400,400,600)
+          assert d['n_native_fits']==6
+          assert d['n_summary']==2*9*8*6
+          assert d['n_rows']==2*9*8*(4*3+2)
+          assert d['n_valid_gates']==2*9*3*3
+          assert d['n_paired_test_CI']==2*9
+          assert len(d['human_facing_source_passports'])==6
+          assert all(z['threeview_measured_only']['train_fit_episodes']==700
+                     for z in d['source_fits'])
+          assert all(not z['physical_semantics_certified']
+                     for z in d['human_facing_source_passports'])
+          assert all(z['source_use']==0
+                     for z in d['summary']
+                     if z['method']=='ABC_threeview'
+                     and z['stress'] in ('missing_A','missing_C','no_views'))
+          assert d['risk_gate_unchanged_across_test_faults_and_masks']
+          assert Path('V37_EVIDENCE/FROZEN_TEST_PREDICTIONS.npz').exists()
+          assert len(list(Path('V37_EVIDENCE/CHECKPOINTS').glob('native_K2_*.pt')))==6
+          PY
+          git rev-parse HEAD > V37_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Archive original TEST, masks and quality evidence without cherry-picking
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v37-centered-threeview-${{ github.run_number }}
+          path: |
+            V37_SMOKE/
+            V37_EVIDENCE/
+            V37_SMOKE_LOG.jsonl
+            V37_FULL_LOG.jsonl
+          if-no-files-found: ignore
