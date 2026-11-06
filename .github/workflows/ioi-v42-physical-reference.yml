@@ -1,0 +1,126 @@
+name: ConceptFAN V42 physical reference source semantics, honest TEST falsifiers
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v42-physical-reference-validity-20261106
+    paths:
+      - '.github/workflows/ioi-v42-physical-reference.yml'
+      - 'src/conceptfan_discovery/physical_reference_world_v42.py'
+      - 'src/conceptfan_discovery/physical_reference_certificate_v42.py'
+      - 'scripts/experiment_physical_validity_v42.py'
+      - 'scripts/audit_physical_validity_v42.py'
+      - 'tests/discovery/test_physical_reference_v42.py'
+      - 'docs/medical/CONCEPTFAN_V42_FROZEN_PHYSICAL_REFERENCE_VALIDITY_20261106.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+jobs:
+  physical-reference-TEST:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install research source and PyTorch CPU dependency
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Strict measured-only source regression and reference validity tests
+        run: |
+          python -m compileall -q \
+            src/conceptfan_discovery/physical_reference_certificate_v42.py \
+            src/conceptfan_discovery/physical_reference_world_v42.py \
+            scripts/experiment_physical_validity_v42.py
+          python -m pytest -q \
+            tests/discovery/test_physical_reference_v42.py \
+            tests/discovery/test_adaptive_pair_consensus_v41.py \
+            tests/discovery/test_paired_isolation_v39.py
+      - name: Smoke privileged reference with one real independent simulated device
+        run: |
+          python scripts/experiment_physical_validity_v42.py \
+            --smoke --out-dir V42_SMOKE | tee V42_SMOKE_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V42_SMOKE/STATUS.json').read_text())
+          assert d['status']=='V42_SMOKE_ONLY'
+          assert d['devices']==[20261607]
+          assert d['n_saved_condition_truth_audits']==8*7
+          assert d['n_PRE_REGISTERED_paired_TEST_physical_error_comparisons']==8
+          assert d['n_frozen_reference_inference_bundles']==2
+          assert d['reference_budget_train_per_device']==160
+          assert d['reference_budget_valid1_per_device']==100
+          assert d['reference_budget_valid2_per_device']==100
+          assert d['oracle_true_E_read_only_in_POST_TEST_AUDIT']
+          assert d['source_fit_does_NOT_receive_oracle_H_S_R_or_Y']
+          assert d['current_episode_independent_reference_not_available']
+          assert Path('V42_SMOKE/FROZEN_TEST_MEASURED_SOURCE_AND_TRUTH_AUDIT.npz').is_file()
+          PY
+      - name: Full 4 fresh TEST devices, 8 physical faults, 7 missingness conditions
+        run: |
+          python scripts/experiment_physical_validity_v42.py \
+            --out-dir V42_EVIDENCE | tee V42_FULL_LOG.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V42_EVIDENCE/STATUS.json').read_text())
+          assert d['status']=='V42_PHYSICAL_REFERENCE_SEMANTIC_AUDIT_EXECUTED'
+          assert d['devices']==[20261607,20261609,20261621,20261623]
+          assert (d['n_train'],d['n_valid1'],d['n_valid2'],d['n_test'])==(1000,400,400,600)
+          assert (d['reference_budget_train_per_device'],
+                  d['reference_budget_valid1_per_device'],
+                  d['reference_budget_valid2_per_device'])==(300,200,200)
+          assert d['n_fault_worlds']==8
+          assert d['n_observation_conditions']==7
+          assert d['n_saved_condition_truth_audits']==4*8*7
+          assert d['n_PRE_REGISTERED_paired_TEST_physical_error_comparisons']==4*8
+          assert d['n_frozen_reference_inference_bundles']==4*2
+          assert len(list(Path('V42_EVIDENCE/REFERENCE_MODELS').glob('*.json')))==8
+          assert d['oracle_true_E_read_only_in_POST_TEST_AUDIT']
+          assert d['source_fit_does_NOT_receive_oracle_H_S_R_or_Y']
+          assert d['reference_extra_supervision_NOT_autonomous_concept_discovery']
+          for s in d['source_measurement_audit']:
+              if s['stress']=='missing_reference' or s['case']=='OFF_reference_unavailable':
+                  assert s['V42_historical_reference_anchored_fraction']==0.
+              assert s['V42_historical_reference_anchored_fraction']<=s[
+                  'V41_statistical_measurement_support_fraction']+1e-12
+          PY
+          git rev-parse HEAD > V42_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independently recompute physical error and reference interval statistics from immutable TEST episodes
+        run: |
+          python scripts/audit_physical_validity_v42.py \
+            --evidence-dir V42_EVIDENCE \
+            --out-file V42_EVIDENCE/INDEPENDENT_PHYSICAL_TRUTH_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V42_EVIDENCE/INDEPENDENT_PHYSICAL_TRUTH_AUDIT.json').read_text())
+          assert d['status']=='V42_INDEPENDENT_PHYSICAL_TRUTH_METRICS_VERIFIED'
+          assert d['verified_condition_audits']==4*8*7
+          assert d['verified_patient_level_physical_truth_predictions']==4*8*7*600
+          assert d['max_abs_recalculated_physical_metric_error']<1e-12
+          assert d['all_missing_OFF_exact_source_refusals']
+          assert d['no_TEST_reference_information_in_persisted_model']
+          assert d['n_registered_physical_error_bootstrap_checks']==32
+          PY
+      - name: Preserve every positive and negative physical measurement result and artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v42-independent-physical-reference-${{ github.run_number }}
+          path: |
+            V42_SMOKE/
+            V42_EVIDENCE/
+            V42_SMOKE_LOG.jsonl
+            V42_FULL_LOG.jsonl
+          if-no-files-found: ignore
