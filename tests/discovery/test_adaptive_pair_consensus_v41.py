@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from dataclasses import replace
 
 from conceptfan_discovery.adaptive_pair_bench_world_v41 import (
     REGISTERED_DEVICES,generate_device_v41,render_observed_v41,
@@ -13,7 +14,7 @@ from conceptfan_discovery.threeview_centered_v37 import (
 )
 from conceptfan_discovery.adaptive_pair_consensus_v41 import (
     fit_adaptive_source_v41,adaptive_pair_feature_v41,
-    unsafe_unconfirmed_any_pair_v41,_select_features,ORDER,
+    unsafe_unconfirmed_any_pair_v41,_select_features,ORDER,PairGaugeV41,
 )
 
 
@@ -104,7 +105,17 @@ def test_all_supported_disagree_then_refuse_instead_of_cherry_picking(prepared):
         "BC":{"q":np.full(n,.05),"support":np.ones(n),
               "paired_timepoints":np.full(n,12)},
     }
-    strict=_select_features(measured,fit,enforce_consensus=True)
+    # Force three individually TRAIN-certified pair views so this test
+    # isolates the rejection policy itself even if the random device
+    # legitimately refuses a secondary pair in its TRAIN fit.
+    certified={k:PairGaugeV41(
+        k,1.,0.,200,.8,True,"TEST_KNOWN_SCALE")
+        for k in ORDER}
+    strict_fit=replace(
+        fit,gauges=certified,
+        train_pairwise_threshold={
+            "AB|AC":.12,"AB|BC":.12,"AC|BC":.12})
+    strict=_select_features(measured,strict_fit,enforce_consensus=True)
     assert not strict["support"].any()
     assert np.all(strict["refused_due_to_disagreement"] |
                   (strict["n_supported_pairs"]<2))
@@ -161,7 +172,11 @@ def test_more_pairs_not_guaranteed_identifiability_under_unmonitored_drift(prepa
     strict=adaptive_pair_feature_v41(fit,d,md)
     assert not fit.clinical_or_causal_semantics_certified
     assert np.isfinite(strict["q"]).all()
-    assert np.all(strict["source_mask"]==False) if "source_mask" in strict else True
+    assert strict["uses_hidden_truth_H_or_S"] is False if (
+        "uses_hidden_truth_H_or_S" in strict) else (
+        not fit.uses_hidden_truth_H_or_S)
+    # The fact that the array is numerically defined does not prove
+    # immunity to a fault correlated across all views.
 
 
 def test_fixed_pair_priority_uses_most_joint_measured_not_largest_q(prepared):
