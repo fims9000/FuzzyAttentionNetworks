@@ -8,6 +8,7 @@ on:
       - 'src/conceptfan_discovery/threeview_world_v37.py'
       - 'src/conceptfan_discovery/threeview_centered_v37.py'
       - 'scripts/experiment_threeview_centered_v37.py'
+      - 'scripts/audit_v37_paired_test_nll.py'
       - 'tests/discovery/test_threeview_centered_v37.py'
   workflow_dispatch:
 permissions:
@@ -93,6 +94,22 @@ jobs:
           assert len(list(Path('V37_EVIDENCE/CHECKPOINTS').glob('native_K2_*.pt')))==6
           PY
           git rev-parse HEAD > V37_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Independently recompute all 2016 TEST results and paired NLL
+        run: |
+          python scripts/audit_v37_paired_test_nll.py \
+            --evidence-dir V37_EVIDENCE \
+            --output V37_EVIDENCE/PAIRED_NLL_AUDIT.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V37_EVIDENCE/PAIRED_NLL_AUDIT.json').read_text())
+          assert d['verified_rows']==2016
+          assert d['verified_aggregate_rows']==864
+          assert d['n_pre_registered_NLL_contrasts']==18
+          assert d['max_absolute_row_metric_recomputation_error']<1e-12
+          assert all(x['confidence_interval_is_conditioned_on_this_device_and_fixed_models']
+                     for x in d['paired_NLL'])
+          PY
       - name: Archive original TEST, masks and quality evidence without cherry-picking
         if: always()
         uses: actions/upload-artifact@v4
