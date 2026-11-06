@@ -248,7 +248,15 @@ def _source_passport(
     friendly["technical_audit"]["v34_source_support_field_was_boolean_gate"]=True
     friendly["technical_audit"]["source_observed_information_fraction"]=None
     friendly["technical_audit"]["source_measured_fraction"]=measured_fraction
+    # Reference calibration of H (V35) and uncertainty in fuzzy
+    # definition boundaries (V34 Type-3) are INDEPENDENT evidence classes.
+    # V35 has verified H but deliberately has NO Type-3 boundary anchor.
     friendly["technical_audit"]["device_calibration_is_external"]=True
+    friendly["technical_audit"]["independent_device_calibration_available"]=True
+    friendly["technical_audit"]["type3_boundary_calibration_available"]=False
+    friendly["technical_audit"]["anchor_semantics"]=(
+        "Verified synthetic device mixing H; no independently verified "
+        "fuzzy membership boundary or clinical physical identity")
     return {
         "version":"V35_TARGET_ROWSPACE",
         "method":method,"stress":mode,
