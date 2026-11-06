@@ -45,6 +45,7 @@ jobs:
           assert len(d['paired_AP_bootstrap'])==5
           assert len(d['gates'])==1*1*2*2*2
           assert Path('V44_SMOKE/TEST_PREDICTIONS.npz').is_file()
+          assert len(list(Path('V44_SMOKE/NATIVE_CHECKPOINTS').glob('*.pt')))==1
           PY
       - name: Full 4 NEW devices and 12 real Temporal ConceptFAN fits
         run: |
@@ -67,6 +68,7 @@ jobs:
           assert not d['physical_source_identity_certified']
           assert not d['general_predictor_superiority_claim']
           assert Path('V44_EVIDENCE/TEST_PREDICTIONS.npz').is_file()
+          assert len(list(Path('V44_EVIDENCE/NATIVE_CHECKPOINTS').glob('*.pt')))==12
           PY
           git rev-parse HEAD > V44_EVIDENCE/SOURCE_COMMIT_SHA.txt
       - name: Independent audit of all primary TEST scores and 20 paired CIs
