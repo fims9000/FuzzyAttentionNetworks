@@ -10,6 +10,7 @@ on:
       - 'src/conceptfan_discovery/source_persistence_v38.py'
       - 'src/conceptfan_discovery/inference_v38.py'
       - 'scripts/infer_exogenous_source_v38.py'
+      - 'scripts/verify_npz_inference_v38.py'
       - 'scripts/experiment_exogenous_probe_v38.py'
       - 'scripts/replay_exogenous_source_v38.py'
       - 'scripts/audit_exogenous_probe_v38.py'
@@ -49,6 +50,7 @@ jobs:
             src/conceptfan_discovery/source_persistence_v38.py \
             src/conceptfan_discovery/inference_v38.py \
             scripts/infer_exogenous_source_v38.py \
+            scripts/verify_npz_inference_v38.py \
             scripts/experiment_exogenous_probe_v38.py \
             scripts/replay_exogenous_source_v38.py
           python -m pytest -q \
@@ -149,6 +151,21 @@ jobs:
           assert d['no_dataset_labels_read_for_replay']
           assert d['source_model_loaded_from_safe_JSON']
           assert d['original_native_K2_loaded_from_snapshot']
+          PY
+      - name: External measured NPZ to JSON CLI must match 30 frozen trained predictions
+        run: |
+          python scripts/verify_npz_inference_v38.py \
+            --evidence-dir V38_EVIDENCE \
+            --out-dir V38_EVIDENCE/EXTERNAL_NPZ_INFERENCE_QA
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V38_EVIDENCE/EXTERNAL_NPZ_INFERENCE_QA/EXTERNAL_INFERENCE_PARITY_AUDIT.json').read_text())
+          assert d['status']=='V38_EXTERNAL_NPZ_JSON_INFERENCE_PARITY_VERIFIED'
+          assert d['n_reopened_CLI_inferences']==30
+          assert d['maximum_difference_vs_original_predictions']<1e-6
+          assert d['model_cli_has_no_latent_H_S_or_TEST_labels']
+          assert d['every_missing_sentinel_or_view_abstains']
           PY
       - name: Preserve all conditions, partial negative findings and checkpoints
         if: always()
