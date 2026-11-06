@@ -10,6 +10,7 @@ from conceptfan_discovery.adaptive_higher_order_concepts_v34 import (
 )
 from conceptfan_discovery.native_adaptive_type3_transformer_v34 import (
     NativeAuditedFuzzyConceptFANV34,readable_source_explanation,
+    render_concept_explanation_ru,
 )
 
 
@@ -111,3 +112,32 @@ def test_gamma_gradient_updates_only_source_slot_while_old_transformer_frozen():
         opt.step()
     assert model.known_model_sha256()==before
     assert float(model.source_slot.gamma)>0.01
+
+
+def test_explanation_is_measurement_based_not_random_fuzzy_membership_dump():
+    model=_native().eval()
+    with torch.no_grad():
+        model.source_slot.gamma.fill_(1.7)
+    values=torch.randn(4,16,4)
+    mask=torch.ones_like(values)
+    out=model(values,mask,
+              extra_source_amplitude=torch.tensor([1.2,.5,.0,-.4]),
+              extra_source_uncertainty=torch.ones(4)*.12,
+              extra_source_observed_information=torch.tensor([1.,.8,.4,.2]),
+              extra_source_gate_approved=True)
+    p=render_concept_explanation_ru(
+        out,0,observed_source_template=
+          list(np.r_[np.ones(8),-np.ones(8)]))
+    assert p["source_channels"]==[4,5,6]
+    assert "датчики" in p["name"]
+    assert "TRAIN" in p["what_was_observed"]
+    assert "модельными оценками" in p["what_the_model_did"]
+    assert "пунктах" not in p["how_prediction_changed"]
+    assert p["scientific_limitation"].startswith("Физический смысл")
+    assert "membership" not in p["what_was_observed"].lower()
+    assert "technical_audit" in p
+    assert p["no_invented_medical_label"]
+    refused=render_concept_explanation_ru(out,2)
+    assert refused["insufficient_evidence_causes_abstention"]
+    assert refused["before_after_model_probabilities"]["difference_in_percentage_points"]==0.0
+    assert "недостаточно" in refused["what_the_model_did"]
