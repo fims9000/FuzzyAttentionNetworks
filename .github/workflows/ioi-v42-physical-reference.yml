@@ -9,6 +9,8 @@ on:
       - 'src/conceptfan_discovery/physical_reference_certificate_v42.py'
       - 'scripts/experiment_physical_validity_v42.py'
       - 'scripts/audit_physical_validity_v42.py'
+      - 'scripts/infer_physical_reference_v42.py'
+      - 'scripts/verify_external_npz_physical_v42.py'
       - 'tests/discovery/test_physical_reference_v42.py'
       - 'docs/medical/CONCEPTFAN_V42_FROZEN_PHYSICAL_REFERENCE_VALIDITY_20261106.md'
   workflow_dispatch:
@@ -40,7 +42,9 @@ jobs:
           python -m compileall -q \
             src/conceptfan_discovery/physical_reference_certificate_v42.py \
             src/conceptfan_discovery/physical_reference_world_v42.py \
-            scripts/experiment_physical_validity_v42.py
+            scripts/experiment_physical_validity_v42.py \
+            scripts/infer_physical_reference_v42.py \
+            scripts/verify_external_npz_physical_v42.py
           python -m pytest -q \
             tests/discovery/test_physical_reference_v42.py \
             tests/discovery/test_adaptive_pair_consensus_v41.py \
@@ -112,6 +116,22 @@ jobs:
           assert d['all_missing_OFF_exact_source_refusals']
           assert d['no_TEST_reference_information_in_persisted_model']
           assert d['n_registered_physical_error_bootstrap_checks']==32
+          PY
+      - name: Reopen physical source and run 48 real masked external NPZ to JSON paths
+        run: |
+          python scripts/verify_external_npz_physical_v42.py \
+            --evidence-dir V42_EVIDENCE \
+            --out-dir V42_EVIDENCE/EXTERNAL_NPZ_INFERENCE_QA
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('V42_EVIDENCE/EXTERNAL_NPZ_INFERENCE_QA/INFERENCE_PARITY_AUDIT.json').read_text())
+          assert d['status']=='V42_EXTERNAL_SENSOR_NPZ_JSON_INFERENCE_PARITY'
+          assert d['n_external_saved_NPZ_to_JSON_calls']==48
+          assert d['n_total_external_sensor_episodes']==576
+          assert d['max_abs_estimated_physical_reference_energy_difference']<1e-8
+          assert d['no_hidden_oracle_source_truth_or_TEST_reference_in_runtime']
+          assert d['every_OFF_missing_or_VALID2_known_drift_output_refuses']
           PY
       - name: Preserve every positive and negative physical measurement result and artifact
         if: always()
