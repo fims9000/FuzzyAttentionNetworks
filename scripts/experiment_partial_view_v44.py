@@ -289,7 +289,7 @@ def run(out:Path,*,smoke=False):
                    f"native_K2_device{ckpt['device']}_seed{ckpt['seed']}.pt")
     if len(list(checkpoint_dir.glob("*.pt")))!=len(trained_models):
         raise AssertionError("Incomplete frozen native K2 evidence checkpoints")
-    print(json.dumps({"event":"V44_COMPLETE",,"n_rows":len(rows),
+    print(json.dumps({"event":"V44_COMPLETE","n_rows":len(rows),
                       "healthy_MCAR40":[r for r in summary
                          if r["case"]=="healthy_energy" and r["stress"]=="MCAR40"]}),
           flush=True)
