@@ -281,8 +281,8 @@ def nullspace_counterexample()->dict:
     assert np.array_equal(H@a,H@b)
     assert not np.isclose(a[0],b[0])
     return {
-        "sensor4_readout_world_A":float(H@a),
-        "sensor4_readout_world_B":float(H@b),
+        "sensor4_readout_world_A":float((H@a)[0]),
+        "sensor4_readout_world_B":float((H@b)[0]),
         "target_a1_world_A":float(a[0]),
         "target_a1_world_B":float(b[0]),
         "both_worlds_exactly_observationally_indistinguishable":True,
