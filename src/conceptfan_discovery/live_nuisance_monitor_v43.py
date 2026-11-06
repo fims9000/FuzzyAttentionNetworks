@@ -106,7 +106,7 @@ def evaluate_live_nuisance_monitor_v43(
         measured&(rms<=monitor.train_threshold_RMS)
         if monitor.passed_both_VALIDs else np.zeros(len(rms),dtype=bool))
     reason=np.where(
-        ~monitor.passed_both_VALIDs,
+        not monitor.passed_both_VALIDs,
         "NO_VALIDATED_NUISANCE_MONITOR",
         np.where(~measured,
                  "REFUSE_MONITOR_UNAVAILABLE",
