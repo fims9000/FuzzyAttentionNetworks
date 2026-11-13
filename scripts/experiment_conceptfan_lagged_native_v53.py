@@ -99,7 +99,7 @@ def metrics(y,z):
             "positive_rate":float(np.mean(y))}
 
 
-def one_run(world,mode,seed):
+def one_run(world,mode,seed,prediction_dir=None):
     x,y=world["x"],world["y"][mode]
     tr,v1,v2,te=(world[k] for k in ("train","valid1","valid2","test"))
     tm,m1,m2=(world["masks"][k] for k in ("train","valid1","valid2"))
@@ -155,6 +155,21 @@ def one_run(world,mode,seed):
             if not np.allclose(proposed,expected,rtol=0,atol=2e-6):
                 raise AssertionError("Discovered concept was not exact signed native decision")
         raw_z=raw.decision_function(tabular(xt,m))
+        if prediction_dir is not None:
+            prediction_dir.mkdir(parents=True,exist_ok=True)
+            qvals=(q["summary"] if source is not None
+                   else np.full(len(te),.5,dtype=np.float64))
+            availability=(q["support"] if source is not None
+                          else np.zeros(len(te),dtype=np.float64))
+            np.savez_compressed(
+                prediction_dir/f"{mode}_seed{seed}_{stress}.npz",
+                y=y[te].astype(np.uint8),
+                k2_logits=np.asarray(baseline,dtype=np.float64),
+                k3_logits=np.asarray(proposed,dtype=np.float64),
+                raw_logits=np.asarray(raw_z,dtype=np.float64),
+                used=np.asarray(used,dtype=np.uint8),
+                q=np.asarray(qvals,dtype=np.float64),
+                measured_support=np.asarray(availability,dtype=np.float64))
         rows.append({
             "mode":mode,"seed":seed,"stress":stress,
             "chosen_candidate":chosen,
@@ -179,9 +194,10 @@ def execute(out:Path,seeds=TEST_SEEDS):
     out.mkdir(parents=True,exist_ok=True)
     world=generate()
     rows=[];receipts=[]
+    prediction_dir=out/"predictions"
     for mode in MODES:
         for seed in seeds:
-            result,receipt=one_run(world,mode,int(seed))
+            result,receipt=one_run(world,mode,int(seed),prediction_dir)
             rows.extend(result);receipts.append(receipt)
             print("V53",mode,seed,"selected",receipt["selected"],flush=True)
     csvpath=out/"cases_v53.csv"
@@ -206,6 +222,10 @@ def execute(out:Path,seeds=TEST_SEEDS):
       "original_K2_exact_fallback":True,
       "risk_has_no_raw_shortcut":True,
       "results":rows,"receipts":receipts,
+      "per_episode_prediction_files":[{
+          "path":str(p.relative_to(out)),
+          "sha256":hashlib.sha256(p.read_bytes()).hexdigest()
+        } for p in sorted(prediction_dir.glob("*.npz"))],
       "cases_csv_sha256":hashlib.sha256(csvpath.read_bytes()).hexdigest(),
       "limits":"Synthetic single generator; test-only sign inversion may fail; no clinical/physical identification or SOTA claim."}
     (out/"report_v53.json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n")
