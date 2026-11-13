@@ -22,7 +22,7 @@ The fitted basis is a statistical observable response subspace; it is not a chem
 | Leading signal singular values | ~5.0064; ~0.8410 | 1.35795; 0.29284; 0.23421 |
 | 95% familywise max-null singular threshold | 2.8566 | 0.27105 |
 
-V62's second direction clears its fixed null threshold on the full independent TRAIN runs, but K is not reproducibly exactly 2 under whole-run resampling: 5/20 bootstraps returned K1, 11/20 K2, 4/20 K3. Thus no stable physical source count has been established, and source volatility may contribute additional axes.
+V62's second direction clears its fixed null threshold on the full independent TRAIN runs, but K is not reproducibly exactly 2 under whole-run resampling: 5/20 bootstraps returned K1, 12/20 K2, 3/20 K3. Thus no stable physical source count has been established, and source volatility may contribute additional axes.
 
 ## Real controlled gas VALID / already-seen TEST classification
 
