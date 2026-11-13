@@ -1,0 +1,84 @@
+name: V62 exploratory real-gas cross-view autonomous concept source bank
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v62-crossview-contrast-20261113
+    paths:
+      - 'src/conceptfan_discovery/crossview_response_bank_v62.py'
+      - 'scripts/experiment_crossview_response_v62.py'
+      - 'tests/discovery/test_crossview_response_bank_v62.py'
+      - 'docs/medical/CONCEPTFAN_V62_FROZEN_CROSSVIEW_CONTRAST_PROTOCOL_20261113.md'
+      - '.github/workflows/ioi-v62-crossview-contrast.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  train-only-crossview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install source and native temporal environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Compile and verify source rank plus previous run-level controls
+        run: |
+          python -m compileall -q src/conceptfan_discovery/crossview_response_bank_v62.py scripts/experiment_crossview_response_v62.py
+          python -m pytest -q tests/discovery/test_crossview_response_bank_v62.py tests/discovery/test_real_gas_interventions_v61.py tests/discovery/test_native_temporal_fuzzy_v56.py
+      - name: Fetch only original UCI real controlled gas recordings
+        run: |
+          mkdir -p /tmp/v62_uci
+          curl -fSL --retry 3 --connect-timeout 20 --max-time 180 \
+            'https://archive.ics.uci.edu/static/public/309/gas%2Bsensor%2Barray%2Bexposed%2Bto%2Bturbulent%2Bgas%2Bmixtures.zip' \
+            -o /tmp/v62_uci/gas.zip || \
+          curl -fSL --retry 3 --connect-timeout 20 --max-time 180 \
+            'https://archive.ics.uci.edu/static/public/309/gas+sensor+array+exposed+to+turbulent+gas+mixtures.zip' \
+            -o /tmp/v62_uci/gas.zip
+          unzip -tq /tmp/v62_uci/gas.zip
+          sha256sum /tmp/v62_uci/gas.zip
+      - name: Run fixed exploratory post-V61 rank and source-completeness challenge
+        run: |
+          set -o pipefail
+          python scripts/experiment_crossview_response_v62.py \
+            --uci-zip /tmp/v62_uci/gas.zip \
+            --out-dir V62_EXPLORATORY_EVIDENCE | tee v62_exploratory_log.jsonl
+          python - <<'PY'
+          import json
+          d=json.load(open('V62_EXPLORATORY_EVIDENCE/STATUS.json'))
+          assert d['status']=='V62_EXPLORATORY_CROSSVIEW_REAL_GAS_EXECUTED'
+          assert d['real_whole_run_counts']=={'TRAIN':120,'VALID':30,'TEST':30}
+          assert d['new_model_benchmark_is_exploratory_not_independent_confirmation']
+          assert d['train_only_source_fitting_uses_zero_gas_labels']
+          assert d['n_independent_original_train_runs']==120
+          assert d['n_dependent_train_crops']==360
+          assert len(d['fixed_valid_and_reused_test_metrics'])==36
+          assert d['crossview_source']['source_receipt']['null_is_whole_train_run_permutation']
+          assert not d['physical_gas_axis_identity_proven']
+          PY
+          git rev-parse HEAD > V62_EXPLORATORY_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve real evidence, including negative results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v62-crossview-post-v61-exploratory
+          path: |
+            V62_EXPLORATORY_EVIDENCE/
+            v62_exploratory_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
