@@ -1,0 +1,86 @@
+name: ConceptFAN V56 independent assay and source-scope revocation
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v56-independent-reference-20261113
+    paths:
+      - 'src/conceptfan_discovery/independent_assay_scope_v56.py'
+      - 'scripts/experiment_conceptfan_assay_scope_v56.py'
+      - 'scripts/verify_conceptfan_v56_case_audit.py'
+      - 'tests/discovery/test_independent_assay_scope_v56.py'
+      - 'docs/medical/CONCEPTFAN_V56_EXTERNAL_REFERENCE_FROZEN_PROTOCOL_20261113.md'
+      - '.github/workflows/conceptfan-v56-independent-assay.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  independent-assay-measured-concepts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 52
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU native ConceptFAN
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -e .
+      - name: Focused independent-assay, device-scope and negative-control tests
+        run: |
+          python -m compileall -q src/conceptfan_discovery/independent_assay_scope_v56.py scripts/experiment_conceptfan_assay_scope_v56.py scripts/verify_conceptfan_v56_case_audit.py
+          python -m pytest -q tests/discovery/test_independent_assay_scope_v56.py tests/discovery/test_constrained_joint_operator_v55.py tests/discovery/test_operator_library_concepts_v54.py
+      - name: Execute preregistered V56 cohort with independent external reference budgets
+        run: |
+          python scripts/experiment_conceptfan_assay_scope_v56.py \
+            --out results/conceptfan_v56_independent_assay --seeds 11 23
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('results/conceptfan_v56_independent_assay/report_v56.json').read_text())
+          assert r['status']=='EXECUTED_EXPLORATORY'
+          assert r['n_native_models']==8
+          assert r['n_test_rows']==48
+          assert len(r['prediction_files'])==48
+          assert r['test_assay_purchased']==0
+          assert r['test_assay_accessed_for_inference'] is False
+          assert r['physical_or_causal_source_identity_proven'] is False
+          assert all(z['source_signed_path_verified'] for z in r['rows'])
+          PY
+      - name: Independent per-subject AUPRC, NLL, coefficient and refusals audit
+        run: |
+          python scripts/verify_conceptfan_v56_case_audit.py \
+            --dir results/conceptfan_v56_independent_assay
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('results/conceptfan_v56_independent_assay/verify_v56_audit.json').read_text())
+          assert r['status']=='V56_INDEPENDENT_CASE_AUDIT_PASS'
+          assert r['verified_arrays']==48
+          assert r['n_scenario_groups']==24
+          assert r['test_assay_absent']
+          PY
+      - name: Preserve exact source commit
+        if: always()
+        run: |
+          mkdir -p results/conceptfan_v56_independent_assay
+          git rev-parse HEAD > results/conceptfan_v56_independent_assay/COMMIT_SHA.txt
+      - name: Upload all individual prediction arrays, risk gates, assay budget and negatives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v56-independent-assay-and-revocation
+          path: results/conceptfan_v56_independent_assay/
+          if-no-files-found: warn
+          retention-days: 90
