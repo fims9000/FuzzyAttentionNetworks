@@ -1,0 +1,82 @@
+name: V56 native self-supervised temporal fuzzy concept learning
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v56-native-dynamics-20261113
+    paths:
+      - 'src/conceptfan_discovery/native_temporal_fuzzy_v56.py'
+      - 'scripts/experiment_native_temporal_v56.py'
+      - 'tests/discovery/test_native_temporal_fuzzy_v56.py'
+      - 'docs/medical/CONCEPTFAN_V56_FROZEN_NATIVE_DYNAMICS_PROTOCOL_20261113.md'
+      - '.github/workflows/ioi-v56-native-dynamics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  neural-source-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install canonical project environment and CPU PyTorch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Compile and test native concept temporal invariants plus old regressions
+        run: |
+          python -m compileall -q src/conceptfan_discovery/native_temporal_fuzzy_v56.py scripts/experiment_native_temporal_v56.py
+          python -m pytest -q tests/discovery/test_native_temporal_fuzzy_v56.py tests/discovery/test_autonomous_adaptive_v55.py tests/discovery/test_robust_observable_v54.py
+      - name: Unlabeled concept training smoke on new synthetic episodes
+        run: |
+          python scripts/experiment_native_temporal_v56.py --smoke --out-dir V56_SMOKE | tee v56_smoke_log.jsonl
+          python - <<'PY'
+          import json
+          r=json.load(open('V56_SMOKE/STATUS.json'))
+          assert r['status']=='SMOKE_ONLY'
+          assert len(r['group_draws'])==1
+          assert len(r['mixed_development_receipts'])==1
+          assert r['outcome_gradients_to_concepts']==False
+          assert r['native_trainable_fuzzy_temporal_concept_encoder']
+          PY
+      - name: Fresh double-draw native temporal source and independent mixed family
+        run: |
+          python scripts/experiment_native_temporal_v56.py --out-dir V56_EVIDENCE | tee v56_full_log.jsonl
+          python - <<'PY'
+          import json
+          r=json.load(open('V56_EVIDENCE/STATUS.json'))
+          assert r['status']=='V56_NEW_SYNTHETIC_EXPLORATORY_EXECUTED'
+          assert len(r['group_draws'])==2
+          assert len(r['group_test_results'])==72
+          assert len(r['mixed_development_receipts'])==2
+          assert len(r['mixed_development_results'])==6
+          assert r['outcome_gradients_to_concepts']==False
+          assert not r['no_physical_or_clinical_semantics_certified']==False
+          PY
+          git rev-parse HEAD > V56_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve train-only dynamic model receipts and per-method negative results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v56-native-temporal
+          path: |
+            V56_SMOKE/
+            V56_EVIDENCE/
+            v56_smoke_log.jsonl
+            v56_full_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
