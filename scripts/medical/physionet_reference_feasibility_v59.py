@@ -160,15 +160,27 @@ def audit_one_pair(values,mask,first:str,second:str,
     rng=np.random.default_rng(seed)
     folds=np.array_split(rng.permutation(patient_count),3)
     fold_counts=tuple(int(both[ids].sum()) for ids in folds)
+    def pearson(a,b):
+        if len(a)>=3 and np.std(a)>1e-8 and np.std(b)>1e-8:
+            return float(np.corrcoef(a,b)[0,1])
+        return None
     a=values[:,:,i][both]
     b=values[:,:,j][both]
-    if len(a)>=3 and np.std(a)>1e-8 and np.std(b)>1e-8:
-        r=float(np.corrcoef(a,b)[0,1])
-    else:
-        r=None
+    r=pearson(a,b)
+    fold_corr=[]
+    for ids in folds:
+        seen=both[ids]
+        fold_corr.append(pearson(values[ids,:,i][seen],values[ids,:,j][seen]))
     n_six=int((pairs_per_person>=6).sum())
     passed=(n_six>=MIN_PATIENTS_WITH_SIX_PAIRS
             and min(fold_counts)>=MIN_CELLS_PER_FOLD)
+    # Diagnostic added after V59 overlap run, but gate is the exact original
+    # PREEXISTING V57 train-fold abs(r)>=.65 condition. Do not tune it.
+    all_folds=all(v is not None for v in fold_corr)
+    corr_agreement=(all_folds and
+        min(abs(v) for v in fold_corr)>=.65 and
+        abs(sum(np.sign(v) for v in fold_corr))==3)
+    v57_alignment_eligible=bool(passed and corr_agreement)
     return {
         "pair":f"{first}/{second}",
         "n_train_patients":int(patient_count),
@@ -181,7 +193,10 @@ def audit_one_pair(values,mask,first:str,second:str,
             float(n_six/patient_count*100),
         "aligned_pair_cells_in_three_disjoint_train_folds":list(fold_counts),
         "descriptive_observed_only_pearson":r,
+        "three_disjoint_train_fold_pearson":fold_corr,
+        "passes_original_v57_signed_corr_min_abs_065":bool(corr_agreement),
         "meets_v57_synthetic_thresholds_for_pair_coverage":bool(passed),
+        "v57_source_alignment_possible_on_measured_association":v57_alignment_eligible,
         "measurement_device_fault_independence_proven":False,
         "clinical_concept_semantics_proven":False,
     }
@@ -254,9 +269,17 @@ def run(archive_path:Path,outcomes_path:Path,output:Path):
             z["max_available_time_bins_per_patient"]=HOURS//bin_size
             reports.append(z)
     passed=[z for z in reports if z["meets_v57_synthetic_thresholds_for_pair_coverage"]]
+    linked=[z for z in reports if z["v57_source_alignment_possible_on_measured_association"]]
     result={
         "status":("MEASUREMENT_OVERLAP_FEASIBLE_UNVERIFIED_PROVENANCE"
                  if passed else "ABSTAIN_CLINICAL_ANCHOR_UNOBSERVABLE"),
+        "post_support_diagnostic_v57_correlation_gate":(
+            "PRESPECIFIED_IN_V57_BUT_ADDED_TO_V59_AFTER_INITIAL_SUPPORT_INSPECTION"),
+        "v57_real_observational_source_link_status":(
+            "ALIGNMENT_POSSIBLE_BUT_INDEPENDENT_PROVENANCE_UNVERIFIED"
+            if linked else
+            "ABSTAIN_NO_PAIR_MEETS_UNCHANGED_V57_CORRELATION_AND_SUPPORT_GATES"),
+        "n_pairs_resolutions_meeting_v57_source_link":len(linked),
         "frozen_preinspection_protocol":"docs/medical/CONCEPTFAN_V59_FROZEN_CLINICAL_REFERENCE_FEASIBILITY_20261113.md",
         "receipt":receipt,
         "reference_overlap_tests":reports,
