@@ -1,0 +1,46 @@
+name: V63 official unseen dynamic gas data schema and pinned download
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v63-dynamic-ica-independent-uci322-20261113
+    paths:
+      - '.github/workflows/ioi-v63-inspect-dynamic-gas.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  official-archive-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore pinned official UCI 322 archive
+        uses: actions/cache@v4
+        with:
+          path: /tmp/conceptfan_v63/uci322.zip
+          key: original-uci322-archive-20261113
+      - name: Download public official archive only if uncached
+        run: |
+          mkdir -p /tmp/conceptfan_v63
+          if [ ! -s /tmp/conceptfan_v63/uci322.zip ]; then
+            curl -fSL --retry 3 --connect-timeout 20 --max-time 1200 \
+              'https://archive.ics.uci.edu/static/public/322/gas%2Bsensor%2Barray%2Bunder%2Bdynamic%2Bgas%2Bmixtures.zip' \
+              -o /tmp/conceptfan_v63/uci322.zip
+          fi
+          unzip -tq /tmp/conceptfan_v63/uci322.zip
+          sha256sum /tmp/conceptfan_v63/uci322.zip
+      - name: Print schema, filenames, header and first row only
+        run: |
+          python - <<'PY'
+          import zipfile,os
+          p='/tmp/conceptfan_v63/uci322.zip'
+          with zipfile.ZipFile(p) as z:
+            names=[x for x in z.namelist() if not x.endswith('/')]
+            print('NAMES',names)
+            for name in names:
+              with z.open(name) as f:
+                print('FILE',name,'RAW_SIZE',z.getinfo(name).file_size)
+                for i in range(3):
+                  line=f.readline()[:250].decode('utf-8',errors='replace').rstrip()
+                  print('HEADER_OR_FIRST',i,repr(line))
+          PY
