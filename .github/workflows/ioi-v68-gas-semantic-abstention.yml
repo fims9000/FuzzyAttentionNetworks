@@ -1,0 +1,90 @@
+name: V68 posthoc source-rank stability and early-period semantic abstention
+
+on:
+  push:
+    branches:
+      - research/conceptfan-v68-drift-semantic-abstention-20261113
+    paths:
+      - 'scripts/experiment_drift_semantic_gate_v68.py'
+      - 'tests/discovery/test_drift_semantic_gate_v68.py'
+      - 'docs/medical/CONCEPTFAN_V68_FROZEN_POSTHOC_DRIFT_SEMANTIC_GATE_20261113.md'
+      - '.github/workflows/ioi-v68-gas-semantic-abstention.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '1'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  pretest-valid-only-source-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install canonical project and PyTorch import dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test semantically conservative abstention and original source integrity
+        run: |
+          python -m compileall -q scripts/experiment_drift_semantic_gate_v68.py
+          python -m pytest -q tests/discovery/test_drift_semantic_gate_v68.py tests/discovery/test_real_six_gas_drift_v67.py
+      - name: Restore same publicly pinned official UCI270 zip
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/conceptfan_v67/uci270.zip
+          key: uci270-original-20261113-sha-pinned
+      - name: Verify original UCI source archive
+        run: |
+          mkdir -p /tmp/conceptfan_v67
+          if [ ! -s /tmp/conceptfan_v67/uci270.zip ]; then
+            curl -fSL --retry 3 --connect-timeout 20 --max-time 300 \
+              'https://archive.ics.uci.edu/static/public/270/gas%2Bsensor%2Barray%2Bdrift%2Bat%2Bdifferent%2Bconcentrations.zip' \
+              -o /tmp/conceptfan_v67/uci270.zip || \
+            curl -fSL --retry 3 --connect-timeout 20 --max-time 300 \
+              'https://archive.ics.uci.edu/static/public/270/gas%2Bsensor%2Barray%2Bdrift%2Bdataset%2Bat%2Bdifferent%2Bconcentrations.zip' \
+              -o /tmp/conceptfan_v67/uci270.zip
+          fi
+          unzip -tq /tmp/conceptfan_v67/uci270.zip
+          echo '98fe3a30981a222dd4518fbcc3dddd45d5c0ce9b03ef6dc6fe5cf7a04cfbff5e  /tmp/conceptfan_v67/uci270.zip' | sha256sum -c -
+      - name: Run retrospective TRAIN stability and two-VALID-batch source naming gate
+        run: |
+          set -o pipefail
+          python scripts/experiment_drift_semantic_gate_v68.py \
+            --uci-zip /tmp/conceptfan_v67/uci270.zip \
+            --out-dir V68_POSTHOC_SEMANTIC_EVIDENCE | tee v68_aggregate_log.jsonl
+          python - <<'PY'
+          import json
+          q=json.load(open('V68_POSTHOC_SEMANTIC_EVIDENCE/STATUS.json'))
+          assert q['status']=='V68_RETROSPECTIVE_DRIFT_SEMANTIC_ABSTENTION_EXECUTED'
+          assert q['not_an_independent_sealed_TEST_because_V67_seen']
+          assert q['V68_thresholds_set_after_V67_test_was_inspected']
+          assert q['original_UCI270_source_zip_sha256']=='98fe3a30981a222dd4518fbcc3dddd45d5c0ce9b03ef6dc6fe5cf7a04cfbff5e'
+          assert q['n_train_historical_batch_stability_tests']==7
+          assert len(q['reference_support_AUC_and_abstention_by_gas'])==6
+          assert all(x['original_train_batch_gas_labels_or_ppm_used'] is False
+                     for x in q['all_unlabeled_SOURCE_subspace_stability'])
+          assert not q['physical_source_specific_semantic_identity_proven']
+          PY
+          git rev-parse HEAD > V68_POSTHOC_SEMANTIC_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Save posthoc explicit abstentions and complete failures, no raw sources
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v68-posthoc-semantic-stability-abstention
+          path: |
+            V68_POSTHOC_SEMANTIC_EVIDENCE/
+            v68_aggregate_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
