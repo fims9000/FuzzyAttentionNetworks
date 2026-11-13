@@ -37,6 +37,7 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
           python -m pip install --disable-pip-version-check -e .
+          python -m pip install --disable-pip-version-check vitaldb
       - name: Test causal last-observed source alignment, subject isolation and HR exclusion
         run: |
           python -m compileall -q scripts/download_vitaldb_external_v59.py scripts/experiment_conceptfan_vitaldb_transfer_v59.py scripts/verify_conceptfan_vitaldb_transfer_v59.py
