@@ -169,10 +169,6 @@ def _fit_risk_gate(model,bank,data):
         return None,[],[],"ONE_CLASS_IN_VALID_CANNOT_ACCEPT_SOURCE"
     n=sum(len(data[k]["y"]) for k in ("train","valid1","valid2"))
     # V55 fit consumes no TEST arrays or risk labels.
-    objects={
-        "train":train,"valid1":v1,"valid2":v2,
-    }
-    import numpy as np
     xx=np.concatenate([train["x"],v1["x"],v2["x"]])
     yy=np.concatenate([train["y"],v1["y"],v2["y"]])
     mm=np.concatenate([train["mask"],v1["mask"],v2["mask"]])
