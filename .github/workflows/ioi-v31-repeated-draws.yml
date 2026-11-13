@@ -1,0 +1,43 @@
+name: IOI V31 repeated-draw concept leakage replication
+
+on:
+  push:
+    branches:
+      - experiment/ioi-v31-repeated-draws-20261113
+    paths:
+      - 'scripts/experiment_ioi_repeated_draws_v31.py'
+      - 'tests/fan_attention/test_ioi_repeated_draws_v31.py'
+      - '.github/workflows/ioi-v31-repeated-draws.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repeated-synthetic-draws:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU scientific stack
+        run: python -m pip install --disable-pip-version-check numpy scipy scikit-learn pytest
+      - name: Install PyTorch CPU
+        run: python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Unit and existing leakage regression contracts
+        run: PYTHONPATH=src:. python -m pytest -q tests/fan_attention/test_ioi_repeated_draws_v31.py tests/fan_attention/test_v27_concept_leakage_guard.py
+      - name: Run two full independent data draws (same model family)
+        run: PYTHONPATH=src:. python scripts/experiment_ioi_repeated_draws_v31.py --out-dir V31_EVIDENCE
+      - name: Upload immutable per-fit evidence and summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-ioi-v31-new-draws
+          path: |
+            V31_EVIDENCE/*.json
+            V31_EVIDENCE_draw_20261113/*.json
+            V31_EVIDENCE_draw_20261114/*.json
+          if-no-files-found: warn
+          retention-days: 90
