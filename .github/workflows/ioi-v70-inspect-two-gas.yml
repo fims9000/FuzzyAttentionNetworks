@@ -48,8 +48,15 @@ jobs:
                   with gzip.GzipFile(fileobj=stream) as f:
                     first=f.readline().decode('utf8',errors='replace').strip()
                     second=f.readline().decode('utf8',errors='replace').strip()
-                  print('RAW_FIRST_ROW_NUMBER_OF_FIELDS',len(next(csv.reader([first]))))
-                  print('RAW_SECOND_ROW_NUMBER_OF_FIELDS',len(next(csv.reader([second]))))
+                  raw_head=next(csv.reader([first]))
+                  raw_sample=next(csv.reader([second]))
+                  print('RAW_HEADER_FIRST_15_FIELD_NAMES',raw_head[:15])
+                  print('RAW_HEADER_LAST_5_FIELD_NAMES',raw_head[-5:])
+                  print('RAW_FIRST_ROW_NUMBER_OF_FIELDS',len(raw_head))
+                  print('RAW_SECOND_ROW_NUMBER_OF_FIELDS',len(raw_sample))
+                  print('RAW_SECOND_ROW_FIRST_9_FIELD_TYPES', [
+                    ('empty' if not v else 'numeric' if re.fullmatch(r'[-+]?\\d+(?:\\.\\d+)?(?:[Ee][-+]?\\d+)?',v) else 'string')
+                    for v in raw_sample[:9]])
                   print('RAW_FIRST_ROW_ALL_NON_NUMERIC_FIELD_INDICES',
                     [i for i,x in enumerate(next(csv.reader([first])))
                      if x and not re.fullmatch(r'[-+]?\d+(?:\.\d+)?(?:[Ee][-+]?\d+)?',x)][:30])
