@@ -48,6 +48,8 @@ class ProgramHeadFitV60:
     raw_to_risk_direct_path:bool=False
     source_programs_fixed_without_Y:bool=True
     source_physical_identity_certified:bool=False
+    stochastic_seeded_initialization_std:float=0.
+    fixed_outcome_blind_source_shortlist:bool=False
 
     def passport(self):
         return asdict(self)
@@ -123,7 +125,9 @@ def group_macro_nll_v60(y,z,groups):
 
 
 def fit_program_head_v60(values,support,base_logits,train_y,train_groups,
-                         *,variant,seed=20266021):
+                         *,variant,seed=20266021,
+                         train_initialization_std=0.,
+                         retain_all_predeclared_sources=False):
     x=np.asarray(values,np.float64)
     s=np.asarray(support,np.float64)
     base0=np.asarray(base_logits,np.float64).reshape(-1)
@@ -132,7 +136,9 @@ def fit_program_head_v60(values,support,base_logits,train_y,train_groups,
         x.shape!=s.shape or len(x)!=len(y) or len(base0)!=len(y) or
         not(1<=x.shape[1]<=24) or len(y)<300 or
         not np.isin(y,[0.,1.]).all() or np.unique(y).size!=2 or
-        not np.isfinite(x).all() or not np.isfinite(base0).all()):
+        not np.isfinite(x).all() or not np.isfinite(base0).all() or
+        not 0.<=train_initialization_std<=.05 or
+        (retain_all_predeclared_sources and x.shape[1]>MAX_ACTIVE)):
         raise ValueError("Need TRAIN only compiled measurement and binary outcomes")
     weight,n_groups=_subject_equal_weights(train_groups)
     prior=np.clip(np.mean(y),1e-5,1.-1e-5)
@@ -140,6 +146,16 @@ def fit_program_head_v60(values,support,base_logits,train_y,train_groups,
     base=(np.full(len(y),prior_log_odds) if variant=="PURE" else base0)
     torch.manual_seed(seed)
     net=SparseCompiledConceptHeadV60(x.shape[1])
+    if train_initialization_std>0.:
+        # V61R genuinely distinct seeded neural initial conditions;
+        # V60/V61 defaults remain exactly unchanged.
+        with torch.no_grad():
+            net.alpha.add_(train_initialization_std*torch.randn_like(net.alpha))
+            net.offset.add_(train_initialization_std*torch.randn_like(net.offset))
+            net.gamma.add_(train_initialization_std*torch.randn_like(net.gamma))
+            net.alpha.clamp_(.5,3.)
+            net.offset.clamp_(-2.,2.)
+            net.gamma.clamp_(-10.,10.)
     xx=torch.as_tensor(x,dtype=torch.float64)
     ss=torch.as_tensor(s,dtype=torch.float64)
     bb=torch.as_tensor(base,dtype=torch.float64)
@@ -159,8 +175,12 @@ def fit_program_head_v60(values,support,base_logits,train_y,train_groups,
             net.gamma.clamp_(-10.,10.)
         history.append(float(loss.detach()))
     # TRAIN-only sparse selection. Do not choose feature count by VALID/TEST.
-    active=np.argsort(-np.abs(net.gamma.detach().numpy()))[:MAX_ACTIVE]
-    active=tuple(sorted(int(i) for i in active))
+    if retain_all_predeclared_sources:
+        # Definition shortlist is frozen using TRAIN X only, not task gamma.
+        active=tuple(range(x.shape[1]))
+    else:
+        active=np.argsort(-np.abs(net.gamma.detach().numpy()))[:MAX_ACTIVE]
+        active=tuple(sorted(int(i) for i in active))
     not_selected=np.ones(x.shape[1],dtype=bool)
     not_selected[list(active)]=False
     others=torch.as_tensor(not_selected,dtype=torch.bool)
@@ -182,8 +202,10 @@ def fit_program_head_v60(values,support,base_logits,train_y,train_groups,
     with torch.no_grad():
         final=net(xx,ss,bb)["logits"].numpy()
         gamma=net.gamma.numpy()
-        active=tuple(i for i in active if abs(gamma[i])>.1)
-        # Weak TRAIN sources are refused without VALID threshold tuning.
+        if not retain_all_predeclared_sources:
+            active=tuple(i for i in active if abs(gamma[i])>.1)
+        # For V61R: keep the entire outcome-blind shortlist, even when a
+        # learned source gamma is weak. Never re-rank by label-trained gamma.
         keep=np.zeros(len(gamma),bool);keep[list(active)]=True
         net.gamma[~torch.as_tensor(keep)]=0.
         final=net(xx,ss,bb)["logits"].numpy()
@@ -197,6 +219,8 @@ def fit_program_head_v60(values,support,base_logits,train_y,train_groups,
         n_train=len(x),n_train_subjects=n_groups,
         train_objective_first=history[0],train_objective_last=history[-1],
         train_patient_macro_NLL=group_macro_nll_v60(y,final,train_groups),
+        stochastic_seeded_initialization_std=float(train_initialization_std),
+        fixed_outcome_blind_source_shortlist=bool(retain_all_predeclared_sources),
     )
     return result
 

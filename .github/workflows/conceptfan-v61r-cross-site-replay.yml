@@ -1,0 +1,121 @@
+name: ConceptFAN V61R posthoc independent-process replay BIDMC and VitalDB
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v61r-stable-sources-20261113
+    paths:
+      - 'src/conceptfan_discovery/program_fan_v60.py'
+      - 'src/conceptfan_discovery/conditional_innovation_v61.py'
+      - 'src/conceptfan_discovery/stable_source_contract_v61r.py'
+      - 'scripts/experiment_conceptfan_conditional_v61.py'
+      - 'scripts/verify_conceptfan_conditional_v61.py'
+      - 'scripts/verify_v61r_replay.py'
+      - 'tests/discovery/test_stable_source_v61r.py'
+      - '.github/workflows/conceptfan-v61r-cross-site-replay.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  PYTHONHASHSEED: '0'
+  CUBLAS_WORKSPACE_CONFIG: ':4096:8'
+
+jobs:
+  reproducibility-replay-two-real-hospitals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU PyTorch, scientific training stack, official VitalDB loader
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -e .
+          python -m pip install --disable-pip-version-check vitaldb
+      - name: Validate V60 defaults unchanged and true V61R masked source/seed controls
+        run: |
+          python -m compileall -q scripts/verify_v61r_replay.py scripts/experiment_conceptfan_conditional_v61.py
+          python -m pytest -q tests/discovery/test_stable_source_v61r.py tests/discovery/test_conditional_novelty_v61.py tests/discovery/test_program_fan_v60.py tests/discovery/test_vitaldb_external_transfer_v59.py
+      - name: Cache official original BIDMC numerics
+        uses: actions/cache@v4
+        with:
+          path: data/bidmc_v58/raw
+          key: official-physionet-bidmc-v1-numerics-fix-sha256-53-records-v1
+      - name: Verify official BIDMC 53 individual source SHA receipts
+        run: |
+          python scripts/download_bidmc_numerics_v58.py --out data/bidmc_v58/raw
+      - name: Acquire 40 originally preselected genuine external VitalDB subjects
+        run: |
+          python scripts/download_vitaldb_external_v59.py --out data/vitaldb_v59/private_source
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('data/vitaldb_v59/private_source/vitaldb_download_receipt.json').read_text())
+          assert r['predeclared_case_candidates']==80
+          assert r['accepted_external_distinct_patients']==40
+          assert not r['raw_subject_ids_exported']
+          PY
+      - name: First frozen experiment in a clean Python process
+        run: |
+          python scripts/experiment_conceptfan_conditional_v61.py \
+            --bidmc data/bidmc_v58/raw \
+            --vitaldb data/vitaldb_v59/private_source \
+            --out results/conceptfan_v61r_replay_first \
+            --seeds 11 23 --tasks future_hr_60s future_resp_60s
+          python scripts/verify_conceptfan_conditional_v61.py \
+            --dir results/conceptfan_v61r_replay_first
+      - name: Second independent Python process, identical DATA and frozen program
+        run: |
+          python scripts/experiment_conceptfan_conditional_v61.py \
+            --bidmc data/bidmc_v58/raw \
+            --vitaldb data/vitaldb_v59/private_source \
+            --out results/conceptfan_v61r_replay_second \
+            --seeds 11 23 --tasks future_hr_60s future_resp_60s
+          python scripts/verify_conceptfan_conditional_v61.py \
+            --dir results/conceptfan_v61r_replay_second
+      - name: Audit exact source contract and all heldout predictions between both processes
+        run: |
+          python scripts/verify_v61r_replay.py \
+            --first results/conceptfan_v61r_replay_first \
+            --second results/conceptfan_v61r_replay_second
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('results/conceptfan_v61r_replay_first/verify_v61r_replay.json')
+          r=json.loads(p.read_text())
+          assert r['status']=='V61R_INDEPENDENT_PROCESS_REPLAY_WITHIN_TOLERANCE'
+          assert r['n_test_arrays_compared']==32
+          assert r['canonical_source_contracts_identical_sha256']
+          assert max(r['observed_max_abs_drift'].values())<=1e-4
+          assert r['posthoc_not_new_confirmatory_data']
+          PY
+      - name: Preserve immutable research revision
+        if: always()
+        run: |
+          mkdir -p results/conceptfan_v61r_replay_first
+          git rev-parse HEAD > results/conceptfan_v61r_replay_first/COMMIT_SHA.txt
+      - name: Publish aggregate fit, exact passports and replay QA only, never individual people
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v61r-actual-replay-BIDMC-VitalDB-aggregate
+          path: |
+            results/conceptfan_v61r_replay_first/report_v61.json
+            results/conceptfan_v61r_replay_first/aggregate_cases_v61.csv
+            results/conceptfan_v61r_replay_first/bidmc_*_split_receipt.json
+            results/conceptfan_v61r_replay_first/verify_v61_audit.json
+            results/conceptfan_v61r_replay_first/verify_v61r_replay.json
+            results/conceptfan_v61r_replay_first/COMMIT_SHA.txt
+            data/vitaldb_v59/private_source/vitaldb_download_receipt.json
+            data/bidmc_v58/raw/download_receipt.json
+          if-no-files-found: warn
+          retention-days: 90

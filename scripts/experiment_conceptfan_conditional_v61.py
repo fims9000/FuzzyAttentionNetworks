@@ -25,6 +25,9 @@ from conceptfan_discovery.program_compiler_v61 import (
     compile_allowed_programs_v61,
     select_conditioning_and_novel_programs_v61,
 )
+from conceptfan_discovery.stable_source_contract_v61r import (
+    shortlist_conditional_sources_v61r,
+)
 from conceptfan_discovery.conditional_innovation_v61 import (
     fit_conditional_sources_v61,infer_conditional_sources_v61,
     conditional_shuffle_gate_v61,
@@ -82,6 +85,11 @@ def _novel_all_sources(train,bank,source_indices,pulse_indices):
     mapped=fit_conditional_sources_v61(
         v,s,train["mask"],train["patient"],
         pulse_indices=pulse_indices,source_indices=source_indices)
+    if mapped is not None:
+        # Outcome-blind, TRAIN-X-only source dictionary: never rank
+        # correlated programs using post-fit task gamma.
+        mapped,_=shortlist_conditional_sources_v61r(
+            mapped,bank,v,s,train["mask"],train["patient"])
     return v,s,mapped
 
 
@@ -109,7 +117,8 @@ def _fit_pulse_and_conditional(train,v1,v2,bank,pulse_idx,source_idx,*,seed):
     pulse_head=fit_program_head_v60(
         values[:,pulse_idx],support[:,pulse_idx],
         np.zeros(len(train["y"])),train["y"],
-        train["patient"],variant="PURE",seed=20266110+seed)
+        train["patient"],variant="PURE",seed=20266110+seed,
+        train_initialization_std=.03,retain_all_predeclared_sources=True)
     pulse_train=infer_program_head_v60(
         pulse_head,values[:,pulse_idx],support[:,pulse_idx],
         np.zeros(len(values)))["logits"]
@@ -118,12 +127,14 @@ def _fit_pulse_and_conditional(train,v1,v2,bank,pulse_idx,source_idx,*,seed):
             source_map,values,support,train["mask"])
         risk_head=fit_program_head_v60(
             residual,residual_support,pulse_train,train["y"],
-            train["patient"],variant="RESIDUAL",seed=20266170+seed)
+            train["patient"],variant="RESIDUAL",seed=20266170+seed,
+            train_initialization_std=.03,retain_all_predeclared_sources=True)
         raw_uncond=values[:,list(source_map.raw_source_indices)]
         raw_sup=support[:,list(source_map.raw_source_indices)]
         raw_ablation_head=fit_program_head_v60(
             raw_uncond,raw_sup,pulse_train,train["y"],
-            train["patient"],variant="RESIDUAL",seed=20266190+seed)
+            train["patient"],variant="RESIDUAL",seed=20266190+seed,
+            train_initialization_std=.03,retain_all_predeclared_sources=True)
     else:
         risk_head=None;raw_ablation_head=None
     events=[]
@@ -291,7 +302,8 @@ def _test_one(test,norm,bank,pulse_idx,source_idx,pulse_head,
 
 
 def execute(bidmc,out,*,vitaldb=None,tasks=TASKS,seeds=SEEDS):
-    torch.set_num_threads(2)
+    torch.set_num_threads(1)
+    torch.use_deterministic_algorithms(True)
     output=Path(out);output.mkdir(parents=True,exist_ok=True)
     entries=[];secrets=[];models=[];banks=[];abstained=[]
     for task in tasks:
@@ -340,6 +352,14 @@ def execute(bidmc,out,*,vitaldb=None,tasks=TASKS,seeds=SEEDS):
                 "pulse_native_PyTorch_head":ph.passport(),
                 "nonpulse_train_only_source_map":(
                     None if source_map is None else source_map.passport()),
+                "stable_source_contract_SHA256":(
+                    None if source_map is None else hashlib.sha256(
+                        json.dumps(source_map.passport(),sort_keys=True,
+                                   separators=(",",":")).encode()).hexdigest()),
+                "stable_outcome_blind_program_ids":(
+                    [] if source_map is None else [
+                        bank.candidates[i].candidate_id
+                        for i in source_map.raw_source_indices]),
                 "conditional_native_PyTorch_head":(
                     None if head is None else head.passport()),
                 "unconditioned_ablation_head":(
@@ -357,7 +377,13 @@ def execute(bidmc,out,*,vitaldb=None,tasks=TASKS,seeds=SEEDS):
                 entries.extend(lines);secrets.extend(files)
     report={
         "protocol":PROTOCOL,
-        "status":"V61_EXECUTED_REAL_CONDITIONAL_NOVELTY_EXPLORATORY",
+        "status":"V61R_EXECUTED_POSTHOC_STABILITY_RESEARCH",
+        "posthoc_amendment_after_original_V61_test_inspection":True,
+        "V61_original_negative_results_preserved_unchanged":True,
+        "native_stochastic_initialization_std":.03,
+        "source_contract_decimal_rounding_digits":12,
+        "novel_source_dictionary_selected_without_Y":True,
+        "torch_cpu_deterministic_one_thread":True,
         "real_sites":sorted({x["site"] for x in entries}),
         "registered_tasks":list(tasks),
         "tasks_not_estimable_on_TRAIN":abstained,
