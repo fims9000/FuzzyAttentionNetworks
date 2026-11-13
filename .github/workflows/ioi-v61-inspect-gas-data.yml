@@ -1,0 +1,47 @@
+name: V61 inspect official gas-plume dataset schema only
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v61-real-gas-control-20261113
+    paths:
+      - '.github/workflows/ioi-v61-inspect-gas-data.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-archive-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve official real wind tunnel dataset from UCI
+        run: |
+          mkdir -p /tmp/conceptfan_v61
+          curl -fSL --retry 2 --connect-timeout 20 --max-time 180 \
+            'https://archive.ics.uci.edu/static/public/309/gas%2Bsensor%2Barray%2Bexposed%2Bto%2Bturbulent%2Bgas%2Bmixtures.zip' \
+            -o /tmp/conceptfan_v61/gas.zip || \
+          curl -fSL --retry 2 --connect-timeout 20 --max-time 180 \
+            'https://archive.ics.uci.edu/static/public/309/gas+sensor+array+exposed+to+turbulent+gas+mixtures.zip' \
+            -o /tmp/conceptfan_v61/gas.zip
+          unzip -tq /tmp/conceptfan_v61/gas.zip
+          sha256sum /tmp/conceptfan_v61/gas.zip
+      - name: Inspect metadata and nonoutcome text formatting only
+        run: |
+          python - <<'PY'
+          import zipfile,collections,os,json
+          p='/tmp/conceptfan_v61/gas.zip'
+          with zipfile.ZipFile(p) as z:
+            names=[q for q in z.namelist() if not q.endswith('/')]
+            tally=collections.Counter(os.path.dirname(q) for q in names)
+            print('ARCHIVE_FILE_COUNT',len(names))
+            print('ARCHIVE_DIR_COUNTS',dict(tally))
+            for key in sorted(tally):
+              files=sorted(q for q in names if os.path.dirname(q)==key)
+              if not files: continue
+              print('SAMPLE_PATH',files[0])
+              block=z.read(files[0])[:550]
+              print('SAMPLE_FIRST_BYTES',repr(block))
+          PY
