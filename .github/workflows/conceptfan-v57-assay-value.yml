@@ -1,0 +1,87 @@
+name: ConceptFAN V57 assay-scaled new concept and matched native risk head
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v57-attested-value-20261113
+    paths:
+      - 'src/conceptfan_discovery/assay_calibrated_concept_v57.py'
+      - 'scripts/experiment_conceptfan_assay_value_v57.py'
+      - 'scripts/verify_conceptfan_v57_case_audit.py'
+      - 'tests/discovery/test_assay_calibrated_concept_v57.py'
+      - 'docs/medical/CONCEPTFAN_V57_ASSAY_CALIBRATED_VALUE_FROZEN_PROTOCOL_20261113.md'
+      - '.github/workflows/conceptfan-v57-assay-value.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  train-assay-scaled-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU PyTorch and project
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -e .
+      - name: Verify numeric source contract, no q-scale mismatch and negative controls
+        run: |
+          python -m compileall -q src/conceptfan_discovery/assay_calibrated_concept_v57.py scripts/experiment_conceptfan_assay_value_v57.py scripts/verify_conceptfan_v57_case_audit.py
+          python -m pytest -q tests/discovery/test_assay_calibrated_concept_v57.py tests/discovery/test_independent_assay_scope_v56.py tests/discovery/test_constrained_joint_operator_v55.py
+      - name: Preregistered fresh cohort: calibrate q, refit native gamma and dual-VALID gate
+        run: |
+          python scripts/experiment_conceptfan_assay_value_v57.py \
+            --out results/conceptfan_v57_assay_value --seeds 11 23
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('results/conceptfan_v57_assay_value/report_v57.json').read_text())
+          assert r['status']=='EXECUTED_EXPLORATORY'
+          assert r['n_models']==8 and r['n_test_rows']==48
+          assert len(r['prediction_files'])==48
+          assert r['assay_budget']['TEST']==0
+          assert r['gamma_retrained_on_calibrated_train_q']
+          assert r['reuses_statistical_v55_gamma_on_assay_q'] is False
+          assert r['native_concept_only_signed_risk']
+          assert all(row['same_calibrated_q_used_in_training_and_inference']
+                     and row['no_test_assay_accessed'] for row in r['rows'])
+          PY
+      - name: Independently audit all 48 individual TEST prediction sets
+        run: |
+          python scripts/verify_conceptfan_v57_case_audit.py \
+            --dir results/conceptfan_v57_assay_value
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('results/conceptfan_v57_assay_value/verify_v57_audit.json').read_text())
+          assert r['status']=='V57_INDEPENDENT_CASE_AUDIT_PASS'
+          assert r['verified_individual_test_arrays']==48
+          assert r['n_scenarios']==24
+          assert r['test_external_assay_not_accessed']
+          PY
+      - name: Save exact source revision
+        if: always()
+        run: |
+          mkdir -p results/conceptfan_v57_assay_value
+          git rev-parse HEAD > results/conceptfan_v57_assay_value/COMMIT_SHA.txt
+      - name: Upload reproducible fitted-source contracts and cases
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v57-assay-scaled-risk-head
+          path: results/conceptfan_v57_assay_value/
+          if-no-files-found: warn
+          retention-days: 90
