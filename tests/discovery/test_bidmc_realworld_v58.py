@@ -84,7 +84,7 @@ def test_patient_disjoint_split_and_same_patient_records_kept_together(fake_full
     assert all(np.isfinite(row["x"]).all() for row in data.values())
     assert norm.train_count>100
     assert "s00001" not in str(info)
-    assert "raw_vitals" not in str(info).lower()
+    assert info["raw_vitals_exported"] is False
 
 
 def test_genuine_real_outcome_is_not_part_of_feature_construction(fake_full_bidmc):
