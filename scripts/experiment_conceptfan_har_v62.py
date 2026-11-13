@@ -22,7 +22,7 @@ from sklearn.preprocessing import StandardScaler
 
 from conceptfan_discovery.har_activity_v62 import (
     TASKS,STRESSES,SENSOR_NAMES,
-    load_har_v62,rename_bank_as_har_v62,stress_har_v62,
+    load_har_v62,load_har_test_v62,rename_bank_as_har_v62,stress_har_v62,
     collapse_raw_axes_v62,
 )
 from conceptfan_discovery.program_compiler_v61 import (
@@ -112,12 +112,11 @@ def execute(root:Path,out:Path,*,tasks=tuple(TASKS),seeds=SEEDS):
         sections,norm,manifest=load_har_v62(root,task)
         (output/f"uci_har_{task}_split_receipt.json").write_text(
             json.dumps(manifest,indent=2,ensure_ascii=False)+"\n")
-        train,v1,v2,test=(sections[k] for k in (
-            "train","valid1","valid2","test"))
-        if any(np.unique(sections[k]["y"]).size<2
-               for k in ("train","test")):
+        train,v1,v2=(sections[k] for k in (
+            "train","valid1","valid2"))
+        if np.unique(train["y"]).size<2:
             raise RuntimeError(
-                "Frozen HAR participant split is one class, do not resplit after TEST")
+                "Original TRAIN groups one class; keep frozen split, no posthoc resampling")
         bank=rename_bank_as_har_v62(
             compile_allowed_programs_v61(
                 train["x"],train["mask"],train["patient"],
@@ -137,6 +136,9 @@ def execute(root:Path,out:Path,*,tasks=tuple(TASKS),seeds=SEEDS):
         })
         zv,sv=infer_program_matrix_v60(
             bank,train["x"],train["mask"])
+        prepared=[]
+        # All stochastic models and both subject-VALID gates are frozen
+        # WITHOUT opening private_test.npz or inspecting any TEST label.
         for seed in seeds:
             pulse_head,mapping,gyro_head,ablation,gate=_fit_pulse_and_conditional(
                 train,v1,v2,bank,pi,ni,seed=seed)
@@ -170,6 +172,14 @@ def execute(root:Path,out:Path,*,tasks=tuple(TASKS),seeds=SEEDS):
                 "training_labels_only_official_UCI_train_people":True,
                 "physical_gyro_sensor_type_separate_but_causality_unproven":True,
             })
+            prepared.append((
+                seed,pulse_head,mapping,gyro_head,ablation,gate,
+                lpulse,lall,lacc,lgyro,lfull,lmean))
+        # FIRST access to UCI original nine-person TEST, after every seed
+        # model, source identity, supervised fit and VALID decision is frozen.
+        test=load_har_test_v62(root,task,norm)
+        for (seed,pulse_head,mapping,gyro_head,ablation,gate,
+             lpulse,lall,lacc,lgyro,lfull,lmean) in prepared:
             for stress in STRESSES:
                 x,m,raw,device_mask=stress_har_v62(
                     test,norm,stress,seed=20266290+seed)
@@ -289,6 +299,8 @@ def execute(root:Path,out:Path,*,tasks=tuple(TASKS),seeds=SEEDS):
         "original_dataset":"UCI HAR Using Smartphones, DOI 10.24432/C54S4K CC-BY 4.0",
         "task_activities_predeclared_before_TEST":list(tasks),
         "original_official_TEST_nine_independent_persons":True,
+        "ALL_seed_training_and_VALID_gates_frozen_before_TEST_opened":True,
+        "original_TEST_one_class_if_any_kept_without_resplit":True,
         "TRAIN_13_VALID1_4_VALID2_4_TEST_9_REAL_PARTICIPANTS":True,
         "base_body_acceleration_gyro_novel_sensor_independent_device_type":True,
         "all_sources_contemporaneous_window_no_future_leakage":True,
