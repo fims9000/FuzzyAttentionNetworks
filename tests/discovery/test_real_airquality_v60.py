@@ -54,7 +54,8 @@ def test_disjoint_episode_splits_and_forecast_alignment():
 
 
 def test_non_contiguous_hours_abstain_instead_of_interpolation():
-    frame=fixture()
+    # Preserve the production >=300 TRAIN minimum even after discarding a bad block.
+    frame=fixture(6630)
     frame.insert(0,"timestamp",pd.date_range("2004-03-10",periods=len(frame),freq="h"))
     frame.loc[10,"timestamp"]=frame.loc[10,"timestamp"]+pd.Timedelta(hours=6)
     result=build_disjoint_blocks(frame)
