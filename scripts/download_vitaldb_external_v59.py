@@ -127,7 +127,10 @@ def _numeric_track(raw,tname):
         value_key=("values" if "values" in normalized else
                    "value" if "value" in normalized else None)
         if "time" not in normalized or value_key is None:
-            raise ValueError("Non-numeric VitalDB track (Time, Values expected)")
+            # Schema-only diagnostics: CSV header names, never any actual
+            # numeric values, patient IDs, timestamps or track identifiers.
+            headers=",".join(sorted(k[:24] for k in normalized.keys()))
+            raise ValueError("Non-numeric VitalDB track columns="+headers)
         try:
             tt=float(normalized["time"])
             val=float(normalized[value_key])
@@ -205,7 +208,7 @@ def download_vitaldb(out:Path):
                 elif "Insufficient valid" in message:
                     category="INSUFFICIENT_NUMERIC_TRACK_SAMPLES"
                 elif "Non-numeric VitalDB" in message:
-                    category="TRACK_CSV_COLUMNS_MISMATCH"
+                    category="TRACK_CSV_COLUMNS_MISMATCH_"+message.split("columns=")[-1][:120]
                 elif "No 480-second window" in message:
                     category="PREDECLARED_COVERAGE_FAILURE"
                 elif "Nonmonotonic" in message:
