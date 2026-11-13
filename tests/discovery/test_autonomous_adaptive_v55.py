@@ -20,7 +20,7 @@ def grouped_sample(seed=14,n=360,t=16):
     return x,m,y
 
 
-def mixed_sample(seed=45,n=210,t=16,k=8):
+def mixed_sample(seed=45,n=360,t=16,k=8):
     rng=np.random.default_rng(seed)
     z=rng.normal(size=(n,t,k))
     for step in range(1,t):
