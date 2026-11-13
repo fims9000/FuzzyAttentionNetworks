@@ -1,0 +1,83 @@
+name: V55 fully autonomous adaptive ConceptFAN vocabulary and risk
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v55-adaptive-concepts-20261113
+    paths:
+      - 'src/conceptfan_discovery/autonomous_adaptive_conceptfan_v55.py'
+      - 'scripts/experiment_autonomous_adaptive_v55.py'
+      - 'tests/discovery/test_autonomous_adaptive_v55.py'
+      - 'docs/medical/CONCEPTFAN_V55_FROZEN_ADAPTIVE_VOCABULARY_PROTOCOL_20261113.md'
+      - '.github/workflows/ioi-v55-adaptive-concepts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  autonomous-concepts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install validated full scientific environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Compile and test full source, routing and prior regressions
+        run: |
+          python -m compileall -q src/conceptfan_discovery/autonomous_adaptive_conceptfan_v55.py scripts/experiment_autonomous_adaptive_v55.py
+          python -m pytest -q tests/discovery/test_autonomous_adaptive_v55.py tests/discovery/test_robust_observable_v54.py tests/discovery/test_autonomous_temporal_bank_v53.py
+      - name: Smoke prototype on partial disjoint synthetic data
+        run: |
+          python scripts/experiment_autonomous_adaptive_v55.py --smoke --out-dir V55_SMOKE | tee v55_smoke_log.jsonl
+          python - <<'PY'
+          import json
+          s=json.load(open("V55_SMOKE/STATUS.json"))
+          assert s["status"]=="SMOKE_ONLY"
+          assert s["route_uses_only_unlabeled_train_measurements"]
+          assert s["known_initial_concepts_supplied"]==False
+          assert len(s["new_group_draws"])==1
+          assert len(s["mixed_loading_development_receipts"])==3
+          PY
+      - name: Two untouched nonlinear generator draws and mixed-source development challenge
+        run: |
+          python scripts/experiment_autonomous_adaptive_v55.py --out-dir V55_EVIDENCE | tee v55_full_log.jsonl
+          python - <<'PY'
+          import json
+          s=json.load(open("V55_EVIDENCE/STATUS.json"))
+          assert s["status"]=="V55_EXPLORATORY_COMPLETED_IF_ALL_CASES_PASS"
+          assert len(s["new_group_draws"])==2
+          assert set(x["generator_seed"] for x in s["new_group_draws"])=={20261331,20261333}
+          assert len(s["mixed_loading_development_receipts"])==3
+          assert len(s["new_group_test_results"])==120
+          assert len(s["mixed_loading_development_results"])==12
+          assert s["risk_output_exact_signed_concept_bottleneck"]
+          assert s["known_initial_concepts_supplied"]==False
+          PY
+          git rev-parse HEAD > V55_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Save full model passports, per-condition data and negative controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v55-adaptive-concepts
+          path: |
+            V55_SMOKE/
+            V55_EVIDENCE/
+            v55_smoke_log.jsonl
+            v55_full_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
