@@ -7,6 +7,7 @@ on:
     paths:
       - 'src/conceptfan_discovery/lagged_operator_concepts_v53.py'
       - 'scripts/experiment_conceptfan_lagged_native_v53.py'
+      - 'scripts/verify_conceptfan_v53_case_audit.py'
       - 'tests/discovery/test_lagged_operator_concepts_v53.py'
       - 'tests/discovery/test_conceptfan_lagged_native_v53.py'
       - 'docs/medical/CONCEPTFAN_V53_LAGGED_NATIVE_FROZEN_PROTOCOL_20261113.md'
@@ -59,6 +60,19 @@ jobs:
           assert all(not item['unsupervised_definition']['trained_on_outcome_labels']
                      for item in r['receipts'])
           assert r['original_K2_exact_fallback']
+          PY
+      - name: Independently verify all 24 per-patient arrays, signed logits, and paired confidence bands
+        run: |
+          python scripts/verify_conceptfan_v53_case_audit.py \
+            --dir results/conceptfan_v53_lagged_native
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('results/conceptfan_v53_lagged_native/verify_v53_audit.json')
+          r=json.loads(p.read_text())
+          assert r['status']=='CASE_LEVEL_INDEPENDENT_RECOMPUTATION_PASS'
+          assert r['n_verified_test_prediction_arrays']==24
+          assert len(r['scenarios'])==12
           PY
       - name: Record exact source commit and preserve full negative results
         if: always()
