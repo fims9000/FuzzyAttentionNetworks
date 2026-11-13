@@ -171,7 +171,7 @@ def load_bidmc_future_v61(source:Path,task):
                  "positive_fraction":float(np.mean(data[key]["y"])),
                  "public_BIDMC_record_ordinals":
                      sorted({rec for p in groups[key] for rec in people[p]})}
-            for key in data,
+            for key in data
         },
     }
     return data,norm,receipt
