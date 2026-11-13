@@ -91,10 +91,15 @@ def fit_conditional_sources_v61(z,s,raw_mask,train_groups,
         ridge=Ridge(alpha=RIDGE_ALPHA,fit_intercept=True)
         ridge.fit(context[observed],values[observed,j],
                   sample_weight=weights[observed])
-        predicted=ridge.predict(context)
+        # V61R posthoc transport-stability repair: quantize tiny BLAS
+        # differences BEFORE using the same measurement map on TRAIN/TEST.
+        coef=np.round(np.asarray(ridge.coef_,float),12)
+        intercept=float(np.round(float(ridge.intercept_),12))
+        predicted=context@coef+intercept
         residual=values[:,j]-predicted
         qlo,qmid,qhi=np.quantile(residual[observed],[.25,.5,.75])
-        width=float(max(qhi-qlo,SCALE_FLOOR))
+        qmid=float(np.round(qmid,12))
+        width=float(np.round(max(qhi-qlo,SCALE_FLOOR),12))
         normal=np.clip((residual-qmid)/width,-8,8)
         checks=[];passes=True
         for ids in folds:
@@ -112,8 +117,8 @@ def fit_conditional_sources_v61(z,s,raw_mask,train_groups,
         residual_ss=float(np.mean((y-predicted[observed])**2))
         target_ss=float(np.var(y))
         score=1.-residual_ss/max(target_ss,1e-10)
-        keep.append(int(j));coefs.append(tuple(map(float,ridge.coef_)))
-        intercepts.append(float(ridge.intercept_))
+        keep.append(int(j));coefs.append(tuple(map(float,coef)))
+        intercepts.append(intercept)
         med.append(float(qmid));iqr.append(width)
         r2.append(score);fold_stats.append(tuple(checks))
     if not keep:return None
