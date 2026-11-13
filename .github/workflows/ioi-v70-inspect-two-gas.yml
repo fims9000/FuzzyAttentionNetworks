@@ -43,6 +43,14 @@ jobs:
                   print('FEATURE_FIELD_NAMES_IF_TEXT',h[:1300] if re.search('[a-zA-Z]{2}',h) else 'NUMERIC_NO_HEADER')
                   first=f.readline().decode('utf8',errors='replace').strip()
                   print('FEATURE_SECOND_ROW_COLUMN_COUNT',len(next(csv.reader([first]))))
+                with z.open(name) as f:
+                  rows=list(csv.DictReader(io.TextIOWrapper(f,encoding='utf8')))
+                  from collections import Counter
+                  print('FEATURE_RECORD_COUNT',len(rows))
+                  print('FEATURE_BATCH_COUNTS',dict(Counter(row['batch'] for row in rows)))
+                  print('FEATURE_EXP_UNIQUE_COUNT',len(set(row['exp'] for row in rows)))
+                  print('FEATURE_BATCH_ORDER_FIRST_EXP',[(row['exp'],row['batch']) for row in rows[:1]])
+
               if name.endswith('rawdata.csv.gz'):
                 with z.open(name) as stream:
                   with gzip.GzipFile(fileobj=stream) as f:
@@ -60,6 +68,28 @@ jobs:
                   print('RAW_FIRST_ROW_ALL_NON_NUMERIC_FIELD_INDICES',
                     [i for i,x in enumerate(next(csv.reader([first])))
                      if x and not re.fullmatch(r'[-+]?\d+(?:\.\d+)?(?:[Ee][-+]?\d+)?',x)][:30])
+          PY
+      - name: Count raw physical sensors and per-experiment keys without viewing outcomes
+        run: |
+          python - <<'PY'
+          import zipfile,gzip,csv,collections,io
+          with zipfile.ZipFile('/tmp/conceptfan_v70/uci308.zip') as z:
+            with gzip.GzipFile(fileobj=z.open('rawdata.csv.gz')) as g:
+              reader=csv.DictReader(io.TextIOWrapper(g,encoding='utf8'))
+              rows=0
+              sensor=collections.Counter()
+              by_trial=collections.Counter()
+              raw_batches=collections.Counter()
+              for row in reader:
+                rows+=1
+                sensor[row['sensor']]+=1
+                by_trial[(row['batch'],row['exp'])]+=1
+                raw_batches[row['batch']]+=1
+              print('RAW_RECORD_ROWS',rows)
+              print('RAW_UNIQUE_SENSORS',dict(sensor))
+              print('RAW_BATCH_COUNTS',dict(raw_batches))
+              print('RAW_UNIQUE_BATCH_EXP_TRIALS',len(by_trial))
+              print('RAW_SENSORS_PER_TRIAL_UNIQUE_VALUES',sorted(set(by_trial.values())))
           PY
       - name: Keep exact official source asset in GitHub workflow cache
         uses: actions/cache/save@v4
