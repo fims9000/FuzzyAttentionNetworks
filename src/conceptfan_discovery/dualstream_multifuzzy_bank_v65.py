@@ -35,8 +35,9 @@ class TrainOnlyDualStreamMultiFuzzyBank:
         load=self.source_basis.loading
         if a.shape[1]!=120 or a.shape[-1]!=load.shape[0]:
             raise ValueError("Only registered 120-second real source episodes supported")
-        if np.any(m[:,0,:].sum(axis=-1)<8):
-            raise ValueError("Not enough initial causal sensor measurements")
+        # Source support is fractional under V56 self-supervised 20% input
+        # dropout. Do not reject a real episode because initial sensors were
+        # temporarily masked; discount DELTA confidence instead.
         weight=np.abs(load)
         support_n=np.einsum("ntd,dk->ntk",m.astype(float),weight,optimize=True)
         coverage=support_n/np.maximum(weight.sum(axis=0)[None,None,:],1e-9)
@@ -48,7 +49,14 @@ class TrainOnlyDualStreamMultiFuzzyBank:
         levels_delta=(np.einsum("ntd,dk->ntk",differences,load,optimize=True)/
                       np.maximum(support_n,.2))
         level=np.concatenate((levels_absolute,levels_delta),axis=-1)
-        support=np.concatenate((coverage,coverage),axis=-1)
+        # A change relative to the first reading cannot be fully supported
+        # when the initial reading itself was unavailable. Do not invent
+        # a real baseline by treating zero-filled hidden cells as measured.
+        initial_support=np.einsum("nd,dk->nk",
+            m[:,0,:].astype(float),weight,optimize=True) / np.maximum(
+                weight.sum(axis=0)[None,:],1e-9)
+        delta_support=coverage*initial_support[:,None,:]
+        support=np.concatenate((coverage,delta_support),axis=-1)
         if not np.isfinite(level).all() or not np.isfinite(support).all():
             raise AssertionError("Nonfinite causal dual-stream measurement")
         return level,support
