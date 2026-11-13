@@ -1,0 +1,90 @@
+name: V67 genuinely new six-gas drift-transfer source semantics test
+
+on:
+  push:
+    branches:
+      - research/conceptfan-v67-independent-drift-gas-transfer-20261113
+    paths:
+      - 'src/conceptfan_discovery/static_gas_drift_concepts_v67.py'
+      - 'scripts/experiment_real_six_gas_drift_v67.py'
+      - 'tests/discovery/test_real_six_gas_drift_v67.py'
+      - 'docs/medical/CONCEPTFAN_V67_FROZEN_UNSEEN_SIX_GAS_DRIFT_PROTOCOL_20261113.md'
+      - '.github/workflows/ioi-v67-real-six-gas-drift.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '1'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  physical-sensor-drift-heldout-batch10:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Reproduce canonical sklearn and project import environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Execute source-contract and split-independence tests BEFORE looking at TEST
+        run: |
+          python -m compileall -q src/conceptfan_discovery/static_gas_drift_concepts_v67.py scripts/experiment_real_six_gas_drift_v67.py
+          python -m pytest -q tests/discovery/test_real_six_gas_drift_v67.py tests/discovery/test_exact_attribution_nonidentifiability_v66.py
+      - name: Restore same official UCI270 source pin as schema check
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/conceptfan_v67/uci270.zip
+          key: uci270-original-20261113-sha-pinned
+      - name: Fetch original source if a branch-scoped cache is missing, verify exact file
+        run: |
+          mkdir -p /tmp/conceptfan_v67
+          if [ ! -s /tmp/conceptfan_v67/uci270.zip ]; then
+            curl -fSL --retry 3 --connect-timeout 20 --max-time 300 \
+              'https://archive.ics.uci.edu/static/public/270/gas%2Bsensor%2Barray%2Bdrift%2Bat%2Bdifferent%2Bconcentrations.zip' \
+              -o /tmp/conceptfan_v67/uci270.zip
+          fi
+          unzip -tq /tmp/conceptfan_v67/uci270.zip
+          echo '98fe3a30981a222dd4518fbcc3dddd45d5c0ce9b03ef6dc6fe5cf7a04cfbff5e  /tmp/conceptfan_v67/uci270.zip' | sha256sum -c -
+      - name: Run preregistered six-gas label-free source discovery and future-batch falsifier
+        run: |
+          set -o pipefail
+          python scripts/experiment_real_six_gas_drift_v67.py \
+            --uci-zip /tmp/conceptfan_v67/uci270.zip \
+            --out-dir V67_UNSEEN_DRIFT_EVIDENCE | tee v67_aggregate_log.jsonl
+          python - <<'PY'
+          import json
+          q=json.load(open('V67_UNSEEN_DRIFT_EVIDENCE/STATUS.json'))
+          assert q['status']=='V67_NEW_UCI270_TEMPORAL_BATCH_TRANSFER_EXECUTED'
+          assert q['original_sample_provenance']['n_actual_recorded_exposures']==13910
+          assert q['source_zip_sha256']=='98fe3a30981a222dd4518fbcc3dddd45d5c0ce9b03ef6dc6fe5cf7a04cfbff5e'
+          assert q['n_temporal_drift_batch_periods']==10
+          assert q['n_independent_hardware_installations']==1
+          assert q['six_pure_gases_not_simultaneous_multisource_exposures']
+          assert q['V65_native_temporal_recurrence_not_claimed_tested']
+          assert q['concentration_setpoints_and_gas_id_excluded_from_source_fit']
+          assert len(q['all_precommitted_multiclass_scores_and_confusions'])==24
+          assert q['concept_head_exact_additive_receipt']['max_abs_probability_additive_reconstruction_error']<1e-9
+          assert not q['chemical_source_identifiability_or_unique_physics_proven']
+          PY
+          git rev-parse HEAD > V67_UNSEEN_DRIFT_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Persist genuine results, including negative scores; no raw sensor rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v67-real-unseen-six-gas-drift-source-semantics
+          path: |
+            V67_UNSEEN_DRIFT_EVIDENCE/
+            v67_aggregate_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90

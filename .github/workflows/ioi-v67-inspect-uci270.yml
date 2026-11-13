@@ -1,0 +1,49 @@
+name: V67 pin unseen official UCI270 archive schema
+on:
+  push:
+    branches:
+      - research/conceptfan-v67-independent-drift-gas-transfer-20261113
+    paths:
+      - '.github/workflows/ioi-v67-inspect-uci270.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect-only-no-test-labels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download original UCI 270 package, not UCI224
+        run: |
+          mkdir -p /tmp/conceptfan_v67
+          curl -fSL --retry 3 --connect-timeout 20 --max-time 300 \
+            'https://archive.ics.uci.edu/static/public/270/gas%2Bsensor%2Barray%2Bdrift%2Bat%2Bdifferent%2Bconcentrations.zip' \
+            -o /tmp/conceptfan_v67/uci270.zip || \
+          curl -fSL --retry 3 --connect-timeout 20 --max-time 300 \
+            'https://archive.ics.uci.edu/static/public/270/gas%2Bsensor%2Barray%2Bdrift%2Bdataset%2Bat%2Bdifferent%2Bconcentrations.zip' \
+            -o /tmp/conceptfan_v67/uci270.zip
+          unzip -tq /tmp/conceptfan_v67/uci270.zip
+          sha256sum /tmp/conceptfan_v67/uci270.zip
+      - name: Inspect archive members and feature count only, do not print gas target
+        run: |
+          python - <<'PY'
+          import zipfile,collections
+          p='/tmp/conceptfan_v67/uci270.zip'
+          with zipfile.ZipFile(p) as z:
+            for f in z.namelist():
+              if f.endswith('/'):continue
+              print('ARCHIVE_MEMBER',f,'SIZE',z.getinfo(f).file_size)
+              if f.endswith('.dat'):
+                with z.open(f) as src:
+                  first=src.readline().decode('utf8').split()
+                print('FIRST_RECORD_COLUMNS_WITHOUT_GAS_LABEL',len(first)-1)
+                print('FIRST_RECORD_FIRST_AND_LAST_FEATURE_INDICES',
+                      first[1].split(':',1)[0] if len(first)>1 else None,
+                      first[-1].split(':',1)[0] if len(first)>1 else None)
+          PY
+      - name: Retain same source ZIP cache across workflow jobs
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/conceptfan_v67/uci270.zip
+          key: uci270-original-20261113-sha-pinned
