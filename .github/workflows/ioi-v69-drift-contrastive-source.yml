@@ -1,0 +1,92 @@
+name: V69 post-selection UCI270 drift-contrastive concept source study
+
+on:
+  push:
+    branches:
+      - research/conceptfan-v69-unlabeled-drift-contrastive-source-20261113
+    paths:
+      - 'src/conceptfan_discovery/environment_contrastive_source_v69.py'
+      - 'scripts/experiment_environment_contrastive_v69.py'
+      - 'tests/discovery/test_environment_contrastive_source_v69.py'
+      - 'docs/medical/CONCEPTFAN_V69_FROZEN_DRIFT_CONTRASTIVE_SOURCE_20261113.md'
+      - '.github/workflows/ioi-v69-drift-contrastive-source.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '1'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  run-frozen-drift-source-study:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install original source and sklearn scientific environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Run focused source tests, label firewall and original heldout grouping tests
+        run: |
+          python -m compileall -q src/conceptfan_discovery/environment_contrastive_source_v69.py scripts/experiment_environment_contrastive_v69.py
+          python -m pytest -q tests/discovery/test_environment_contrastive_source_v69.py tests/discovery/test_real_six_gas_drift_v67.py tests/discovery/test_drift_semantic_gate_v68.py
+      - name: Restore original research-only UCI270 archive
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/conceptfan_v67/uci270.zip
+          key: uci270-original-20261113-sha-pinned
+      - name: Fetch exact same official original UCI270 ZIP on branch cache miss
+        run: |
+          mkdir -p /tmp/conceptfan_v67
+          if [ ! -s /tmp/conceptfan_v67/uci270.zip ]; then
+            curl -fSL --retry 2 --connect-timeout 20 --max-time 300 \
+              'https://archive.ics.uci.edu/static/public/270/gas%2Bsensor%2Barray%2Bdrift%2Bat%2Bdifferent%2Bconcentrations.zip' \
+              -o /tmp/conceptfan_v67/uci270.zip || \
+            curl -fSL --retry 2 --connect-timeout 20 --max-time 300 \
+              'https://archive.ics.uci.edu/static/public/270/gas%2Bsensor%2Barray%2Bdrift%2Bdataset%2Bat%2Bdifferent%2Bconcentrations.zip' \
+              -o /tmp/conceptfan_v67/uci270.zip
+          fi
+          unzip -tq /tmp/conceptfan_v67/uci270.zip
+          echo '98fe3a30981a222dd4518fbcc3dddd45d5c0ce9b03ef6dc6fe5cf7a04cfbff5e  /tmp/conceptfan_v67/uci270.zip' | sha256sum -c -
+      - name: Execute TRAIN-only environment contrast and complete future drift comparison
+        run: |
+          set -o pipefail
+          python scripts/experiment_environment_contrastive_v69.py \
+            --uci-zip /tmp/conceptfan_v67/uci270.zip \
+            --out-dir V69_POSTHOC_DRIFT_CONTRAST_EVIDENCE | tee v69_log.jsonl
+          python - <<'PY'
+          import json
+          j=json.load(open('V69_POSTHOC_DRIFT_CONTRAST_EVIDENCE/STATUS.json'))
+          assert j['status']=='V69_POST_V67_EXPLORATORY_DRIFT_CONTRASTIVE_EXECUTED'
+          assert j['TEST_batch10_was_already_viewed_before_design']
+          assert not j['claim_independent_external_confirmation']
+          assert j['source_fit_uses_historical_batch_ID_but_no_gas_label_or_ppm']
+          assert j['original_zip_sha256']=='98fe3a30981a222dd4518fbcc3dddd45d5c0ce9b03ef6dc6fe5cf7a04cfbff5e'
+          assert j['original_source_K_and_new_source_K']['old']==j['original_source_K_and_new_source_K']['new']
+          assert len(j['predeclared_all_method_classification_scores'])==32
+          assert len(j['TRAIN_only_leave_one_batch_out_source_stability'])==7
+          assert j['exact_signed_additive_new_source_head']['max_abs_probability_additive_reconstruction_error']<1e-9
+          assert not j['false_physical_semantic_identity_claimed']
+          PY
+          git rev-parse HEAD > V69_POSTHOC_DRIFT_CONTRAST_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Retain all successful and unsuccessful score evidence without original data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v69-drift-contrastive-real-exploratory
+          path: |
+            V69_POSTHOC_DRIFT_CONTRAST_EVIDENCE/
+            v69_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
