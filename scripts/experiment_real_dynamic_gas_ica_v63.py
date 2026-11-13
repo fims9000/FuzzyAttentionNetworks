@@ -166,8 +166,9 @@ def build_real_windows(path:Path):
             raw.append({"file":name,**record,**split})
             for label in runs:
                 runs[label].extend(sections[label])
-    if sum(len(p["sensor"]) for p in runs.values())<300:
+    if sum(len(p) for p in runs.values())<300:
         raise ValueError("Too few real full 120s windows")
+    print(json.dumps({"event":"V63_OBSERVED_SCHEMA_ONLY","by_session":raw,"n_windows":{k:len(v) for k,v in runs.items()}},ensure_ascii=False),flush=True)
     return runs,raw
 
 
@@ -207,8 +208,6 @@ def reg_metrics(y,p,trainstd):
         "MAE_ppm":float(mean_absolute_error(y,p)),
         "NMAE_relative_to_train_target_std":float(mean_absolute_error(y,p)/trainstd),
         "spearman":rho if rho is None or np.isfinite(rho) else None,
-        "constant_train_mean_reference_R2":float(r2_score(
-            y,np.full_like(y,np.mean(y)))) if np.var(y)>1e-10 else None,
     }
 
 
