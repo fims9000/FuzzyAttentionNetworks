@@ -1,0 +1,92 @@
+name: V71 supervised reference-anchor study on previously-seen real two-gas TEST
+
+on:
+  push:
+    branches:
+      - research/conceptfan-v71-reference-anchored-conditional-20261113
+    paths:
+      - 'src/conceptfan_discovery/reference_anchored_dose_v71.py'
+      - 'scripts/experiment_reference_anchored_mixture_v71.py'
+      - 'tests/discovery/test_reference_anchored_dose_v71.py'
+      - 'docs/medical/CONCEPTFAN_V71_FROZEN_SUPERVISED_CONDITIONAL_ANCHORS_20261113.md'
+      - '.github/workflows/ioi-v71-reference-anchored.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '1'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  posthoc-supervised-source-anchor-ablation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install original project and science environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify true TRAIN-only physical reference supervision, controls and V70 regression tests
+        run: |
+          python -m compileall -q src/conceptfan_discovery/reference_anchored_dose_v71.py scripts/experiment_reference_anchored_mixture_v71.py
+          python -m pytest -q tests/discovery/test_reference_anchored_dose_v71.py tests/discovery/test_trialwise_dualstream_mixture_v70.py
+      - name: Restore exact original official UCI308 58 real physical trials
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/conceptfan_v70/uci308.zip
+          key: uci308-exact-original-public-20261113
+      - name: Verify and download only original UCI308 if cache missed
+        run: |
+          mkdir -p /tmp/conceptfan_v70
+          if [ ! -s /tmp/conceptfan_v70/uci308.zip ]; then
+            curl -fSL --retry 2 --connect-timeout 20 --max-time 180 \
+              'https://archive.ics.uci.edu/static/public/308/gas%2Bsensor%2Barray%2Bunder%2Bflow%2Bmodulation.zip' \
+              -o /tmp/conceptfan_v70/uci308.zip || \
+            curl -fSL --retry 2 --connect-timeout 20 --max-time 180 \
+              'https://archive.ics.uci.edu/static/public/308/gas+sensor+array+under+flow+modulation.zip' \
+              -o /tmp/conceptfan_v70/uci308.zip
+          fi
+          unzip -tq /tmp/conceptfan_v70/uci308.zip
+          echo '7b062960dbef1a9e8aefc62bc7dbac09bdadb8cbb40793cf2b8e122da1862f90  /tmp/conceptfan_v70/uci308.zip' | sha256sum -c -
+      - name: Run original 39/11/8 physical trial supervised anchor ablation
+        run: |
+          set -o pipefail
+          python scripts/experiment_reference_anchored_mixture_v71.py \
+            --uci-zip /tmp/conceptfan_v70/uci308.zip \
+            --out-dir V71_POSTHOC_ANCHORED_EVIDENCE | tee v71_aggregate_log.jsonl
+          python - <<'PY'
+          import json
+          x=json.load(open('V71_POSTHOC_ANCHORED_EVIDENCE/STATUS.json'))
+          assert x['status']=='V71_POST_V70_EXPLORATORY_REFERENCE_ANCHORED_PROXY_EXECUTED'
+          assert x['V70_TEST8_already_inspected_when_hypothesis_formulated']
+          assert not x['not_a_new_independent_test'] is False
+          assert x['original_physical_experiment_split']=={'TRAIN':39,'VALID':11,'TEST':8}
+          assert x['anchored_source_uses_actual_TRAIN_reference_preparation_doses']
+          assert x['anchor_is_supervised_water_dilution_proxy_not_autonomous_gas_factor']
+          assert x['anchored_source_passport']['target_information_used_in_source_fit']
+          assert x['original_UCI308_source_zip_sha256']=='7b062960dbef1a9e8aefc62bc7dbac09bdadb8cbb40793cf2b8e122da1862f90'
+          assert len(x['all_preset_comparators_and_target_metrics'])==24
+          assert not x['physically_identifiable_gas_source_claimed']
+          PY
+          git rev-parse HEAD > V71_POSTHOC_ANCHORED_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve full negative and positive source calibration receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v71-supervised-reference-dose-anchoring-posthoc
+          path: |
+            V71_POSTHOC_ANCHORED_EVIDENCE/
+            v71_aggregate_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
