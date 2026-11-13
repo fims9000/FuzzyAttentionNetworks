@@ -19,6 +19,15 @@ class RealPairedMeasurementFeasibilityTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             static_info(record,456)
 
+    def test_static_metadata_scan_does_not_parse_sealed_timeline(self):
+        # If static_info scans the later fields this deliberately malformed
+        # time-series row raises; frozen split must consume admission only.
+        payload=(b"Time,Parameter,Value\\n"
+                 b"00:00,RecordID,123\\n"
+                 b"00:00,ICUType,2\\n"
+                 b"BADLY_MALFORMED_PRIVATE_TIMELINE\\n")
+        self.assertEqual(static_info(payload,123),2)
+
     def test_four_hour_aggregation_does_not_fill_unobserved_bins(self):
         x=np.full((4,36,len(CHANNELS)),np.nan,dtype=float)
         m=np.zeros_like(x,dtype=bool)
