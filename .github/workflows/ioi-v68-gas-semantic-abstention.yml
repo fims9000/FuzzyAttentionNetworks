@@ -51,6 +51,9 @@ jobs:
           if [ ! -s /tmp/conceptfan_v67/uci270.zip ]; then
             curl -fSL --retry 3 --connect-timeout 20 --max-time 300 \
               'https://archive.ics.uci.edu/static/public/270/gas%2Bsensor%2Barray%2Bdrift%2Bat%2Bdifferent%2Bconcentrations.zip' \
+              -o /tmp/conceptfan_v67/uci270.zip || \
+            curl -fSL --retry 3 --connect-timeout 20 --max-time 300 \
+              'https://archive.ics.uci.edu/static/public/270/gas%2Bsensor%2Barray%2Bdrift%2Bdataset%2Bat%2Bdifferent%2Bconcentrations.zip' \
               -o /tmp/conceptfan_v67/uci270.zip
           fi
           unzip -tq /tmp/conceptfan_v67/uci270.zip
