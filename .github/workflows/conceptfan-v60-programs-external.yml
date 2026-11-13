@@ -10,6 +10,7 @@ on:
       - 'src/conceptfan_discovery/real_future_tasks_v60.py'
       - 'scripts/experiment_programfan_real_v60.py'
       - 'scripts/verify_programfan_real_v60.py'
+      - 'scripts/inspect_programfan_v60_posthoc.py'
       - 'tests/discovery/test_program_compiler_v60.py'
       - 'tests/discovery/test_program_fan_v60.py'
       - '.github/workflows/conceptfan-v60-programs-external.yml'
@@ -100,6 +101,18 @@ jobs:
           assert a['no_source_or_invalid_gate_exact_native_K2_fallback']
           assert a['test_metrics_and_subject_macro_NLL_independently_recomputed']
           PY
+      - name: Posthoc whole-patient pulse-only comparator and program-source dependence
+        run: |
+          python scripts/inspect_programfan_v60_posthoc.py --dir results/conceptfan_v60_external
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('results/conceptfan_v60_external/posthoc_v60_source_dependence.json').read_text())
+          assert r['status']=='V60_POSTHOC_DEPENDENCE_AND_BASELINE_AUDIT_DONE'
+          assert r['posthoc_after_primary_TEST_seen']
+          assert r['no_model_training_selection_or_admission_change']
+          assert len(r['comparison_groups'])==8
+          PY
       - name: Preserve source commit hash
         if: always()
         run: |
@@ -115,6 +128,7 @@ jobs:
             results/conceptfan_v60_external/aggregate_cases_v60.csv
             results/conceptfan_v60_external/bidmc_*_split_receipt.json
             results/conceptfan_v60_external/verify_v60_audit.json
+            results/conceptfan_v60_external/posthoc_v60_source_dependence.json
             results/conceptfan_v60_external/COMMIT_SHA.txt
             data/vitaldb_v59/private_source/vitaldb_download_receipt.json
             data/vitaldb_v59/private_source/external_cohort_failure_receipt.json
