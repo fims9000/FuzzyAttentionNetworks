@@ -54,7 +54,7 @@ def test_causal_derivatives_and_volatility_do_not_see_future():
 
 
 def test_missing_real_pulse_never_becomes_observed_zero():
-    raw=np.column_stack((90+np.arange(40),20+np.arange(40),97+np.arange(40)))
+    raw=np.column_stack((90+np.arange(40),20+np.arange(40),97+np.arange(40))).astype(float)
     raw[10:13,0]=np.nan
     x,m=causal_monitor_features(raw)
     assert not m[10:13,0].any()
