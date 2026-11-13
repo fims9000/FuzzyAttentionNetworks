@@ -1,0 +1,105 @@
+name: ConceptFAN V61R posthoc stable source definitions and real seeded models
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v61r-stable-sources-20261113
+    paths:
+      - 'src/conceptfan_discovery/program_fan_v60.py'
+      - 'src/conceptfan_discovery/conditional_innovation_v61.py'
+      - 'src/conceptfan_discovery/stable_source_contract_v61r.py'
+      - 'scripts/experiment_conceptfan_conditional_v61.py'
+      - 'scripts/verify_conceptfan_conditional_v61.py'
+      - 'tests/discovery/test_stable_source_v61r.py'
+      - 'docs/medical/CONCEPTFAN_V61R_POSTHOC_NUMERICAL_STABILITY_AMENDMENT_20261113.md'
+      - '.github/workflows/conceptfan-v61r-stable-bidmc.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  PYTHONHASHSEED: '0'
+  CUBLAS_WORKSPACE_CONFIG: ':4096:8'
+
+jobs:
+  posthoc-stability-real-bidmc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU PyTorch and model scientific dependencies
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -e .
+      - name: Run V61R canonical source and distinct seeded heads tests
+        run: |
+          python -m compileall -q src/conceptfan_discovery/stable_source_contract_v61r.py src/conceptfan_discovery/program_fan_v60.py src/conceptfan_discovery/conditional_innovation_v61.py scripts/experiment_conceptfan_conditional_v61.py scripts/verify_conceptfan_conditional_v61.py
+          python -m pytest -q tests/discovery/test_stable_source_v61r.py tests/discovery/test_conditional_novelty_v61.py tests/discovery/test_program_fan_v60.py tests/discovery/test_program_compiler_v60.py
+      - name: Cache official prior BIDMC real recordings
+        uses: actions/cache@v4
+        with:
+          path: data/bidmc_v58/raw
+          key: official-physionet-bidmc-v1-numerics-fix-sha256-53-records-v1
+      - name: Verify all source SHA256 and original 53 BIDMC patient files
+        run: |
+          python scripts/download_bidmc_numerics_v58.py --out data/bidmc_v58/raw
+      - name: "Run V61R amended BIDMC exploratory TRAIN and TEST, no changed target populations"
+        run: |
+          python scripts/experiment_conceptfan_conditional_v61.py \
+            --bidmc data/bidmc_v58/raw \
+            --out results/conceptfan_v61r_bidmc \
+            --seeds 11 23 --tasks future_hr_60s future_resp_60s
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('results/conceptfan_v61r_bidmc/report_v61.json').read_text())
+          assert r['status']=='V61R_EXECUTED_POSTHOC_STABILITY_RESEARCH'
+          assert r['n_trained_models']==4 and r['n_test_scenarios']==16
+          assert r['posthoc_amendment_after_original_V61_test_inspection']
+          assert r['native_stochastic_initialization_std']==.03
+          assert r['source_contract_decimal_rounding_digits']==12
+          assert r['novel_source_dictionary_selected_without_Y']
+          assert all(len(m['stable_outcome_blind_program_ids'])<=6
+                     for m in r['frozen_model_and_gate_receipts'])
+          PY
+      - name: Independent case-level source contract and true two-seed auditor
+        run: |
+          python scripts/verify_conceptfan_conditional_v61.py \
+            --dir results/conceptfan_v61r_bidmc
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('results/conceptfan_v61r_bidmc/verify_v61_audit.json').read_text())
+          assert r['status']=='V61R_POSTHOC_NATIVE_STABILITY_CASE_AUDIT_PASS'
+          assert r['two_actual_distinct_seeded_native_initializations_verified']
+          assert r['TRAIN_only_source_dictionary_ids_identical_across_initializations']
+          assert r['exact_frozen_pulse_program_head_fallback_verified']
+          PY
+      - name: Save immutable code commit receipt
+        if: always()
+        run: |
+          mkdir -p results/conceptfan_v61r_bidmc
+          git rev-parse HEAD > results/conceptfan_v61r_bidmc/COMMIT_SHA.txt
+      - name: Upload aggregate only, with posthoc disclosure and canonical source ids
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v61r-source-stability-BIDMC-aggregate
+          path: |
+            results/conceptfan_v61r_bidmc/report_v61.json
+            results/conceptfan_v61r_bidmc/aggregate_cases_v61.csv
+            results/conceptfan_v61r_bidmc/bidmc_*_split_receipt.json
+            results/conceptfan_v61r_bidmc/verify_v61_audit.json
+            results/conceptfan_v61r_bidmc/COMMIT_SHA.txt
+            data/bidmc_v58/raw/download_receipt.json
+          if-no-files-found: warn
+          retention-days: 90
