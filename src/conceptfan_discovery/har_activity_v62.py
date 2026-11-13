@@ -144,7 +144,7 @@ def rename_bank_as_har_v62(bank:ProgramBankV60):
     for c in bank.candidates:
         updated.append(replace(c,
             channel_names=tuple(SENSOR_NAMES[j] for j in c.channels),
-            measurement_scope="STATISTICAL_HAR_INERTIAL_PROGRAM"))
+            expression_scope="STATISTICAL_HAR_INERTIAL_PROGRAM"))
     return replace(bank,candidates=tuple(updated),channels=SENSOR_NAMES)
 
 
