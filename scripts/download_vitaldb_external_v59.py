@@ -121,11 +121,16 @@ def _numeric_track(raw,tname):
     t=[];v=[]
     for row in rows:
         normalized={k.strip().lower():x for k,x in row.items()}
-        if not("time" in normalized and "value" in normalized):
-            raise ValueError("Non-numeric track format (Time,Value expected)")
+        # VitalDB documents the numeric CSV columns as "Time" and
+        # "Values" (plural). Historical exports sometimes use "Value".
+        # Accept both *documented* spellings, never guess arbitrary columns.
+        value_key=("values" if "values" in normalized else
+                   "value" if "value" in normalized else None)
+        if "time" not in normalized or value_key is None:
+            raise ValueError("Non-numeric VitalDB track (Time, Values expected)")
         try:
             tt=float(normalized["time"])
-            val=float(normalized["value"])
+            val=float(normalized[value_key])
         except (TypeError,ValueError):
             continue
         lo,hi=CHANNEL_BOUNDS[tname]
