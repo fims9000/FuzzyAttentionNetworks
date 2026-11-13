@@ -31,7 +31,8 @@ jobs:
           python-version: '3.12'
       - name: Install only mathematical verification environment
         run: |
-          python -m pip install numpy scipy pytest
+          python -m pip install "torch==2.5.1+cpu" --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
       - name: Compile and test bounded fuzzy equivalence
         run: |
           python -m compileall -q src/conceptfan_discovery/exact_attribution_nonidentifiability_v66.py scripts/experiment_attribution_identity_v66.py
