@@ -10,6 +10,7 @@ on:
       - 'src/conceptfan_discovery/real_future_tasks_v60.py'
       - 'scripts/experiment_programfan_real_v60.py'
       - 'scripts/verify_programfan_real_v60.py'
+      - 'scripts/inspect_programfan_v60_posthoc.py'
       - 'tests/discovery/test_program_compiler_v60.py'
       - 'tests/discovery/test_program_fan_v60.py'
       - 'docs/medical/CONCEPTFAN_V60_PROGRAM_COMPILER_FROZEN_PROTOCOL_20261113.md'
@@ -87,6 +88,19 @@ jobs:
           assert r['native_torch_program_additive_risk_checked']
           assert r['no_source_or_invalid_gate_exact_native_K2_fallback']
           PY
+      - name: Posthoc source-dependence and whole-patient PULSE-only comparator diagnostics
+        run: |
+          python scripts/inspect_programfan_v60_posthoc.py --dir results/conceptfan_v60_programs_bidmc
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('results/conceptfan_v60_programs_bidmc/posthoc_v60_source_dependence.json')
+          r=json.loads(p.read_text())
+          assert r['status']=='V60_POSTHOC_DEPENDENCE_AND_BASELINE_AUDIT_DONE'
+          assert r['posthoc_after_primary_TEST_seen']
+          assert r['no_model_training_selection_or_admission_change']
+          assert len(r['comparison_groups'])==4
+          PY
       - name: Preserve exact experimental source SHA
         if: always()
         run: |
@@ -102,6 +116,7 @@ jobs:
             results/conceptfan_v60_programs_bidmc/aggregate_cases_v60.csv
             results/conceptfan_v60_programs_bidmc/bidmc_*_split_receipt.json
             results/conceptfan_v60_programs_bidmc/verify_v60_audit.json
+            results/conceptfan_v60_programs_bidmc/posthoc_v60_source_dependence.json
             results/conceptfan_v60_programs_bidmc/COMMIT_SHA.txt
             data/bidmc_v58/raw/download_receipt.json
           if-no-files-found: warn
