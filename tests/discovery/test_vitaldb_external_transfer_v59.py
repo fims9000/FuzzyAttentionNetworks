@@ -20,14 +20,15 @@ from scripts.experiment_conceptfan_vitaldb_transfer_v59 import (
 def test_last_observation_alignment_is_causal_not_future_filled():
     tt=np.array([0.,2.,8.,12.])
     vv=np.array([60.,63.,90.,96.])
-    grid=np.arange(16,dtype=float)
+    grid=np.arange(17,dtype=float)
     observed=_align(tt,vv,grid)
     assert observed[1]==60.
     assert observed[3]==63.
     assert np.isnan(observed[6])
     assert np.isnan(observed[7])
     assert observed[8]==90.
-    assert np.isnan(observed[16-1])
+    assert observed[15]==96.
+    assert np.isnan(observed[16])
 
 
 def test_safely_parse_sparse_numeric_track_and_last_duplicate():
