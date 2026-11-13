@@ -1,0 +1,83 @@
+name: V57 independent reference verification and common-mode concept fault tests
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v57-independent-anchor-20261113
+    paths:
+      - 'src/conceptfan_discovery/independent_anchor_verification_v57.py'
+      - 'scripts/experiment_independent_anchor_v57.py'
+      - 'tests/discovery/test_independent_anchor_verification_v57.py'
+      - 'docs/medical/CONCEPTFAN_V57_FROZEN_INDEPENDENT_ANCHOR_PROTOCOL_20261113.md'
+      - '.github/workflows/ioi-v57-independent-anchor.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  independent-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install scientific project environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Verify new reference gate and old frozen concept contracts
+        run: |
+          python -m compileall -q src/conceptfan_discovery/independent_anchor_verification_v57.py scripts/experiment_independent_anchor_v57.py
+          python -m pytest -q tests/discovery/test_independent_anchor_verification_v57.py tests/discovery/test_native_temporal_fuzzy_v56.py tests/discovery/test_autonomous_adaptive_v55.py
+      - name: Small reference-control smoke
+        run: |
+          set -o pipefail
+          python scripts/experiment_independent_anchor_v57.py --smoke --out-dir V57_SMOKE | tee v57_smoke_log.jsonl
+          python - <<'PY'
+          import json
+          r=json.load(open('V57_SMOKE/STATUS.json'))
+          assert r['status']=='SMOKE_ONLY'
+          assert len(r['draws'])==1
+          assert len(r['rows'])==84
+          assert r['reference_channel_excluded_from_concept_encoder_and_native_task_head']
+          assert r['draws'][0]['reference_linkage_fit_before_any_task_labels']
+          PY
+      - name: New two-draw independent-sensor falsification
+        run: |
+          set -o pipefail
+          python scripts/experiment_independent_anchor_v57.py --out-dir V57_EVIDENCE | tee v57_full_log.jsonl
+          python - <<'PY'
+          import json
+          r=json.load(open('V57_EVIDENCE/STATUS.json'))
+          assert r['status']=='V57_NEW_SYNTHETIC_INDEPENDENT_SENSOR_EXECUTED'
+          assert len(r['draws'])==2
+          assert len(r['rows'])==168
+          assert {d['draw'] for d in r['draws']}=={20261471,20261473}
+          assert r['reference_channel_excluded_from_concept_encoder_and_native_task_head']
+          assert r['common_mode_joint_fault_is_possible_negative_control']
+          PY
+          git rev-parse HEAD > V57_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Always retain complete tests, split receipts and negative controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v57-independent-reference
+          path: |
+            V57_SMOKE/
+            V57_EVIDENCE/
+            v57_smoke_log.jsonl
+            v57_full_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
