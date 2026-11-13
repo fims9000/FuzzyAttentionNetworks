@@ -1,0 +1,123 @@
+name: ConceptFAN V60 global typed ProgramFAN real BIDMC validation
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v60-program-compiler-20261113
+    paths:
+      - 'src/conceptfan_discovery/program_compiler_v60.py'
+      - 'src/conceptfan_discovery/program_fan_v60.py'
+      - 'src/conceptfan_discovery/real_future_tasks_v60.py'
+      - 'scripts/experiment_programfan_real_v60.py'
+      - 'scripts/verify_programfan_real_v60.py'
+      - 'scripts/inspect_programfan_v60_posthoc.py'
+      - 'tests/discovery/test_program_compiler_v60.py'
+      - 'tests/discovery/test_program_fan_v60.py'
+      - 'docs/medical/CONCEPTFAN_V60_PROGRAM_COMPILER_FROZEN_PROTOCOL_20261113.md'
+      - '.github/workflows/conceptfan-v60-programs-bidmc.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  general-causal-concept-program-bidmc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 52
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU native PyTorch and scientific package
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -e .
+      - name: Test outcome-blind causal compiler, native signed risk and future horizon
+        run: |
+          python -m compileall -q src/conceptfan_discovery/program_compiler_v60.py src/conceptfan_discovery/program_fan_v60.py src/conceptfan_discovery/real_future_tasks_v60.py scripts/experiment_programfan_real_v60.py scripts/verify_programfan_real_v60.py
+          python -m pytest -q tests/discovery/test_program_compiler_v60.py tests/discovery/test_program_fan_v60.py tests/discovery/test_bidmc_realworld_v58.py tests/discovery/test_constrained_joint_operator_v55.py
+      - name: Cache original BIDMC recordings with official independent SHA256 authentication
+        uses: actions/cache@v4
+        with:
+          path: data/bidmc_v58/raw
+          key: official-physionet-bidmc-v1-numerics-fix-sha256-53-records-v1
+      - name: Load exact official 53 BIDMC recording numerics and genuine subject-group IDs
+        run: |
+          python scripts/download_bidmc_numerics_v58.py --out data/bidmc_v58/raw
+      - name: Execute V60 original K2, compiled pure and residual ProgramFAN, patient admission, both real tasks
+        run: |
+          python scripts/experiment_programfan_real_v60.py \
+            --bidmc data/bidmc_v58/raw \
+            --out results/conceptfan_v60_programs_bidmc \
+            --seeds 11 23 --tasks simultaneous future_60s
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('results/conceptfan_v60_programs_bidmc/report_v60.json')
+          r=json.loads(p.read_text())
+          assert r['status']=='EXECUTED_EXPLORATORY_REAL_HOSPITAL_MEASUREMENT'
+          assert r['test_sites']==['BIDMC']
+          assert r['n_native_K2_models']==4
+          assert r['n_test_cases']==16
+          assert len(r['private_case_sha256'])==16
+          assert r['source_discovery_outcome_blind']
+          assert r['whole_real_patient_VALID_admission']
+          assert all(len(m['program_bank']['candidates'])>=1 for m in r['source_manifests'])
+          assert any(m['task']=='future_60s' and m['future_task_no_target_in_input']
+                     for m in r['source_manifests'])
+          PY
+      - name: Independently recompute private real per-person risks and exact source attribution
+        run: |
+          python scripts/verify_programfan_real_v60.py \
+            --dir results/conceptfan_v60_programs_bidmc
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('results/conceptfan_v60_programs_bidmc/verify_v60_audit.json').read_text())
+          assert r['status']=='V60_INDEPENDENT_NATIVE_PROGRAM_REAL_CASE_AUDIT_PASS'
+          assert r['individual_private_arrays_verified']==16
+          assert r['native_torch_program_additive_risk_checked']
+          assert r['no_source_or_invalid_gate_exact_native_K2_fallback']
+          PY
+      - name: Posthoc source-dependence and whole-patient PULSE-only comparator diagnostics
+        run: |
+          python scripts/inspect_programfan_v60_posthoc.py --dir results/conceptfan_v60_programs_bidmc
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('results/conceptfan_v60_programs_bidmc/posthoc_v60_source_dependence.json')
+          r=json.loads(p.read_text())
+          assert r['status']=='V60_POSTHOC_DEPENDENCE_AND_BASELINE_AUDIT_DONE'
+          assert r['posthoc_after_primary_TEST_seen']
+          assert r['no_model_training_selection_or_admission_change']
+          assert len(r['comparison_groups'])==4
+          PY
+      - name: Preserve exact experimental source SHA
+        if: always()
+        run: |
+          mkdir -p results/conceptfan_v60_programs_bidmc
+          git rev-parse HEAD > results/conceptfan_v60_programs_bidmc/COMMIT_SHA.txt
+      - name: Upload ONLY aggregate results, no patient IDs, vitals or predictions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v60-global-program-compiler-BIDMC-aggregate
+          path: |
+            results/conceptfan_v60_programs_bidmc/report_v60.json
+            results/conceptfan_v60_programs_bidmc/aggregate_cases_v60.csv
+            results/conceptfan_v60_programs_bidmc/bidmc_*_split_receipt.json
+            results/conceptfan_v60_programs_bidmc/verify_v60_audit.json
+            results/conceptfan_v60_programs_bidmc/posthoc_v60_source_dependence.json
+            results/conceptfan_v60_programs_bidmc/COMMIT_SHA.txt
+            data/bidmc_v58/raw/download_receipt.json
+          if-no-files-found: warn
+          retention-days: 90
