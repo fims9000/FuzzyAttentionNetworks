@@ -100,16 +100,22 @@ def _number(value):
 def static_info(payload:bytes,expected_record_id:int):
     record_id=None
     icu_type=-1
+    icu_seen=False
+    # Stop at the two admission descriptors. In particular DO NOT iterate
+    # through held-out episodes' time-series readings merely to make a split.
     for _,parameter,value in parse_rows(payload):
         if parameter=="RecordID":
             z=_number(value)
             if z is not None:
                 record_id=int(z)
         elif parameter=="ICUType":
+            icu_seen=True
             z=_number(value)
             if z is not None:
                 icu_type=int(z)
-    if record_id!=expected_record_id:
+        if record_id is not None and icu_seen:
+            break
+    if record_id!=expected_record_id or not icu_seen:
         raise ValueError("Original static RecordID does not match archive filename")
     return icu_type
 
@@ -215,8 +221,9 @@ def run(archive_path:Path,outcomes_path:Path,output:Path):
         raise ValueError("The official Outcomes-a file must contain 4000 unique records")
     outcomes_by_id=outcomes.set_index("RecordID")["In-hospital_death"]
     with zipfile.ZipFile(archive_path) as z:
-        if z.testzip() is not None:
-            raise ValueError("Corrupt archive member")
+        # Do not pre-extract/checksum every sealed patient timeline; reading
+        # the ZIP index does not consume any time-series. TRAIN records alone
+        # are parsed as observational trajectories below.
         names={int(Path(name).stem):name
                for name in z.namelist() if name.lower().endswith(".txt")}
         if len(names)!=N_PATIENTS or set(names)!=set(outcomes_by_id.index.astype(int)):
