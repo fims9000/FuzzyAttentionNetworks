@@ -1,0 +1,84 @@
+name: V60 real-certified-analyzer chronological ConceptFAN research
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v60-real-airquality-20261113
+    paths:
+      - 'scripts/experiment_real_airquality_v60.py'
+      - 'tests/discovery/test_real_airquality_v60.py'
+      - 'docs/medical/CONCEPTFAN_V60_FROZEN_REAL_AIRQUALITY_PROTOCOL_20261113.md'
+      - '.github/workflows/ioi-v60-real-airquality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  real-reference-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install canonical scientific stack and CPU Torch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Compile and run new leakage/semantic plus previous encoder tests
+        run: |
+          python -m compileall -q scripts/experiment_real_airquality_v60.py
+          python -m pytest -q tests/discovery/test_real_airquality_v60.py tests/discovery/test_native_temporal_fuzzy_v56.py tests/discovery/test_autonomous_adaptive_v55.py
+      - name: Download official original public Air Quality dataset (no mirror)
+        run: |
+          mkdir -p /tmp/conceptfan_v60_dataset
+          curl -fSL --retry 3 --connect-timeout 20 --max-time 180 \
+            'https://archive.ics.uci.edu/static/public/360/air%2Bquality.zip' \
+            -o /tmp/conceptfan_v60_dataset/air_quality.zip || \
+          curl -fSL --retry 3 --connect-timeout 20 --max-time 180 \
+            'https://archive.ics.uci.edu/static/public/360/air+quality.zip' \
+            -o /tmp/conceptfan_v60_dataset/air_quality.zip
+          unzip -tq /tmp/conceptfan_v60_dataset/air_quality.zip
+          unzip -l /tmp/conceptfan_v60_dataset/air_quality.zip
+          sha256sum /tmp/conceptfan_v60_dataset/air_quality.zip
+      - name: Execute independent real held-out CO and NOx reference tests
+        run: |
+          set -o pipefail
+          python scripts/experiment_real_airquality_v60.py \
+            --uci-zip /tmp/conceptfan_v60_dataset/air_quality.zip \
+            --out-dir V60_REAL_AGGREGATE_EVIDENCE | tee v60_summary_log.jsonl
+          python - <<'PY'
+          import json
+          r=json.load(open('V60_REAL_AGGREGATE_EVIDENCE/STATUS.json'))
+          assert r['status']=='REAL_AIRQUALITY_V60_EXPLORATORY_COMPLETE'
+          assert r['analyzers_never_passed_to_concept_encoder']
+          assert len(r['input_only_5_mox_sensors'])==5
+          assert set(r['chronological_split_counts'])=={'TRAIN','VALID','TEST'}
+          assert r['train_only_source']['source_receipt']['n_train_unlabeled']==r['chronological_split_counts']['TRAIN']
+          assert len(r['chronological_predictions_metrics'])==20
+          assert not r['physical_source_semantics_identified']
+          assert not r['recorded_independent_sensor_fault_ground_truth']
+          assert r['raw_time_series_in_artifact']==False
+          PY
+          git rev-parse HEAD > V60_REAL_AGGREGATE_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve aggregate metrics, original hashes, code provenance and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v60-real-airquality-aggregate
+          path: |
+            V60_REAL_AGGREGATE_EVIDENCE/
+            v60_summary_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
