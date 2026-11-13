@@ -40,12 +40,17 @@ def scores(y,z):
 def audit(root):
     root=Path(root)
     report=json.loads((root/"report_v61.json").read_text())
-    if (report["status"]!="V61_EXECUTED_REAL_CONDITIONAL_NOVELTY_EXPLORATORY"
+    if (report["status"]!="V61R_EXECUTED_POSTHOC_STABILITY_RESEARCH"
         or not report["future_resp_target_excluded_from_input_and_scaling"]
         or not report["new_programs_do_not_read_PULSE_directly"]
         or not report["source_gate_patient_cluster_and_pulse_stratified_null"]
         or report["sites_previously_inspected_NOT_confirmatory"] is not True):
-        raise AssertionError("V61 disclosure or guarded source definition incorrect")
+        raise AssertionError("V61R disclosure or guarded source definition incorrect")
+    if not (report["posthoc_amendment_after_original_V61_test_inspection"]
+            and report["V61_original_negative_results_preserved_unchanged"]
+            and report["torch_cpu_deterministic_one_thread"]
+            and report["novel_source_dictionary_selected_without_Y"]):
+        raise AssertionError("V61R posthoc-stability amendment not disclosed")
     expected=len(report["frozen_model_and_gate_receipts"])*(
         len(report["real_sites"])*4)
     if (len(report["test_cases"])!=expected or
@@ -79,6 +84,18 @@ def audit(root):
             raise AssertionError("V61 real patient-group labels or risk outputs corrupted")
         model=models[task,seed]
         bank=banks[task]
+        if model["pulse_native_PyTorch_head"]["stochastic_seeded_initialization_std"]<=0:
+            raise AssertionError("V61R stochastic head initials still identical across seeds")
+        if not model["pulse_native_PyTorch_head"]["fixed_outcome_blind_source_shortlist"]:
+            raise AssertionError("V61R pulse dictionary not frozen")
+        newfit=model["conditional_native_PyTorch_head"]
+        if newfit is not None:
+            if newfit["n_candidates"]>6 or not newfit["fixed_outcome_blind_source_shortlist"]:
+                raise AssertionError("V61R source gamma-trained top-six selection still active")
+            expected_id=[bank["bank"]["candidates"][i]["candidate_id"]
+                         for i in model["nonpulse_train_only_source_map"]["raw_source_indices"]]
+            if expected_id!=model["stable_outcome_blind_program_ids"]:
+                raise AssertionError("Canonical source dictionary fingerprint/identity mismatch")
         pulse_fit=model["pulse_native_PyTorch_head"]
         if (task=="future_resp_60s" and not bank["target_channel_prohibited"]):
             raise AssertionError("RESP target entered source compiler")
@@ -155,8 +172,22 @@ def audit(root):
                 b=data_by_key[f"{site}_{task}_seed23_{stress}"]
                 np.testing.assert_array_equal(a["y"],b["y"])
                 np.testing.assert_array_equal(a["group"],b["group"])
+    # Two native seeds must produce genuinely distinct TRAIN model head
+    # parameters (but still share exact TEST patient groups).
+    for task in report["registered_tasks"]:
+        trials=[v for (tt,_),v in models.items() if tt==task]
+        if len(trials)==2:
+            a=trials[0]["pulse_native_PyTorch_head"]["gamma"]
+            b=trials[1]["pulse_native_PyTorch_head"]["gamma"]
+            if np.array_equal(a,b):
+                raise AssertionError("V61R two different seeds produced an identical trained head")
+            if trials[0]["stable_outcome_blind_program_ids"]!=trials[1]["stable_outcome_blind_program_ids"]:
+                raise AssertionError("V61R TRAIN source IDs changed between model initializations")
     receipt={
-        "status":"V61_INDEPENDENT_PATIENT_CONDITIONAL_SOURCE_AUDIT_PASS",
+        "status":"V61R_POSTHOC_NATIVE_STABILITY_CASE_AUDIT_PASS",
+        "posthoc_after_V61_TEST_was_inspected":True,
+        "two_actual_distinct_seeded_native_initializations_verified":True,
+        "TRAIN_only_source_dictionary_ids_identical_across_initializations":True,
         "verified_private_real_case_arrays":len(data_by_key),
         "task_targets_always_60s_future":True,
         "no_RESP_target_read_in_excluded_task":True,
