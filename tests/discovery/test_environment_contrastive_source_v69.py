@@ -51,7 +51,7 @@ def test_batch_metadata_affects_unlabeled_environment_objective():
     raw,batch,labels=sensor_fixture()
     a=TrainOnlyDriftContrastiveBank().fit_unlabeled(raw,batch)
     # Change only historical environment partition; no sensor observations.
-    altered=np.roll(batch,133)
+    altered=np.roll(batch,132)
     b=TrainOnlyDriftContrastiveBank().fit_unlabeled(raw,altered)
     assert a.sha!=b.sha
     assert a.K==b.K
