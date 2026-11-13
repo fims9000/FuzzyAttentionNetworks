@@ -95,6 +95,22 @@ def test_external_analyzer_permutation_negative_control():
     assert len(results["all_concept_reference_ranks"])==2
 
 
+
+
+def test_five_sensor_unlabeled_source_grouping_not_artificially_six_only():
+    from conceptfan_discovery.auto_measured_concept_proposals import form_train_measured_groups
+    rng=np.random.default_rng(84)
+    n=360;t=12
+    latent=rng.normal(size=(n,t))
+    x=rng.normal(size=(n,t,5))
+    x[:,:,0]=latent+rng.normal(scale=.05,size=(n,t))
+    x[:,:,1]=latent+rng.normal(scale=.05,size=(n,t))
+    mask=rng.random(x.shape)>.12
+    proposed=form_train_measured_groups(
+        x,mask,known_sensor_indices=(),seed=17)
+    assert any(tuple(g.sensor_indices)==(0,1) for g in proposed.candidates)
+    assert proposed.outcomes_used_for_grouping is False
+
 def test_no_evidence_no_invented_semantic_concept():
     rng=np.random.default_rng(9)
     c=np.empty((80,0))
