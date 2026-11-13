@@ -55,7 +55,7 @@ class ProposalManifest:
 def _check(x: np.ndarray, mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     a = np.asarray(x, dtype=np.float64)
     m = np.asarray(mask)
-    if a.ndim != 3 or a.shape != m.shape or a.shape[1] < 8 or a.shape[2] < 6:
+    # Grouping requires two observed channels, not six. The old >=6 guard\n    # was a synthetic benchmark dimension, not a mathematical condition.\n    if a.ndim != 3 or a.shape != m.shape or a.shape[1] < 8 or a.shape[2] < 2:
         raise ValueError("Expected aligned [episode,time,channels] arrays")
     if not np.logical_or(m == 0, m == 1).all():
         raise ValueError("Availability must be binary (0 or 1)")
