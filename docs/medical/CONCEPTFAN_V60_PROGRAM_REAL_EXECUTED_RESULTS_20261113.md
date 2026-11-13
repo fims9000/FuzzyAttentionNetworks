@@ -36,7 +36,7 @@ Numbers averaged over two fixed K2 seeds 11 and 23. **Same test people across bo
 | **Ungated pure ProgramFAN** | .1740 / .0945 | .9606 / .0825 |
 | PULSE-only logistic | .2297 / .0811 | .9602 / .1325 |
 
-Although the proposed alternative performed well retrospectively, it was **rejected** on both BIDMC VALID splits: the second VALID's 99%-one-sided patient-group lower bound crossed zero. **No threshold was adjusted** on inspected TEST scores. The deployed model therefore remained exact K2 on both sites; claiming deployed AUPRC .9606 would be false.
+Although the proposed alternative performed well retrospectively, it was **rejected after checking both BIDMC VALID groups**: VALID1 passed, but VALID2's 99%-one-sided patient-group lower bound crossed zero. **No threshold was adjusted** on inspected TEST scores. The deployed model therefore remained exact K2 on both sites; claiming deployed AUPRC .9606 would be false.
 
 ### Stress: VitalDB +60s, gated model
 
