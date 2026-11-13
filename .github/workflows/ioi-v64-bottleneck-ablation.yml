@@ -41,11 +41,16 @@ jobs:
         with:
           path: /tmp/conceptfan_v63/uci322.zip
           key: original-uci322-archive-20261113
-      - name: Verify original raw UCI322 archive
+      - name: Download exact official UCI322 source if cache is scoped to other branch
         run: |
-          test -s /tmp/conceptfan_v63/uci322.zip
+          mkdir -p /tmp/conceptfan_v63
+          if [ ! -s /tmp/conceptfan_v63/uci322.zip ]; then
+            curl -fSL --retry 3 --connect-timeout 20 --max-time 1200 \
+              'https://archive.ics.uci.edu/static/public/322/gas%2Bsensor%2Barray%2Bunder%2Bdynamic%2Bgas%2Bmixtures.zip' \
+              -o /tmp/conceptfan_v63/uci322.zip
+          fi
           unzip -tq /tmp/conceptfan_v63/uci322.zip
-          sha256sum /tmp/conceptfan_v63/uci322.zip
+          echo '8b6323b801363e11343ba1a5a7718e76666b715e753b3a40dbdfd1838d953fe7  /tmp/conceptfan_v63/uci322.zip' | sha256sum -c -
       - name: Reproduce explicit posthoc causal stage-information controls
         run: |
           set -o pipefail
