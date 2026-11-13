@@ -72,18 +72,31 @@ def _fit_predict_with_receipt(method,xtrain,ytrain,xtest):
     if method.startswith("v65_"):
         # All coordinates are inspectable fuzzy states and reference only their
         # final two temporal summaries, no raw source input bypass.
+        # The raw Ridge comparator uses StandardScaler. Give bounded
+        # sigmoid memberships the SAME TRAIN-only column standardization
+        # before Ridge(alpha=1), then algebraically express the head in the
+        # original inspectable fuzzy coordinates for exact signed attribution.
+        train0=xtrain-.5
+        mu=train0.mean(axis=0)
+        scale=np.std(train0,axis=0)
+        scale=np.where(scale<1e-8,1.,scale)
         model=Ridge(alpha=1.)
-        model.fit(xtrain-.5,ytrain)
-        parts=(xtest-.5)*model.coef_[None,:]
-        pred=model.intercept_+parts.sum(axis=1)
-        error=float(np.max(np.abs(pred-(model.intercept_+parts.sum(axis=1)))))
-        if error>1e-12:
-            raise AssertionError("Dual-stream signed additive explanation failed")
+        model.fit((train0-mu)/scale,ytrain)
+        beta=model.coef_/scale
+        bias=float(model.intercept_-np.dot(beta,mu))
+        parts=(xtest-.5)*beta[None,:]
+        pred=bias+parts.sum(axis=1)
+        normalized_prediction=model.predict(((xtest-.5)-mu)/scale)
+        error=float(np.max(np.abs(pred-normalized_prediction)))
+        if error>1e-9:
+            raise AssertionError("Scaled native concept head lost exact additive fidelity")
         return pred,{
-            "model":"CONCEPT_ONLY_SIGNED_ADDITIVE_RIDGE",
+            "model":"TRAIN_STANDARDIZED_CONCEPT_ONLY_SIGNED_ADDITIVE_RIDGE",
             "n_fuzzy_membership_state_time_summaries":xtest.shape[1],
             "max_additive_error":error,
-            "signed_coefficients":model.coef_.tolist(),
+            "original_fuzzy_coordinate_intercept":bias,
+            "signed_coefficients":beta.tolist(),
+            "train_only_standardization":True,
             "risk_raw_sensor_bypass":False
         }
     model=make_pipeline(StandardScaler(),Ridge(alpha=1.))
