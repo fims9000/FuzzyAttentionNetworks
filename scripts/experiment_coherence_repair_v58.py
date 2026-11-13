@@ -226,7 +226,7 @@ def run(output:Path,*,smoke:bool=False):
         writer.writeheader();writer.writerows(results)
     print(json.dumps({
         "event":"V58_DONE","status":report["status"],
-        "N_draws":len(receipts),"N_test_rows":len(results)},flush=True))
+        "N_draws":len(receipts),"N_test_rows":len(results)}),flush=True)
     return report
 
 
