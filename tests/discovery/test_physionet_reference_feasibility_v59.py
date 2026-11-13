@@ -42,6 +42,8 @@ class RealPairedMeasurementFeasibilityTests(unittest.TestCase):
         m[:,:,INDEX["NIMAP"]]=True
         report=audit_one_pair(x,m,"MAP","NIMAP")
         self.assertTrue(report["meets_v57_synthetic_thresholds_for_pair_coverage"])
+        self.assertTrue(report["v57_source_alignment_possible_on_measured_association"])
+        self.assertTrue(all(v>.9 for v in report["three_disjoint_train_fold_pearson"]))
         self.assertEqual(report["n_patients_at_least_six_aligned_bins"],360)
         self.assertGreater(report["descriptive_observed_only_pearson"],.9)
         self.assertTrue(all(q>=250 for q in report[
@@ -57,6 +59,7 @@ class RealPairedMeasurementFeasibilityTests(unittest.TestCase):
         self.assertEqual(report["aligned_joint_time_bins"],0)
         self.assertEqual(report["n_patients_at_least_six_aligned_bins"],0)
         self.assertFalse(report["meets_v57_synthetic_thresholds_for_pair_coverage"])
+        self.assertFalse(report["v57_source_alignment_possible_on_measured_association"])
         self.assertIsNone(report["descriptive_observed_only_pearson"])
 
     def test_invalid_channel_names_and_nondivisible_binning(self):
