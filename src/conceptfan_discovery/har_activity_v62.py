@@ -57,7 +57,9 @@ def _section(source,mask):
 
 
 def _masked_partition(section,people):
-    ids=np.isin(section["patient"],people)
+    # np.isin(array, set) treats a Python set as ONE object; convert
+    # genuine subject-id membership explicitly before masking windows.
+    ids=np.isin(section["patient"],np.asarray(sorted(people)))
     if not ids.any():raise RuntimeError("No official HAR participant split")
     axes=section["axes"][ids]
     raw=collapse_raw_axes_v62(axes)
