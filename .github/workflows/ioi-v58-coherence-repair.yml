@@ -1,0 +1,81 @@
+name: V58 coherence-aware independent-source concept repair
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v58-coherent-anchor-repair-20261113
+    paths:
+      - 'src/conceptfan_discovery/coherence_aware_anchor_repair_v58.py'
+      - 'scripts/experiment_coherence_repair_v58.py'
+      - 'tests/discovery/test_coherence_aware_anchor_repair_v58.py'
+      - 'docs/medical/CONCEPTFAN_V58_FROZEN_COHERENT_REPAIR_PROTOCOL_20261113.md'
+      - '.github/workflows/ioi-v58-coherence-repair.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  coherent-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install canonical science dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Compile and verify V58 / V57 / native-fuzzy invariants
+        run: |
+          python -m compileall -q src/conceptfan_discovery/coherence_aware_anchor_repair_v58.py scripts/experiment_coherence_repair_v58.py
+          python -m pytest -q tests/discovery/test_coherence_aware_anchor_repair_v58.py tests/discovery/test_independent_anchor_verification_v57.py tests/discovery/test_native_temporal_fuzzy_v56.py
+      - name: Frozen mechanism smoke
+        run: |
+          set -o pipefail
+          python scripts/experiment_coherence_repair_v58.py --smoke --out-dir V58_SMOKE | tee v58_smoke_log.jsonl
+          python - <<'PY'
+          import json
+          r=json.load(open("V58_SMOKE/STATUS.json"))
+          assert r["status"]=="SMOKE_ONLY"
+          assert len(r["draws"])==1
+          assert len(r["rows"])==120
+          assert r["reference_affects_only_one_concept_input_not_task_head"]
+          PY
+      - name: Fully new two-draw synthetic fault and recovery experiment
+        run: |
+          set -o pipefail
+          python scripts/experiment_coherence_repair_v58.py --out-dir V58_EVIDENCE | tee v58_full_log.jsonl
+          python - <<'PY'
+          import json
+          r=json.load(open("V58_EVIDENCE/STATUS.json"))
+          assert r["status"]=="V58_NEW_EXPLORATORY_COHERENCE_REPAIR_EXECUTED"
+          assert {d["draw"] for d in r["draws"]}=={20261491,20261493}
+          assert len(r["rows"])==240
+          assert r["unlabeled_source_and_coherence_reference_training_only"]
+          assert r["joint_anchor_primary_sensor_failures_not_guaranteed_detectable"]
+          PY
+          git rev-parse HEAD > V58_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve source calibration, tests and negative outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v58-coherence-reference-repair
+          path: |
+            V58_SMOKE/
+            V58_EVIDENCE/
+            v58_smoke_log.jsonl
+            v58_full_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
