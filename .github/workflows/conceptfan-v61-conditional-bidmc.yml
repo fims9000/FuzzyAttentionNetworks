@@ -1,0 +1,104 @@
+name: ConceptFAN V61 independent sensor novelty on real BIDMC
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v61-conditional-novelty-20261113
+    paths:
+      - 'src/conceptfan_discovery/program_compiler_v61.py'
+      - 'src/conceptfan_discovery/conditional_innovation_v61.py'
+      - 'src/conceptfan_discovery/real_future_targets_v61.py'
+      - 'scripts/experiment_conceptfan_conditional_v61.py'
+      - 'scripts/verify_conceptfan_conditional_v61.py'
+      - 'tests/discovery/test_conditional_novelty_v61.py'
+      - 'docs/medical/CONCEPTFAN_V61_CONDITIONAL_SENSOR_NOVELTY_FROZEN_PROTOCOL_20261113.md'
+      - '.github/workflows/conceptfan-v61-conditional-bidmc.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  real-nonpulse-conditional-novelty:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install native ConceptFAN and CPU scientific dependencies
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -e .
+      - name: Verify target-excluded typed grammar, conditional source masks and true future targets
+        run: |
+          python -m compileall -q src/conceptfan_discovery/program_compiler_v61.py src/conceptfan_discovery/conditional_innovation_v61.py src/conceptfan_discovery/real_future_targets_v61.py scripts/experiment_conceptfan_conditional_v61.py scripts/verify_conceptfan_conditional_v61.py
+          python -m pytest -q tests/discovery/test_conditional_novelty_v61.py tests/discovery/test_program_compiler_v60.py tests/discovery/test_program_fan_v60.py tests/discovery/test_bidmc_realworld_v58.py
+      - name: Cache authentic original 53 BIDMC patient numerics
+        uses: actions/cache@v4
+        with:
+          path: data/bidmc_v58/raw
+          key: official-physionet-bidmc-v1-numerics-fix-sha256-53-records-v1
+      - name: Verify all official PhysioNet SHA256 source files and genuine patient groups
+        run: |
+          python scripts/download_bidmc_numerics_v58.py --out data/bidmc_v58/raw
+      - name: "Execute V61 future HR and target-excluded RESP: patient-conditional source TEST"
+        run: |
+          python scripts/experiment_conceptfan_conditional_v61.py \
+            --bidmc data/bidmc_v58/raw \
+            --out results/conceptfan_v61_bidmc \
+            --seeds 11 23 --tasks future_hr_60s future_resp_60s
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('results/conceptfan_v61_bidmc/report_v61.json').read_text())
+          assert x['status']=='V61_EXECUTED_REAL_CONDITIONAL_NOVELTY_EXPLORATORY'
+          assert x['real_sites']==['BIDMC']
+          assert x['n_trained_models'] if False else x['n_trained_models']==len(x['frozen_model_and_gate_receipts'])
+          assert x['n_trained_models']>=2
+          assert x['n_test_scenarios']==8*x['n_trained_models']//2
+          assert x['future_resp_target_excluded_from_input_and_scaling']
+          assert x['source_conditional_on_pulse_TRAIN_values_only']
+          assert all(b['target_channel_prohibited'] for b in x['program_banks'])
+          PY
+      - name: Independently verify native risk attribution, source gating and grouped NLL
+        run: |
+          python scripts/verify_conceptfan_conditional_v61.py \
+            --dir results/conceptfan_v61_bidmc
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('results/conceptfan_v61_bidmc/verify_v61_audit.json').read_text())
+          assert x['status']=='V61_INDEPENDENT_PATIENT_CONDITIONAL_SOURCE_AUDIT_PASS'
+          assert x['pulse_head_native_signed_decomposition_verified']
+          assert x['exact_frozen_pulse_program_head_fallback_verified']
+          assert x['new_sources_never_read_PULSE_directly']
+          PY
+      - name: Save exact commit revision
+        if: always()
+        run: |
+          mkdir -p results/conceptfan_v61_bidmc
+          git rev-parse HEAD > results/conceptfan_v61_bidmc/COMMIT_SHA.txt
+      - name: Publish ONLY aggregate real cohort and fitted program passports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v61-conditional-BIDMC-aggregate
+          path: |
+            results/conceptfan_v61_bidmc/report_v61.json
+            results/conceptfan_v61_bidmc/aggregate_cases_v61.csv
+            results/conceptfan_v61_bidmc/bidmc_*_split_receipt.json
+            results/conceptfan_v61_bidmc/verify_v61_audit.json
+            results/conceptfan_v61_bidmc/COMMIT_SHA.txt
+            data/bidmc_v58/raw/download_receipt.json
+          if-no-files-found: warn
+          retention-days: 90

@@ -1,0 +1,120 @@
+name: ConceptFAN V61 true cross-hospital conditional sensor novelty
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v61-conditional-novelty-20261113
+    paths:
+      - 'src/conceptfan_discovery/program_compiler_v61.py'
+      - 'src/conceptfan_discovery/conditional_innovation_v61.py'
+      - 'src/conceptfan_discovery/real_future_targets_v61.py'
+      - 'scripts/experiment_conceptfan_conditional_v61.py'
+      - 'scripts/verify_conceptfan_conditional_v61.py'
+      - 'tests/discovery/test_conditional_novelty_v61.py'
+      - '.github/workflows/conceptfan-v61-conditional-external.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  conditional-nonpulse-bidmc-to-vitaldb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install ConceptFAN and official VitalDB versioned-record loader
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -e .
+          python -m pip install --disable-pip-version-check vitaldb
+      - name: Run strict target-exclusion and conditional source/gating regression tests
+        run: |
+          python -m compileall -q src/conceptfan_discovery/program_compiler_v61.py src/conceptfan_discovery/conditional_innovation_v61.py src/conceptfan_discovery/real_future_targets_v61.py scripts/experiment_conceptfan_conditional_v61.py scripts/verify_conceptfan_conditional_v61.py
+          python -m pytest -q tests/discovery/test_conditional_novelty_v61.py tests/discovery/test_program_fan_v60.py tests/discovery/test_vitaldb_external_transfer_v59.py
+      - name: Cache official BIDMC original 53 patient records with source checksums
+        uses: actions/cache@v4
+        with:
+          path: data/bidmc_v58/raw
+          key: official-physionet-bidmc-v1-numerics-fix-sha256-53-records-v1
+      - name: Authenticate original BIDMC TRAIN patient groups
+        run: |
+          python scripts/download_bidmc_numerics_v58.py --out data/bidmc_v58/raw
+      - name: Acquire original 80 preselected VitalDB candidates via official packed format
+        run: |
+          python scripts/download_vitaldb_external_v59.py \
+            --out data/vitaldb_v59/private_source
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('data/vitaldb_v59/private_source/vitaldb_download_receipt.json').read_text())
+          assert r['accepted_external_distinct_patients']==40
+          assert r['predeclared_case_candidates']==80
+          assert not r['raw_patient_timeseries_uploaded']
+          assert not r['raw_subject_ids_exported']
+          PY
+      - name: "Frozen conditional ProgramFAN: real BIDMC TRAIN and both BIDMC/VitalDB TEST tasks"
+        run: |
+          python scripts/experiment_conceptfan_conditional_v61.py \
+            --bidmc data/bidmc_v58/raw \
+            --vitaldb data/vitaldb_v59/private_source \
+            --out results/conceptfan_v61_external \
+            --seeds 11 23 --tasks future_hr_60s future_resp_60s
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('results/conceptfan_v61_external/report_v61.json').read_text())
+          assert r['status']=='V61_EXECUTED_REAL_CONDITIONAL_NOVELTY_EXPLORATORY'
+          assert sorted(r['real_sites'])==['BIDMC','VitalDB']
+          assert r['n_test_scenarios']==8*r['n_trained_models']
+          assert r['n_trained_models']>=2
+          assert r['future_resp_target_excluded_from_input_and_scaling']
+          assert r['source_conditional_on_pulse_TRAIN_values_only']
+          assert r['sites_previously_inspected_NOT_confirmatory']
+          assert all(b['target_channel_prohibited'] for b in r['program_banks'])
+          PY
+      - name: Independently verify all real hospital signed concept heads and patient macro NLL
+        run: |
+          python scripts/verify_conceptfan_conditional_v61.py \
+            --dir results/conceptfan_v61_external
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('results/conceptfan_v61_external/verify_v61_audit.json').read_text())
+          assert a['status']=='V61_INDEPENDENT_PATIENT_CONDITIONAL_SOURCE_AUDIT_PASS'
+          assert a['exact_frozen_pulse_program_head_fallback_verified']
+          assert a['no_RESP_target_read_in_excluded_task']
+          assert a['clinical_data_and_patient_predictions_not_uploaded']
+          PY
+      - name: Preserve frozen research commit
+        if: always()
+        run: |
+          mkdir -p results/conceptfan_v61_external
+          git rev-parse HEAD > results/conceptfan_v61_external/COMMIT_SHA.txt
+      - name: Publish only aggregate hospital results and operator passports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v61-conditional-cross-hospital-aggregate
+          path: |
+            results/conceptfan_v61_external/report_v61.json
+            results/conceptfan_v61_external/aggregate_cases_v61.csv
+            results/conceptfan_v61_external/bidmc_*_split_receipt.json
+            results/conceptfan_v61_external/verify_v61_audit.json
+            results/conceptfan_v61_external/COMMIT_SHA.txt
+            data/vitaldb_v59/private_source/vitaldb_download_receipt.json
+            data/vitaldb_v59/private_source/external_cohort_failure_receipt.json
+            data/bidmc_v58/raw/download_receipt.json
+          if-no-files-found: warn
+          retention-days: 90
