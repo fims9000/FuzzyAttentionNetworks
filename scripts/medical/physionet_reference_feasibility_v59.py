@@ -15,17 +15,13 @@ import csv
 import hashlib
 import io
 import json
-import tempfile
 import warnings
 import zipfile
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-from conceptfan_realdata.data import (
-    create_split,load_outcomes,sha256_file
-)
+from sklearn.model_selection import train_test_split
 
 N_PATIENTS=4000
 TRAIN=2400
@@ -39,6 +35,46 @@ CHANNELS=("MAP","NIMAP","SysABP","NISysABP","DiasABP","NIDiasABP")
 PAIRS=(("MAP","NIMAP"),("SysABP","NISysABP"),
        ("DiasABP","NIDiasABP"))
 INDEX={name:i for i,name in enumerate(CHANNELS)}
+
+
+def sha256_file(path:Path)->str:
+    digest=hashlib.sha256()
+    with path.open("rb") as f:
+        for block in iter(lambda:f.read(1048576),b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def frozen_original_split(manifest:pd.DataFrame,*,seed:int=SPLIT_SEED):
+    """Exact independent reimplementation of original create_split.
+
+    The original package __init__ eagerly imports PyTorch; this harmless
+    aggregate availability audit must not need to load the neural stack.
+    Splitting is copied verbatim from conceptfan_realdata.data.create_split.
+    """
+    frame=manifest.rename(columns={"record_id":"RecordID",
+                                   "icu_type":"ICUType"}).copy()
+    frame["stratum"]=frame["In-hospital_death"].astype(str)+"_"+frame["ICUType"].astype(str)
+    ids=frame.index.to_numpy()
+    tvc,test=train_test_split(
+        ids,test_size=600,random_state=seed,
+        stratify=frame.loc[ids,"stratum"])
+    tv,cal=train_test_split(
+        tvc,test_size=400,random_state=seed+1,
+        stratify=frame.loc[tvc,"stratum"])
+    train,val=train_test_split(
+        tv,test_size=600,random_state=seed+2,
+        stratify=frame.loc[tv,"stratum"])
+    mapping={int(index):name for name,group in
+             (("train",train),("validation",val),
+              ("calibration",cal),("test",test))
+             for index in group}
+    frame["split"]=[mapping[int(idx)] for idx in frame.index]
+    expected={"train":2400,"validation":600,"calibration":400,"test":600}
+    counts=frame["split"].value_counts().to_dict()
+    if counts!=expected:
+        raise AssertionError(f"Original frozen split mismatch: {counts}")
+    return frame[["RecordID","split"]],counts
 
 
 def parse_rows(payload:bytes):
@@ -156,9 +192,12 @@ def run(archive_path:Path,outcomes_path:Path,output:Path):
         raise FileExistsError("Never overwrite pinned V59 aggregate evidence")
     if not archive_path.is_file() or not outcomes_path.is_file():
         raise FileNotFoundError("Official PhysioNet Set A and Outcomes-a required")
-    outcomes=load_outcomes(outcomes_path)
-    if len(outcomes)!=N_PATIENTS:
-        raise ValueError("The official Outcomes-a file must contain 4000 subjects")
+    outcomes=pd.read_csv(outcomes_path)
+    if (len(outcomes)!=N_PATIENTS
+        or "RecordID" not in outcomes
+        or "In-hospital_death" not in outcomes
+        or outcomes["RecordID"].duplicated().any()):
+        raise ValueError("The official Outcomes-a file must contain 4000 unique records")
     outcomes_by_id=outcomes.set_index("RecordID")["In-hospital_death"]
     with zipfile.ZipFile(archive_path) as z:
         if z.testzip() is not None:
@@ -175,19 +214,17 @@ def run(archive_path:Path,outcomes_path:Path,output:Path):
                 "icu_type":icu,
                 "In-hospital_death":int(outcomes_by_id.loc[record_id])
             })
-        with tempfile.TemporaryDirectory(prefix="conceptfan_v59_split_") as td:
-            split=create_split(pd.DataFrame(metas),Path(td),seed=SPLIT_SEED)
-            train_ids=sorted(split.loc[split["split"].eq("train"),"RecordID"].astype(int))
-            split_summary=split["split"].value_counts().to_dict()
-            if len(train_ids)!=TRAIN:
-                raise AssertionError("Frozen original TRAIN split changed")
-            # Only TRAIN patients' *time-series measurements* are extracted.
-            x=np.full((len(train_ids),HOURS,len(CHANNELS)),np.nan,dtype=np.float64)
-            m=np.zeros_like(x,dtype=bool)
-            for n,record_id in enumerate(train_ids):
-                current,mask=observed_hours(z.read(names[record_id]))
-                x[n]=current
-                m[n]=mask
+        split,split_summary=frozen_original_split(pd.DataFrame(metas),seed=SPLIT_SEED)
+        train_ids=sorted(split.loc[split["split"].eq("train"),"RecordID"].astype(int))
+        if len(train_ids)!=TRAIN:
+            raise AssertionError("Frozen original TRAIN split changed")
+        # Only TRAIN patients' time-series measurements are extracted.
+        x=np.full((len(train_ids),HOURS,len(CHANNELS)),np.nan,dtype=np.float64)
+        m=np.zeros_like(x,dtype=bool)
+        for n,record_id in enumerate(train_ids):
+            current,mask=observed_hours(z.read(names[record_id]))
+            x[n]=current
+            m[n]=mask
     if not np.isfinite(x[m]).all():
         raise AssertionError("Nonfinite observed source measurement")
     receipt={
