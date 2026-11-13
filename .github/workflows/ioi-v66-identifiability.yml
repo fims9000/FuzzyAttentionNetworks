@@ -1,0 +1,64 @@
+name: V66 formal identifiability counterexample for bounded exact fuzzy attribution
+
+on:
+  push:
+    branches:
+      - research/conceptfan-v66-identifiability-certificate-20261113
+    paths:
+      - 'src/conceptfan_discovery/exact_attribution_nonidentifiability_v66.py'
+      - 'tests/discovery/test_exact_attribution_nonidentifiability_v66.py'
+      - 'scripts/experiment_attribution_identity_v66.py'
+      - 'docs/medical/CONCEPTFAN_V66_FORMAL_ATTRIBUTION_IDENTIFIABILITY_PROTOCOL_20261113.md'
+      - '.github/workflows/ioi-v66-identifiability.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  semantic-risk-nonidentifiability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install only mathematical verification environment
+        run: |
+          python -m pip install "torch==2.5.1+cpu" --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Compile and test bounded fuzzy equivalence
+        run: |
+          python -m compileall -q src/conceptfan_discovery/exact_attribution_nonidentifiability_v66.py scripts/experiment_attribution_identity_v66.py
+          python -m pytest -q tests/discovery/test_exact_attribution_nonidentifiability_v66.py
+      - name: Verify nine synthetic bounded fuzzy equivariance cases
+        run: |
+          python scripts/experiment_attribution_identity_v66.py \
+            --out-dir V66_FORMAL_EVIDENCE | tee v66_math_log.jsonl
+          python - <<'PY'
+          import json
+          d=json.load(open('V66_FORMAL_EVIDENCE/STATUS.json'))
+          assert d['status']=='V66_FORMAL_BOUNDED_CONCEPT_NONIDENTIFIABILITY_EXECUTED'
+          assert len(d['rows'])==9
+          assert all(z['max_logit_difference']<1e-12 for z in d['rows'])
+          assert all(z['bounded_state_violations']==0 for z in d['rows'])
+          assert d['n_independent_real_clinical_or_physical_samples_in_this_test']==0
+          assert d['stronger_assumptions_can_exclude_cross_concept_mixing']
+          PY
+          git rev-parse HEAD > V66_FORMAL_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve theorem and synthetic negative controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v66-formal-explanation-identifiability
+          path: |
+            V66_FORMAL_EVIDENCE/
+            v66_math_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
