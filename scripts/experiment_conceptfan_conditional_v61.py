@@ -27,7 +27,6 @@ from conceptfan_discovery.program_compiler_v61 import (
 )
 from conceptfan_discovery.stable_source_contract_v61r import (
     shortlist_conditional_sources_v61r,
-    source_contract_fingerprint_v61r,
 )
 from conceptfan_discovery.conditional_innovation_v61 import (
     fit_conditional_sources_v61,infer_conditional_sources_v61,
@@ -353,12 +352,14 @@ def execute(bidmc,out,*,vitaldb=None,tasks=TASKS,seeds=SEEDS):
                 "pulse_native_PyTorch_head":ph.passport(),
                 "nonpulse_train_only_source_map":(
                     None if source_map is None else source_map.passport()),
-                "stable_source_contract_SHA256":source_contract_fingerprint_v61r(
-                    source_map,None if source_map is None else
-                    shortlist_conditional_sources_v61r(
-                        source_map,bank,*infer_program_matrix_v60(
-                            bank,train["x"],train["mask"]),
-                        train["mask"],train["patient"])[1]),
+                "stable_source_contract_SHA256":(
+                    None if source_map is None else hashlib.sha256(
+                        json.dumps(source_map.passport(),sort_keys=True,
+                                   separators=(",",":")).encode()).hexdigest()),
+                "stable_outcome_blind_program_ids":(
+                    [] if source_map is None else [
+                        bank.candidates[i].candidate_id
+                        for i in source_map.raw_source_indices]),
                 "conditional_native_PyTorch_head":(
                     None if head is None else head.passport()),
                 "unconditioned_ablation_head":(
