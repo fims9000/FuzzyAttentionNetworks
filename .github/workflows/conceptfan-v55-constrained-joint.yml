@@ -1,0 +1,81 @@
+name: ConceptFAN V55 joint new measured concept and signed risk
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v55-joint-operator-20261113
+    paths:
+      - 'src/conceptfan_discovery/constrained_joint_operator_v55.py'
+      - 'scripts/experiment_conceptfan_joint_operator_v55.py'
+      - 'scripts/verify_conceptfan_v55_case_audit.py'
+      - 'tests/discovery/test_constrained_joint_operator_v55.py'
+      - 'docs/medical/CONCEPTFAN_V55_CONSTRAINED_JOINT_FROZEN_PROTOCOL_20261113.md'
+      - '.github/workflows/conceptfan-v55-constrained-joint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  train-joint-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 52
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU native PyTorch and ConceptFAN
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -e .
+      - name: Test constrained observed fuzzy memberships and native fallback
+        run: |
+          python -m compileall -q src/conceptfan_discovery/constrained_joint_operator_v55.py scripts/experiment_conceptfan_joint_operator_v55.py
+          python -m pytest -q tests/discovery/test_constrained_joint_operator_v55.py tests/discovery/test_operator_library_concepts_v54.py tests/discovery/test_conceptfan_operator_library_v54.py
+      - name: Joint TRAIN optimization, independent dual VALID and new TEST cohort
+        run: |
+          python scripts/experiment_conceptfan_joint_operator_v55.py --out results/conceptfan_v55_joint --seeds 11 23
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('results/conceptfan_v55_joint/report_v55.json').read_text())
+          assert d['status']=='EXECUTED_EXPLORATORY'
+          assert d['n_native_models']==6
+          assert d['n_registered_test_rows']==30
+          assert len(d['prediction_files'])==30
+          assert d['no_raw_to_risk_shortcut'] and d['exact_original_K2_fallback']
+          assert d['all_proposals_y_blind']
+          assert all(r['native_signed_path_checked'] for r in d['rows'])
+          PY
+      - name: Independently recompute case-level risk, concept and uncertainty
+        run: |
+          python scripts/verify_conceptfan_v55_case_audit.py --dir results/conceptfan_v55_joint
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('results/conceptfan_v55_joint/verify_v55_audit.json').read_text())
+          assert d['status']=='V55_CASE_LEVEL_INDEPENDENT_RECOMPUTATION_PASS'
+          assert d['verified_arrays']==30 and d['n_scenarios']==15
+          PY
+      - name: Preserve exact source revision
+        if: always()
+        run: |
+          mkdir -p results/conceptfan_v55_joint
+          git rev-parse HEAD > results/conceptfan_v55_joint/COMMIT_SHA.txt
+      - name: Upload auditable TEST predictions, frozen contracts and all negatives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v55-constrained-joint-research
+          path: results/conceptfan_v55_joint/
+          if-no-files-found: warn
+          retention-days: 90
