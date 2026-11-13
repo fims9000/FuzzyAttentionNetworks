@@ -1,0 +1,76 @@
+name: V54 robust source and train-only observable spectral concepts
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v54-robust-observable-20261113
+    paths:
+      - 'src/conceptfan_discovery/robust_observable_concepts_v54.py'
+      - 'scripts/experiment_robust_spectral_v54.py'
+      - 'tests/discovery/test_robust_observable_v54.py'
+      - 'docs/medical/CONCEPTFAN_V54_FROZEN_ROBUST_SPECTRAL_PROTOCOL_20261113.md'
+      - '.github/workflows/ioi-v54-robust-observable.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  evaluate-new-sensors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install canonical scientific model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test V54 mathematical, missingness, spectral and legacy V53 invariants
+        run: |
+          python -m pytest -q tests/discovery/test_robust_observable_v54.py tests/discovery/test_autonomous_temporal_bank_v53.py
+      - name: Isolated data smoke
+        run: |
+          python scripts/experiment_robust_spectral_v54.py --smoke --out-dir V54_SMOKE | tee v54_smoke_log.jsonl
+          python - <<'PY'
+          import json
+          s=json.load(open('V54_SMOKE/STATUS.json'))
+          assert s['status']=='SMOKE_ONLY'
+          assert s['all_source_definitions_train_only']
+          assert not s['K_physically_identified']
+          PY
+      - name: Fresh two-draw source corruption and different mixed-loading family
+        run: |
+          python scripts/experiment_robust_spectral_v54.py --out-dir V54_EVIDENCE | tee v54_full_log.jsonl
+          python - <<'PY'
+          import json
+          s=json.load(open('V54_EVIDENCE/STATUS.json'))
+          assert s['status']=='V54_EXPLORATORY_EXECUTED_NEW_DRAWS'
+          assert len(s['nonlinear_draws'])==2
+          assert len(s['independent_mixed_loading_results'])==9
+          assert s['all_source_definitions_train_only']
+          PY
+          git rev-parse HEAD > V54_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve full results and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v54-robust-observable
+          path: |
+            V54_SMOKE/
+            V54_EVIDENCE/
+            v54_smoke_log.jsonl
+            v54_full_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
