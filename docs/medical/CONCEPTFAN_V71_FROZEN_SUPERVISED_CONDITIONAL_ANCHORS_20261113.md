@@ -1,0 +1,33 @@
+# V71 frozen post-V70 diagnostic — supervised conditional physical-reference anchors versus autonomous concepts
+
+**13 November 2026. POSTHOC EXPLORATORY.** UCI308 TEST day4 (8 true independent physical trials) had ALREADY been inspected in V70 before this mechanism was designed. Even a large V71 gain must NOT be presented as new independent confirmation or proof of gas molecular identity. The purpose is to isolate the missing **reference anchoring** condition in an explainable ConceptFAN system.
+
+## Parent failure and testable hypothesis
+
+V70 detected K2 anonymous PCA components from TRAIN39 real acetone/ethanol mixture trials without chemical labels, but each component had high partial association with BOTH controlled preparations. On TEST acetone axis1 acetone rho .792, ethanol on that same axis .821; ethanol axis0 ethanol rho .879, acetone on same axis .872. Thus an unsupervised statistical axis cannot be called "acetone concept" or "ethanol concept" simply because K2 matches two analytes.
+
+V71 intentionally changes the source learning supervision assumption and makes it **explicit**: let known experimentally prepared **acetone and ethanol dilution vol.%** labels serve as reference anchors on original TRAIN39 whole trials. Construct exactly two **supervised preparation-dose proxy concepts**, not independent gas-phase chemical sensors. Quantify whether this explicit anchor reduces source cross-talk and how it affects prediction with an otherwise identical concept-only signed readout.
+
+## Frozen physical data / labels / split
+
+Official UCI308 DOI `10.24432/C5BG7G`, source ZIP SHA256 `7b062960dbef1a9e8aefc62bc7dbac09bdadb8cbb40793cf2b8e122da1862f90`. Original 58 independent real physical 5-minute trials (16 sensor measurements at 25Hz), exact original 39 TRAIN first3 sessions / 11 VALID day3 / **already viewed 8 TEST day4**. Strict same official 60 five-second real-sensor bin medians. Labels from `ace_conc`, `eth_conc` are nominal **0,0.1,0.3,1 vol.% dilutions in water**, NOT true airborne gas ppm or per-time chemical analyzer ground truth.
+
+Reuse only original V70 TRAIN-fitted robust 16-sensor median/IQR and raw32 whole+late sensor summary features. Original V70 **unlabeled PCA K** and fuzzy source bank remains unchanged for main comparator, but new V71 **reference-anchored sources explicitly receive original TRAIN39 two analyte preparation doses**.
+
+## Locked supervised conditional source procedure (single setting, no tuning)
+
+1. Fit one `StandardScaler` on the 39 original TRAIN raw32 physically measured sensor feature vectors. No VALID/TEST data in scaling. The same vectors are available to raw16 Ridge control.
+2. For each chemical preparation label j (acetone or ethanol), regress its original TRAIN dose `y_j` only on the **other** TRAIN dose `y_other` using intercept+one linear coefficient (ordinary least squares, no sensor features). Define conditional TRAIN-dose residual `r_j=y_j−E_linear[y_j|y_other]`. Its objective is the *statistical* source dose variation not linearly predicted by the other known preparation dose; it is NOT a physical interventional residual.
+3. Fit `Ridge(alpha=1)` mapping scaled TRAIN raw32 sensor summaries → each residual r_j. The TRAIN-fitted weight vector defines one dedicated supervised dose proxy direction j. Canonicalize its sign to positively correlate with TRAIN r_j. Freeze exactly TWO dose proxy directions, one explicitly **reference-labeled** acetone and the other ethanol (K=2 is given by the two known target fields, NOT autonomously discovered). No downstream labels after TRAIN may modify the directions.
+4. For both proxy directions, calibrate exactly TRAIN-only Q25/Q50/Q75 and positive width `max(0.15,IQR/1.35)`; generate **six bounded fuzzy membership states** total. Do not call six different chemicals or autonomous concepts. Logistic/sigmoid inverse transforms in a signed concept-only `Ridge(alpha=1)` with TRAIN-only StandardScaler and exact algebraic back-transform of head weights/intercept. Independent separate supervised heads on the **same TRAIN39 preparation-dose labels**; note label use both in source construction and risk head (same number of records but **more direct supervision** than unsupervised V70).
+5. Include reference-proxy LINEAR K2→Ridge head; original V70 source fuzzy and original 32 raw Ridge baselines **refit identically**. Add a fixed negative control: independently permute the ORIGINAL TRAIN39 pairs of dose labels with seed 20261971 ONLY WHEN FITTING SOURCE AXES; keep supervised head fitting on true TRAIN labels. No VALID/TEST dose enters source fitting or model selection. This is a sensitivity control, not a randomized physical intervention.
+6. Predict nominal acetone/ethanol water-dilution preparation doses for VALID11 and already-viewed TEST8: R², MAE in vol.%, RMSE, normalized MAE vs TRAIN target std, constant TRAIN prior. Report all source proxy and raw baselines and negative-control scores, without choosing based on TEST.
+7. For each physically known label j, after source fit, report **fixed** TRAIN/VALID/TEST partial Spearman between the corresponding proxy score and dose j controlling the other dose; also report cross-talk with the other dose on the SAME proxy. Compute signed **specificity margin = |rho_matched|−|rho_cross|** on independent VALID11 and retrospective TEST8. A negative margin or small positive margin means no demonstrated selective physical proxy. No p-value from n8 and no claim of source causal identification.
+
+## Scientific non-claims / success conditions
+
+A success would mean **TRAIN reference supervision makes a useful, traceable, explicitly anchored preparation-dose proxy**, which might improve interpretability compared with anonymous unsupervised axes. It does NOT mean autonomous concept discovery. Each proxy's chemical name is supplied by reference **TRAIN labels**, not generated by a neural or fuzzy network. Nominal water-dilution doses are not an external physical gas concentration analyzer trace; physico-chemical source separation remains unverified even if heldout dose correlations are high.
+
+The data have only 58 real physical trials and n8 TEST, one device, five acquisition sessions and an already viewed test. This cannot provide a valid new confirmatory test after V70. Both raw Ridge and even linear anchored proxy may outperform fuzzy; retain failures. A truly independent confirmation requires fresh physical apparatus, calibrated airborne gas assays and one-source-at-a-time independent interventions with same measured sensor channels.
+
+Keep all code and results research-only, DRAFT, no accepted IOI/PIERE document or master edits.
