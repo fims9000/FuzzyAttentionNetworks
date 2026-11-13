@@ -1,0 +1,114 @@
+name: ConceptFAN V59 independent Seoul VitalDB external hospital transfer
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v59-external-vitaldb-20261113
+    paths:
+      - 'scripts/download_vitaldb_external_v59.py'
+      - 'scripts/experiment_conceptfan_vitaldb_transfer_v59.py'
+      - 'scripts/verify_conceptfan_vitaldb_transfer_v59.py'
+      - 'tests/discovery/test_vitaldb_external_transfer_v59.py'
+      - 'docs/medical/CONCEPTFAN_V59_EXTERNAL_VITALDB_FROZEN_PROTOCOL_20261113.md'
+      - '.github/workflows/conceptfan-v59-vitaldb-external.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  independent-site-no-test-refit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 52
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install native ConceptFAN CPU scientific runtime
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -e .
+      - name: Test causal last-observed source alignment, subject isolation and HR exclusion
+        run: |
+          python -m compileall -q scripts/download_vitaldb_external_v59.py scripts/experiment_conceptfan_vitaldb_transfer_v59.py scripts/verify_conceptfan_vitaldb_transfer_v59.py
+          python -m pytest -q tests/discovery/test_vitaldb_external_transfer_v59.py tests/discovery/test_bidmc_realworld_v58.py
+      - name: Reuse unchanged official BIDMC source SHA cache
+        uses: actions/cache@v4
+        with:
+          path: data/bidmc_v58/raw
+          key: official-physionet-bidmc-v1-numerics-fix-sha256-53-records-v1
+      - name: Authenticate all 53 original BIDMC source numerics used for TRAIN
+        run: |
+          python scripts/download_bidmc_numerics_v58.py --out data/bidmc_v58/raw
+      - name: Independently fetch VitalDB public API inventories and 80 pre-registered candidate patients
+        run: |
+          python scripts/download_vitaldb_external_v59.py --out data/vitaldb_v59/private_source
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('data/vitaldb_v59/private_source/vitaldb_download_receipt.json').read_text())
+          assert r['accepted_external_distinct_patients']>=30
+          assert r['accepted_external_distinct_patients']<=40
+          assert r['predeclared_case_candidates']==80
+          assert r['clinical_HR_not_an_input'] is True
+          assert r['raw_subject_ids_exported'] is False
+          PY
+      - name: Freeze BIDMC-trained native K2 and measured-source gates; run only VitalDB external TEST
+        run: |
+          python scripts/experiment_conceptfan_vitaldb_transfer_v59.py \
+            --bidmc data/bidmc_v58/raw \
+            --vitaldb data/vitaldb_v59/private_source \
+            --out results/conceptfan_v59_external_site \
+            --seeds 11 23
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('results/conceptfan_v59_external_site/report_v59.json').read_text())
+          assert report['status']=='EXECUTED_INDEPENDENT_HOSPITAL_EXPLORATORY'
+          assert report['source_sites_disjoint']
+          assert report['n_native_models']==2 and report['n_test_runs']==8
+          assert report['no_BIDMC_source_new_concepts']
+          assert report['external_HR_absent_from_model_inputs']
+          assert not report['raw_external_patient_risks_exported']
+          PY
+      - name: Independently verify signed FAN source refusal and external patient-group metrics
+        run: |
+          python scripts/verify_conceptfan_vitaldb_transfer_v59.py \
+            --dir results/conceptfan_v59_external_site
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('results/conceptfan_v59_external_site/verify_v59_audit.json').read_text())
+          assert a['status']=='V59_EXTERNAL_VITALDB_INDEPENDENT_SITE_CASE_AUDIT_PASS'
+          assert a['n_test_conditions_recomputed']==8
+          assert a['native_no_source_exact_K2_fallback_verified']
+          assert a['private_subject_predictions_not_uploaded']
+          PY
+      - name: Capture source revision for reproducibility
+        if: always()
+        run: |
+          mkdir -p results/conceptfan_v59_external_site
+          git rev-parse HEAD > results/conceptfan_v59_external_site/COMMIT_SHA.txt
+      - name: Upload ONLY aggregate external hospital metrics; never upload downloaded clinical time series
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v59-vitaldb-external-hospital-transfer
+          path: |
+            results/conceptfan_v59_external_site/report_v59.json
+            results/conceptfan_v59_external_site/verify_v59_audit.json
+            results/conceptfan_v59_external_site/aggregate_cases_v59.csv
+            results/conceptfan_v59_external_site/COMMIT_SHA.txt
+            data/vitaldb_v59/private_source/vitaldb_download_receipt.json
+            data/bidmc_v58/raw/download_receipt.json
+          if-no-files-found: warn
+          retention-days: 90
