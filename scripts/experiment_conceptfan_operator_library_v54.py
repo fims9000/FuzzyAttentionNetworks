@@ -165,6 +165,23 @@ def added_logits(base,source,gamma,x,mask,kind):
     return z,used,q,support
 
 
+def native_added_logits(model,base,source,gamma,x,mask,kind):
+    """Use the actual PyTorch native signed concept bottleneck for new source.
+
+    The scalar-numpy formulation is only an independent equality check, not
+    the reported prediction path. No learned raw-input-to-risk bypass.
+    """
+    expected,used,q,support=added_logits(base,source,gamma,x,mask,kind)
+    with torch.no_grad():
+        model.gamma.fill_(float(gamma))
+    native=native_logits(model,x,mask,q.astype(np.float32),used)
+    if not np.allclose(native,expected,atol=2e-6,rtol=0):
+        raise AssertionError("Native source contribution disagrees with signed audit")
+    if not np.array_equal(native[~used],base[~used]):
+        raise AssertionError("Native model failed exact K2 abstention")
+    return native,used,q,support
+
+
 def score(y,z):
     return metrics(y,z)
 
@@ -195,10 +212,10 @@ def one_run(world,mode,seed,save_dir):
             for j in channels:
                 xt[:,:,j]*=(-1. if stress=="source_sign_flip" else 1.5)
         base=native_logits(model,xt,mask)
-        z54,used54,q54,supp54=added_logits(base,chosen_v54,gamma_v54,
-                                          xt,mask,"operator")
-        z53,used53,q53,supp53=added_logits(base,chosen_v53,gamma_v53,
-                                          xt,mask,"signed")
+        z54,used54,q54,supp54=native_added_logits(model,base,chosen_v54,gamma_v54,
+                                                 xt,mask,"operator")
+        z53,used53,q53,supp53=native_added_logits(model,base,chosen_v53,gamma_v53,
+                                                 xt,mask,"signed")
         raw_z=_apply_baseline(raw,xt,mask)
         energy_z=_apply_baseline(engineered,xt,mask,energy=True)
         if chosen_v54 is None and not np.array_equal(base,z54):
