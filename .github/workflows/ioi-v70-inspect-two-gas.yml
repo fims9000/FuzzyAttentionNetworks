@@ -1,0 +1,98 @@
+name: V70 inspect official unseen two-gas UCI308 schema ONLY
+
+on:
+  push:
+    branches:
+      - research/conceptfan-v70-unseen-two-gas-mixture-20261113
+    paths:
+      - '.github/workflows/ioi-v70-inspect-two-gas.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-official-schema-before-implementation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download only original licensed UCI308 package
+        run: |
+          mkdir -p /tmp/conceptfan_v70
+          curl -fSL --retry 2 --connect-timeout 20 --max-time 180 \
+            'https://archive.ics.uci.edu/static/public/308/gas%2Bsensor%2Barray%2Bunder%2Bflow%2Bmodulation.zip' \
+            -o /tmp/conceptfan_v70/uci308.zip || \
+          curl -fSL --retry 2 --connect-timeout 20 --max-time 180 \
+            'https://archive.ics.uci.edu/static/public/308/gas+sensor+array+under+flow+modulation.zip' \
+            -o /tmp/conceptfan_v70/uci308.zip
+          unzip -tq /tmp/conceptfan_v70/uci308.zip
+          sha256sum /tmp/conceptfan_v70/uci308.zip
+      - name: Inspect source schema and header only without opening experiment outcomes
+        run: |
+          python - <<'PY'
+          import zipfile,gzip,csv,io,re
+          with zipfile.ZipFile('/tmp/conceptfan_v70/uci308.zip') as z:
+            names=[p for p in z.namelist() if not p.endswith('/')]
+            print('ARCHIVE_MEMBERS',[(n,z.getinfo(n).file_size) for n in names])
+            for name in names:
+              if name.endswith('features.csv'):
+                with z.open(name) as f:
+                  h=f.readline().decode('utf8',errors='replace').strip()
+                  print('FEATURE_HEADER_OR_FIRST_RECORD_NUMBER_OF_COLUMNS',len(next(csv.reader([h]))))
+                  print('FEATURE_FIELD_NAMES_IF_TEXT',h[:1300] if re.search('[a-zA-Z]{2}',h) else 'NUMERIC_NO_HEADER')
+                  first=f.readline().decode('utf8',errors='replace').strip()
+                  print('FEATURE_SECOND_ROW_COLUMN_COUNT',len(next(csv.reader([first]))))
+                with z.open(name) as f:
+                  rows=list(csv.DictReader(io.TextIOWrapper(f,encoding='utf8')))
+                  from collections import Counter
+                  print('FEATURE_RECORD_COUNT',len(rows))
+                  print('FEATURE_BATCH_COUNTS',dict(Counter(row['batch'] for row in rows)))
+                  print('FEATURE_EXP_UNIQUE_COUNT',len(set(row['exp'] for row in rows)))
+                  print('FEATURE_BATCH_ORDER_FIRST_EXP',[(row['exp'],row['batch']) for row in rows[:1]])
+
+              if name.endswith('rawdata.csv.gz'):
+                with z.open(name) as stream:
+                  with gzip.GzipFile(fileobj=stream) as f:
+                    first=f.readline().decode('utf8',errors='replace').strip()
+                    second=f.readline().decode('utf8',errors='replace').strip()
+                  raw_head=next(csv.reader([first]))
+                  raw_sample=next(csv.reader([second]))
+                  print('RAW_HEADER_FIRST_15_FIELD_NAMES',raw_head[:15])
+                  print('RAW_HEADER_LAST_5_FIELD_NAMES',raw_head[-5:])
+                  print('RAW_FIRST_ROW_NUMBER_OF_FIELDS',len(raw_head))
+                  print('RAW_SECOND_ROW_NUMBER_OF_FIELDS',len(raw_sample))
+                  print('RAW_SECOND_ROW_FIRST_9_FIELD_TYPES', [
+                    ('empty' if not v else 'numeric' if re.fullmatch(r'[-+]?\\d+(?:\\.\\d+)?(?:[Ee][-+]?\\d+)?',v) else 'string')
+                    for v in raw_sample[:9]])
+                  print('RAW_FIRST_ROW_ALL_NON_NUMERIC_FIELD_INDICES',
+                    [i for i,x in enumerate(next(csv.reader([first])))
+                     if x and not re.fullmatch(r'[-+]?\d+(?:\.\d+)?(?:[Ee][-+]?\d+)?',x)][:30])
+          PY
+      - name: Count raw physical sensors and per-experiment keys without viewing outcomes
+        run: |
+          python - <<'PY'
+          import zipfile,gzip,csv,collections,io
+          with zipfile.ZipFile('/tmp/conceptfan_v70/uci308.zip') as z:
+            with gzip.GzipFile(fileobj=z.open('rawdata.csv.gz')) as g:
+              reader=csv.DictReader(io.TextIOWrapper(g,encoding='utf8'))
+              rows=0
+              sensor=collections.Counter()
+              by_trial=collections.Counter()
+              raw_batches=collections.Counter()
+              for row in reader:
+                rows+=1
+                sensor[row['sensor']]+=1
+                by_trial[(row['batch'],row['exp'])]+=1
+                raw_batches[row['batch']]+=1
+              print('RAW_RECORD_ROWS',rows)
+              print('RAW_UNIQUE_SENSORS',dict(sensor))
+              print('RAW_BATCH_COUNTS',dict(raw_batches))
+              print('RAW_UNIQUE_BATCH_EXP_TRIALS',len(by_trial))
+              print('RAW_SENSORS_PER_TRIAL_UNIQUE_VALUES',sorted(set(by_trial.values())))
+          PY
+      - name: Keep exact official source asset in GitHub workflow cache
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/conceptfan_v70/uci308.zip
+          key: uci308-exact-original-public-20261113
