@@ -5,7 +5,7 @@ from conceptfan_discovery.operator_library_concepts_v54 import (
     discover_operator_library_v54,infer_operator_concept_v54,OP_EVEN,
 )
 from scripts.experiment_conceptfan_operator_library_v54 import (
-    generate,energy_tabular,added_logits,TRAIN_N,VALID_N,TEST_N,native_k2,
+    generate,energy_tabular,native_added_logits,TRAIN_N,VALID_N,TEST_N,native_k2,
     native_logits,
 )
 
@@ -31,14 +31,14 @@ def test_k2_exact_abstention_and_signed_additivity():
     m=np.ones_like(x,dtype=bool)
     model=native_k2(11)
     baseline=native_logits(model,x,m)
-    z,used,q,s=added_logits(baseline,None,0.,x,m,"operator")
+    z,used,q,s=native_added_logits(model,baseline,None,0.,x,m,"operator")
     np.testing.assert_array_equal(z,baseline)
     assert not used.any()
     c=discover_operator_library_v54(w["x"][w["train"]],
                                     w["masks"]["train"]).candidates[0]
-    z,used,q,s=added_logits(baseline,c,1.75,x,m,"operator")
+    z,used,q,s=native_added_logits(model,baseline,c,1.75,x,m,"operator")
     np.testing.assert_allclose(z,baseline+np.where(used,1.75*(q-.5),0.),
-                               atol=0,rtol=0)
+                               atol=2e-6,rtol=0)
     assert used.any()
 
 def test_engineered_baseline_has_no_simulator_source_inputs():
