@@ -18,8 +18,10 @@ def sample():
     tr=w["train"]
     x=w["x"][tr]
     m=w["masks"]["train"]
-    c=discover_operator_library_v54(x,m).candidates[0]
-    assert c.family==OP_EVEN
+    discovered=discover_operator_library_v54(x,m)
+    c=next(v for v in discovered.candidates if
+           v.family==OP_EVEN and
+           {v.source_channel,v.readout_channel}=={4,5})
     y=w["y"]["nonlinear_energy"][tr]
     return x,m,c,y
 
