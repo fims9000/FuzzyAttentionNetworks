@@ -194,7 +194,7 @@ def run(out:Path,*,smoke=False):
             "event":"V55_MEASURED_FAMILY","draw":seed,
             "routes":{world:x["route"] for world,x in receipt["routing_receipts"].items()},
             "primary":[r for r in case_rows if r["world"]=="physical_extra"
-                      and r["condition"]=="single_sensor_flip"]},flush=True)
+                      and r["condition"]=="single_sensor_flip"]}),flush=True)
     mixed,mixed_receipts=evaluate_mixed(smoke=smoke)
     evidence={
         "status":"SMOKE_ONLY" if smoke else "V55_EXPLORATORY_COMPLETED_IF_ALL_CASES_PASS",
@@ -223,7 +223,7 @@ def run(out:Path,*,smoke=False):
         "new_draws":len(group_receipts),
         "group_rows":len(rows),"mixed_rows":len(mixed),
         "selected_routes_mixed":[x["observed_source_route"] for x in mixed_receipts]
-    },flush=True))
+    }),flush=True)
     return evidence
 
 
