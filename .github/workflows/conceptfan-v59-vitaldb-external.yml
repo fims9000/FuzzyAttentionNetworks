@@ -109,6 +109,7 @@ jobs:
             results/conceptfan_v59_external_site/aggregate_cases_v59.csv
             results/conceptfan_v59_external_site/COMMIT_SHA.txt
             data/vitaldb_v59/private_source/vitaldb_download_receipt.json
+            data/vitaldb_v59/private_source/external_cohort_failure_receipt.json
             data/bidmc_v58/raw/download_receipt.json
           if-no-files-found: warn
           retention-days: 90
