@@ -1,0 +1,83 @@
+name: V63 independent real dynamic gas source ICA and concept-identity falsification
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v63-dynamic-ica-independent-uci322-20261113
+    paths:
+      - 'src/conceptfan_discovery/train_innovation_ica_bank_v63.py'
+      - 'scripts/experiment_real_dynamic_gas_ica_v63.py'
+      - 'tests/discovery/test_real_dynamic_gas_ica_v63.py'
+      - 'docs/medical/CONCEPTFAN_V63_FROZEN_DYNAMIC_GAS_ICA_PROTOCOL_20261113.md'
+      - '.github/workflows/ioi-v63-dynamic-ica.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '1'
+  PYTHONHASHSEED: '0'
+jobs:
+  new-real-dynamic-gas-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install documented CPU-native fuzzy concept environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Test native concept source rank, time embargo and leakage controls
+        run: |
+          python -m compileall -q src/conceptfan_discovery/train_innovation_ica_bank_v63.py scripts/experiment_real_dynamic_gas_ica_v63.py
+          python -m pytest -q tests/discovery/test_real_dynamic_gas_ica_v63.py tests/discovery/test_native_temporal_fuzzy_v56.py tests/discovery/test_crossview_response_bank_v62.py
+      - name: Restore verified public UCI 322 archive from same source pin
+        uses: actions/cache@v4
+        with:
+          path: /tmp/conceptfan_v63/uci322.zip
+          key: original-uci322-archive-20261113
+      - name: Obtain official data if exact cache unavailable
+        run: |
+          mkdir -p /tmp/conceptfan_v63
+          if [ ! -s /tmp/conceptfan_v63/uci322.zip ]; then
+            curl -fSL --retry 3 --connect-timeout 20 --max-time 1200 \
+              'https://archive.ics.uci.edu/static/public/322/gas%2Bsensor%2Barray%2Bunder%2Bdynamic%2Bgas%2Bmixtures.zip' \
+              -o /tmp/conceptfan_v63/uci322.zip
+          fi
+          unzip -tq /tmp/conceptfan_v63/uci322.zip
+          sha256sum /tmp/conceptfan_v63/uci322.zip
+      - name: Run strict unseen UCI322 physical dynamic mixture experiment
+        run: |
+          set -o pipefail
+          python scripts/experiment_real_dynamic_gas_ica_v63.py \
+            --uci-zip /tmp/conceptfan_v63/uci322.zip \
+            --out-dir V63_REAL_DYNAMIC_GAS_EVIDENCE | tee v63_full_log.jsonl
+          python - <<'PY'
+          import json
+          r=json.load(open('V63_REAL_DYNAMIC_GAS_EVIDENCE/STATUS.json'))
+          assert r['status']=='V63_REAL_DYNAMIC_GAS_BLIND_ICA_EXPLORATORY_EXECUTED'
+          assert r['real_independent_continuous_recording_sessions']==2
+          assert r['do_not_treat_120s_windows_as_independent_experiments']
+          assert r['physical_source_setpoint_values_not_source_model_inputs']
+          assert set(r['source_banks'])=={'pca','ica'}
+          assert len(r['continuous_ppm_reference_regression_results'])==56
+          assert not r['any_chemical_source_identity_proven']
+          assert not r['controller_setpoints_are_not_independent_chemical_analyzer_trajectories']==False
+          PY
+          git rev-parse HEAD > V63_REAL_DYNAMIC_GAS_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Always retain source SHA, full scores and negative cases, no raw time series
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v63-unseen-real-dynamic-gas-ica
+          path: |
+            V63_REAL_DYNAMIC_GAS_EVIDENCE/
+            v63_full_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
