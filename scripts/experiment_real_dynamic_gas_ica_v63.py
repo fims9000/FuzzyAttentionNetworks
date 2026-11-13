@@ -447,7 +447,7 @@ def run(archive:Path,out:Path):
         "n_windows":{k:len(v) for k,v in runs.items()},
         "test":[z for z in rows if z["cohort"]=="TEST"],
         "max_abs_conditional_associations":{
-            k:{name:v[k]["native"]["TEST"][name]["max_abs_conditional_by_target"]
+            k:{name:v["native"]["TEST"][name]["max_abs_conditional_by_target"]
                for name in ("CO_recording","methane_recording")}
             for k,v in association.items()}
     },ensure_ascii=False,allow_nan=False),flush=True)
