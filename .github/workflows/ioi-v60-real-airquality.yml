@@ -7,6 +7,7 @@ on:
     paths:
       - 'scripts/experiment_real_airquality_v60.py'
       - 'src/conceptfan_discovery/auto_measured_concept_proposals.py'
+      - 'src/conceptfan_discovery/auto_measured_concept_proposals.py'
       - 'tests/discovery/test_real_airquality_v60.py'
       - 'docs/medical/CONCEPTFAN_V60_FROZEN_REAL_AIRQUALITY_PROTOCOL_20261113.md'
       - '.github/workflows/ioi-v60-real-airquality.yml'
@@ -39,7 +40,7 @@ jobs:
           python -m pip install -e .
       - name: Compile and run new leakage/semantic plus previous encoder tests
         run: |
-          python -m compileall -q scripts/experiment_real_airquality_v60.py src/conceptfan_discovery/auto_measured_concept_proposals.py
+          python -m compileall -q scripts/experiment_real_airquality_v60.py src/conceptfan_discovery/auto_measured_concept_proposals.py src/conceptfan_discovery/auto_measured_concept_proposals.py
           python -m pytest -q tests/discovery/test_real_airquality_v60.py tests/discovery/test_native_temporal_fuzzy_v56.py tests/discovery/test_autonomous_adaptive_v55.py tests/discovery/test_auto_measured_concept_pipeline.py
       - name: Download official original public Air Quality dataset (no mirror)
         run: |
