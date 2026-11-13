@@ -112,7 +112,7 @@ def load_har_v62(data:Path,task):
             key:{"true_participant_count":len(np.unique(sec["patient"])),
                  "overlapping_windows":len(sec["y"]),
                  "class_prevalence":float(np.mean(sec["y"]))}
-            for key,sec in sections.items(),
+            for key,sec in sections.items()
         },
     }
     return sections,scaler,receipt
