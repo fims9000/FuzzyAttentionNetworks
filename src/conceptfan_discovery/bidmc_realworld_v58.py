@@ -53,7 +53,7 @@ def _read_patient_group(text):
 
 
 def _numbers(path:Path):
-    with path.open("r",encoding="utf8-sig",newline="") as file:
+    with path.open("r",encoding="utf-8-sig",newline="") as file:
         reader=csv.DictReader(file)
         if not {"Time [s]","HR","PULSE","RESP","SpO2"}.issubset(
             {x.strip() for x in (reader.fieldnames or [])}):
@@ -171,7 +171,7 @@ def load_bidmc_realworld_v58(root:Path):
         fixed=root/f"{prefix}_Fix.txt"
         if not path.is_file() or not fixed.is_file():
             raise FileNotFoundError(f"Missing original BIDMC {prefix}")
-        patient=_read_patient_group(fixed.read_text(encoding="utf8-sig"))
+        patient=_read_patient_group(fixed.read_text(encoding="utf-8-sig"))
         data=_numbers(path)
         three=data[:,:3]
         hr=data[:,3]
