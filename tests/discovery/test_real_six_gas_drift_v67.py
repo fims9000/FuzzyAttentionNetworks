@@ -72,7 +72,9 @@ def test_fuzzy_train_only_not_label_or_physical_identity(fixed_source):
 
 
 def test_feature_views_are_two_engineered_descriptors_groups_not_time():
-    example=np.arange(128,dtype=float).reshape(1,16,8)
+    # The public API accepts the original flat 128 engineered descriptors;
+    # it constructs its internal 16-sensor x 8-feature layout itself.
+    example=np.arange(128,dtype=float).reshape(1,128)
     mapped=v.FrozenSixGasSourceBank.sensor_views(example)
     assert mapped.shape==(1,32)
     assert mapped[0,0]==.5
