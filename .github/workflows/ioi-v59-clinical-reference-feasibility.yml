@@ -1,0 +1,87 @@
+name: V59 real PhysioNet TRAIN-only candidate reference overlap audit
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v59-clinical-anchor-feasibility-20261113
+    paths:
+      - 'scripts/medical/physionet_reference_feasibility_v59.py'
+      - 'tests/discovery/test_physionet_reference_feasibility_v59.py'
+      - 'docs/medical/CONCEPTFAN_V59_FROZEN_CLINICAL_REFERENCE_FEASIBILITY_20261113.md'
+      - '.github/workflows/ioi-v59-clinical-reference-feasibility.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  physiological-pair-availability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install only non-neural mask-audit dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pandas scikit-learn pyyaml pytest
+      - name: Compile and test absence-aware real sensor parsing
+        run: |
+          python -m compileall -q scripts/medical/physionet_reference_feasibility_v59.py
+          python -m pytest -q tests/discovery/test_physionet_reference_feasibility_v59.py
+      - name: Download fixed official public PhysioNet Set A and outcomes
+        run: |
+          mkdir -p /tmp/conceptfan_v59_public
+          curl -fSL --retry 3 --connect-timeout 20 --max-time 180 \
+            https://physionet.org/files/challenge-2012/1.0.0/set-a.zip \
+            -o /tmp/conceptfan_v59_public/set-a.zip || \
+          curl -fSL --retry 3 --connect-timeout 20 --max-time 180 \
+            https://archive.physionet.org/physiobank/database/challenge/2012/set-a.zip \
+            -o /tmp/conceptfan_v59_public/set-a.zip
+          curl -fSL --retry 3 --connect-timeout 20 --max-time 60 \
+            https://physionet.org/files/challenge-2012/1.0.0/Outcomes-a.txt \
+            -o /tmp/conceptfan_v59_public/Outcomes-a.txt || \
+          curl -fSL --retry 3 --connect-timeout 20 --max-time 60 \
+            https://archive.physionet.org/physiobank/database/challenge/2012/Outcomes-a.txt \
+            -o /tmp/conceptfan_v59_public/Outcomes-a.txt
+          unzip -tq /tmp/conceptfan_v59_public/set-a.zip
+          sha256sum /tmp/conceptfan_v59_public/set-a.zip /tmp/conceptfan_v59_public/Outcomes-a.txt
+      - name: Run frozen official TRAIN-only clinical measurement availability
+        run: |
+          python scripts/medical/physionet_reference_feasibility_v59.py \
+            --set-a-zip /tmp/conceptfan_v59_public/set-a.zip \
+            --outcomes /tmp/conceptfan_v59_public/Outcomes-a.txt \
+            --out-dir V59_AGGREGATE_EVIDENCE | tee v59_aggregate_log.jsonl
+          python - <<'PY'
+          import json
+          r=json.load(open("V59_AGGREGATE_EVIDENCE/STATUS.json"))
+          assert r['status'] in (
+              'MEASUREMENT_OVERLAP_FEASIBLE_UNVERIFIED_PROVENANCE',
+              'ABSTAIN_CLINICAL_ANCHOR_UNOBSERVABLE'
+          )
+          assert r['receipt']['train_count']==2400
+          assert len(r['reference_overlap_tests'])==6
+          assert r['sealed_original_validation_calibration_and_test_timelines_read']==False
+          assert r['clinical_predictive_model_trained_or_tested']==False
+          assert r['published_artifacts_are_aggregate_only']
+          PY
+          git rev-parse HEAD > V59_AGGREGATE_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve only source hashes, aggregate feasibility and tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v59-real-physionet-reference-feasibility
+          path: |
+            V59_AGGREGATE_EVIDENCE/
+            v59_aggregate_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
