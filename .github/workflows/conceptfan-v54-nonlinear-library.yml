@@ -1,0 +1,75 @@
+name: ConceptFAN V54 nonlinear measured operator discovery
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v54-operator-library-20261113
+    paths:
+      - 'src/conceptfan_discovery/operator_library_concepts_v54.py'
+      - 'scripts/experiment_conceptfan_operator_library_v54.py'
+      - 'tests/discovery/test_operator_library_concepts_v54.py'
+      - 'tests/discovery/test_conceptfan_operator_library_v54.py'
+      - 'docs/medical/CONCEPTFAN_V54_NONLINEAR_OPERATOR_FROZEN_PROTOCOL_20261113.md'
+      - '.github/workflows/conceptfan-v54-nonlinear-library.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  nonlinear-native-concepts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 48
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU PyTorch and ConceptFAN
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -e .
+      - name: Verify nonlinear discovery contracts
+        run: |
+          python -m compileall -q src/conceptfan_discovery/operator_library_concepts_v54.py scripts/experiment_conceptfan_operator_library_v54.py
+          python -m pytest -q tests/discovery/test_operator_library_concepts_v54.py tests/discovery/test_conceptfan_operator_library_v54.py tests/discovery/test_lagged_operator_concepts_v53.py tests/discovery/test_conceptfan_lagged_native_v53.py
+      - name: Train six native K2 models and evaluate preregistered nonlinear operator library
+        run: |
+          python scripts/experiment_conceptfan_operator_library_v54.py \
+            --out results/conceptfan_v54_nonlinear \
+            --seeds 11 23
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('results/conceptfan_v54_nonlinear/report_v54.json').read_text())
+          assert report['status']=='EXECUTED_EXPLORATORY'
+          assert report['n_native_models']==6
+          assert report['n_test_rows']==30
+          assert len(report['prediction_files'])==30
+          assert report['all_proposals_y_blind']
+          assert report['all_risk_admission_train_and_valid_only']
+          assert report['no_direct_risk_bypass']
+          assert not report['no_physical_or_causal_identification'] is False
+          assert all(row['exact_unavailable_fallback'] for row in report['rows'])
+          PY
+      - name: Save source revision and complete negative/positive evidence
+        if: always()
+        run: |
+          mkdir -p results/conceptfan_v54_nonlinear
+          git rev-parse HEAD > results/conceptfan_v54_nonlinear/COMMIT_SHA.txt
+      - name: Upload complete V54 test arrays
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v54-nonlinear-operator-library
+          path: results/conceptfan_v54_nonlinear/
+          if-no-files-found: warn
+          retention-days: 90
