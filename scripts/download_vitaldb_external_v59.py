@@ -199,7 +199,20 @@ def download_vitaldb(out:Path):
             try:
                 c,origin,values,hashes=future.result()
             except Exception as exc:
-                results[case]={"accepted":False,"reason":type(exc).__name__}
+                message=str(exc)
+                if "VitalDB public API unavailable" in message:
+                    category="PUBLIC_API_TRACK_UNAVAILABLE"
+                elif "Insufficient valid" in message:
+                    category="INSUFFICIENT_NUMERIC_TRACK_SAMPLES"
+                elif "Non-numeric VitalDB" in message:
+                    category="TRACK_CSV_COLUMNS_MISMATCH"
+                elif "No 480-second window" in message:
+                    category="PREDECLARED_COVERAGE_FAILURE"
+                elif "Nonmonotonic" in message:
+                    category="SOURCE_TIME_NOT_MONOTONE"
+                else:
+                    category="OTHER_"+type(exc).__name__
+                results[case]={"accepted":False,"reason":category}
                 continue
             path=out/f"vitaldb_case_{case}.npz"
             # Clinical values and subject IDs stay runner-local; DO NOT add
@@ -214,6 +227,20 @@ def download_vitaldb(out:Path):
     accepted=[case for case in candidate_cases if results.get(case,{}).get("accepted")]
     selected=accepted[:MAX_ACCEPTED_CASES]
     if len(selected)<MIN_ACCEPTED_CASES:
+        # Fail closed without changing the frozen 80-subject selection.
+        # Publish only aggregate failure categories; never source samples,
+        # patient identifiers, or per-subject selection reasons.
+        from collections import Counter
+        rejected=Counter(
+            r["reason"] for r in results.values() if not r["accepted"])
+        refusal={"status":"EXTERNAL_PREDECLARED_COHORT_STOP",
+                 "selected_eligible":len(selected),
+                 "frozen_minimum":MIN_ACCEPTED_CASES,
+                 "frozen_candidates":CANDIDATE_SUBJECT_LIMIT,
+                 "rejection_counts_only":dict(sorted(rejected.items()))}
+        (out/"external_cohort_failure_receipt.json").write_text(
+            json.dumps(refusal,indent=2)+"\n")
+        print(json.dumps(refusal),flush=True)
         raise RuntimeError(f"External VitalDB cohort below 30 genuine cases: {len(selected)}")
     # Delete the numeric files for nonselected cases (they were never used
     # for model fitting, enrollment, tuning or evaluation).
