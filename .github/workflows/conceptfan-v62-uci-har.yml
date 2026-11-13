@@ -1,0 +1,117 @@
+name: ConceptFAN V62 fresh UCI HAR cross-modality sensor novelty
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v62-uci-har-fresh-cross-modality-20261113
+    paths:
+      - 'scripts/download_uci_har_v62.py'
+      - 'src/conceptfan_discovery/har_activity_v62.py'
+      - 'scripts/experiment_conceptfan_har_v62.py'
+      - 'scripts/verify_conceptfan_har_v62.py'
+      - 'tests/discovery/test_har_activity_v62.py'
+      - 'docs/research/CONCEPTFAN_V62_UCI_HAR_FRESH_MODALITY_FROZEN_PROTOCOL_20261113.md'
+      - '.github/workflows/conceptfan-v62-uci-har.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  PYTHONHASHSEED: '0'
+  CUBLAS_WORKSPACE_CONFIG: ':4096:8'
+
+jobs:
+  untouched-uci-har-external-subject-sensor-novelty:
+    runs-on: ubuntu-latest
+    timeout-minutes: 57
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install native CPU PyTorch, real-sensor scientific runtime
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -e .
+      - name: Unit-test original sensor raw windows, untouched TEST gate, canonical residual source
+        run: |
+          python -m compileall -q scripts/download_uci_har_v62.py src/conceptfan_discovery/har_activity_v62.py scripts/experiment_conceptfan_har_v62.py scripts/verify_conceptfan_har_v62.py
+          python -m pytest -q tests/discovery/test_har_activity_v62.py tests/discovery/test_stable_source_v61r.py tests/discovery/test_conditional_novelty_v61.py tests/discovery/test_program_fan_v60.py
+      - name: Download official UCI HAR original unaggregated six-axis inertial source
+        run: |
+          python scripts/download_uci_har_v62.py \
+            --out data/uci_har_v62/private_official
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('data/uci_har_v62/private_official/uci_har_official_source_receipt.json')
+          r=json.loads(p.read_text())
+          assert r['original_official_participant_count']==30
+          assert r['split_provenance']['train']['original_windows']==7352
+          assert r['split_provenance']['test']['original_windows']==2947
+          assert r['split_provenance']['train']['participant_count']==21
+          assert r['split_provenance']['test']['participant_count']==9
+          assert r['official_participant_test_disjoint']
+          assert not r['uses_precomputed_561_features']
+          PY
+      - name: First encounter with official UCI HAR heldout 9 people only AFTER all train and VALID gates
+        run: |
+          python scripts/experiment_conceptfan_har_v62.py \
+            --data data/uci_har_v62/private_official \
+            --out results/conceptfan_v62_uci_har \
+            --seeds 11 23 --tasks STAIRS_UP_VS_DOWN STAND_VS_SIT
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('results/conceptfan_v62_uci_har/report_v62.json')
+          r=json.loads(p.read_text())
+          assert r['status']=='V62_EXECUTED_UNTOUCHED_UCI_HAR_SENSOR_NOVELTY'
+          assert r['ALL_seed_training_and_VALID_gates_frozen_before_TEST_opened']
+          assert r['n_trained_models']==4 and r['n_test_conditions']==20
+          assert r['conditional_gyro_source_ids_SELECTED_TRAIN_X_only']
+          assert r['original_official_TEST_nine_independent_persons']
+          assert all(not x['original_har_TEST_used_for_fitting_or_source_admission']
+                     for x in r['test_cases'])
+          assert r['all_561_UCI_engineered_features_excluded']
+          PY
+      - name: Independently verify all 20 truly heldout original UCI nine-person prediction sets
+        run: |
+          python scripts/verify_conceptfan_har_v62.py \
+            --dir results/conceptfan_v62_uci_har
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('results/conceptfan_v62_uci_har/verify_v62_audit.json')
+          r=json.loads(p.read_text())
+          assert r['status']=='V62_UCI_HAR_INDEPENDENT_SENSOR_MODALITY_AUDIT_PASS'
+          assert r['real_test_participants']==9
+          assert r['n_verified_individual_private_test_arrays']==20
+          assert r['exact_accel_fallback_when_gyro_not_admitted_or_source_missing']
+          assert r['original_TEST_loaded_only_after_all_train_valid_freeze']
+          assert r['no_original_participant_signal_or_individual_risk_uploaded']
+          PY
+      - name: Capture immutable source revision
+        if: always()
+        run: |
+          mkdir -p results/conceptfan_v62_uci_har
+          git rev-parse HEAD > results/conceptfan_v62_uci_har/COMMIT_SHA.txt
+      - name: Upload ONLY aggregate 30-person source and nine-person TEST metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v62-fresh-uci-har-gyro-novelty-aggregate
+          path: |
+            results/conceptfan_v62_uci_har/report_v62.json
+            results/conceptfan_v62_uci_har/aggregate_cases_v62.csv
+            results/conceptfan_v62_uci_har/uci_har_*_split_receipt.json
+            results/conceptfan_v62_uci_har/verify_v62_audit.json
+            results/conceptfan_v62_uci_har/COMMIT_SHA.txt
+            data/uci_har_v62/private_official/uci_har_official_source_receipt.json
+          if-no-files-found: warn
+          retention-days: 90
