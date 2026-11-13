@@ -39,6 +39,10 @@ def test_safely_parse_sparse_numeric_track_and_last_duplicate():
     many="Time,Value\n"+"".join(f"{2*i},{75+i%5}\n" for i in range(305))
     time,value=_numeric_track(many.encode(),"Solar8000/HR")
     assert len(time)==305 and time[0]==0. and time[-1]==608.
+    official=many.replace("Time,Value", "Time,Values")
+    tm,vm=_numeric_track(official.encode(),"Solar8000/HR")
+    np.testing.assert_array_equal(tm,time)
+    np.testing.assert_array_equal(vm,value)
 
 
 def test_first_available_window_selection_never_uses_signal_values():
