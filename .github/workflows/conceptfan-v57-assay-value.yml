@@ -41,7 +41,7 @@ jobs:
         run: |
           python -m compileall -q src/conceptfan_discovery/assay_calibrated_concept_v57.py scripts/experiment_conceptfan_assay_value_v57.py scripts/verify_conceptfan_v57_case_audit.py
           python -m pytest -q tests/discovery/test_assay_calibrated_concept_v57.py tests/discovery/test_independent_assay_scope_v56.py tests/discovery/test_constrained_joint_operator_v55.py
-      - name: Preregistered fresh cohort: calibrate q, refit native gamma and dual-VALID gate
+      - name: "Preregistered fresh cohort: calibrate q, refit native gamma and dual-VALID gate"
         run: |
           python scripts/experiment_conceptfan_assay_value_v57.py \
             --out results/conceptfan_v57_assay_value --seeds 11 23
