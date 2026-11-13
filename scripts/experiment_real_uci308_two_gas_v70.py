@@ -229,13 +229,12 @@ def physical_semantics_audit(source,x,reference,groups,seed=20261970):
         vals=zs[ix];dose=reference[ix]
         associations[cohort]=[
             {"axis":int(k),
-             analyte:{
+             **{analyte:{
                  "partial_spearman_controlling_other_preparation_dose":
                      partial_spearman(vals[:,k],dose[:,j],dose[:,1-j]),
                  "n_original_physical_experiments":len(ix),
                  "unique_gas_chemical_identity_established":False,
-             }
-             for j,analyte in enumerate(ANALYTES)}
+             } for j,analyte in enumerate(ANALYTES)}}
             for k in range(source.K)]
     if source.K<2:
         alignment={"status":"ABSTAIN_K_LT_TWO_NOT_CHEMICAL_IDENTITY"}
