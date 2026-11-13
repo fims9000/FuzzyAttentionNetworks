@@ -183,11 +183,43 @@ def download_vitaldb(out:Path):
     patients,track_index,candidate_cases,case_sha,tracks_sha,n_subjects=_inventory()
     results={}
     def one(case):
+        # Current VitalDB Open Dataset API v2 no longer serves the legacy
+        # per-TID CSV at /{tid} as numeric CSV (a 200 HTML response can
+        # otherwise masquerade as a valid download). The official VitalDB
+        # Python loader requests packed, versioned .vital records, preserving
+        # the case's shared clock and the SAME four predeclared track names.
+        # This changes transport only: frozen case inventory, 80 subjects,
+        # first eligible 480s, 70% coverage, and thresholds stay unchanged.
+        import vitaldb
+        vf=vitaldb.VitalFile(int(case),list(REQUIRED_TRACKS))
         resolved={};digests={}
         for name in REQUIRED_TRACKS:
-            raw=_fetch(BASE+"/"+track_index[case][name])
-            digests[name]=sha256(raw)
-            resolved[name]=_numeric_track(raw,name)
+            tr=vf.find_track(name)
+            if tr is None or int(tr.type)!=2:
+                raise ValueError("Required numeric track absent in packed case")
+            lo,hi=CHANNEL_BOUNDS[name]
+            tv=[]
+            for sample in tr.recs:
+                if not("dt" in sample and "val" in sample):continue
+                try:
+                    t=float(sample["dt"])-float(vf.dtstart)
+                    v=float(sample["val"])
+                except (TypeError,ValueError):continue
+                if np.isfinite(t) and np.isfinite(v) and lo<=v<=hi:
+                    tv.append((t,v))
+            if len(tv)<300:
+                raise ValueError("Insufficient valid packed numeric track samples")
+            raw=np.asarray(tv,dtype=np.float64)
+            if (np.diff(raw[:,0])<-1e-6).any():
+                raise ValueError("Nonmonotonic source timestamps in packed case")
+            # Same-timestamp duplicate samples: keep last, no future fill.
+            good=np.r_[np.diff(raw[:,0])>0,True]
+            t,v=raw[good,0],raw[good,1]
+            if len(t)<300:raise ValueError("Insufficient unique numeric observations")
+            resolved[name]=(t,v)
+            # Data receipt hash without leaking any times or measured values.
+            digests[name]=sha256(np.ascontiguousarray(
+                np.stack((t,v),axis=1)).tobytes())
         choice=_earliest_complete_window(resolved)
         if choice is None:
             raise ValueError("No 480-second window with predeclared 70% coverage")
@@ -213,6 +245,10 @@ def download_vitaldb(out:Path):
                     category="PREDECLARED_COVERAGE_FAILURE"
                 elif "Nonmonotonic" in message:
                     category="SOURCE_TIME_NOT_MONOTONE"
+                elif "Required numeric track absent" in message:
+                    category="PACKED_CASE_TRACK_ABSENT"
+                elif "Insufficient valid packed" in message or "Insufficient unique numeric" in message:
+                    category="PACKED_TRACK_TOO_SPARSE"
                 else:
                     category="OTHER_"+type(exc).__name__
                 results[case]={"accepted":False,"reason":category}
