@@ -71,10 +71,9 @@ def _masked_partition(section,people):
 def load_har_v62(data:Path,task):
     if task not in TASKS:raise ValueError("V62 task not preregistered")
     data=Path(data)
+    # No attempt to open private_test.npz until after every TRAIN and VALID
+    # model/gate is frozen. The official 21/9 group split is public metadata.
     raw_train=_section(data/"private_train.npz",TASKS[task])
-    raw_test=_section(data/"private_test.npz",TASKS[task])
-    overlap=set(raw_train["patient"])&set(raw_test["patient"])
-    if overlap:raise AssertionError("Official UCI TEST volunteer leaked into TRAIN")
     # Subject partition MUST be fixed from official 21 person list before
     # task-specific labels are examined; data loader uses all original ids.
     with np.load(data/"private_train.npz",allow_pickle=False) as z:
@@ -86,12 +85,9 @@ def load_har_v62(data:Path,task):
              "valid2":set(groups[17:21])}
     sections={key:_masked_partition(raw_train,s)
               for key,s in subsets.items()}
-    sections["test"]=_masked_partition(
-        raw_test,set(raw_test["patient"]))
-    if (len(set(sections["test"]["patient"]))!=9 or
-        any(len(set(sections[k]["patient"]))!=v
-            for k,v in (("train",13),("valid1",4),("valid2",4)))):
-        raise AssertionError("HAR participant isolation or task class presence drift")
+    if any(len(set(sections[k]["patient"]))!=v
+           for k,v in (("train",13),("valid1",4),("valid2",4))):
+        raise AssertionError("HAR subject participant split is not 13/4/4")
     scaler=_fit_scaler(sections["train"],(0,1,2))
     for section in sections.values():
         section["x"],section["mask"]=transform_allowed_v61(
@@ -102,6 +98,8 @@ def load_har_v62(data:Path,task):
         "official_source_classes":TASKS[task],
         "seed_dev_participant_split":SEED,
         "official_TEST_participants_not_touched_by_training":True,
+        "official_TEST_n_people_public_metadata":9,
+        "official_TEST_opened_only_after_ALL_train_VALID_fit":True,
         "original_raw_samples_per_window":128,
         "nonoverlapping_causal_blocks":16,
         "source_names":SENSOR_NAMES,
@@ -116,6 +114,27 @@ def load_har_v62(data:Path,task):
         },
     }
     return sections,scaler,receipt
+
+
+def load_har_test_v62(data:Path,task,scaler):
+    """FIRST read original heldout test AFTER all seed-specific models/gates.
+
+    Split details are checked only after all model definitions are frozen.
+    This function must never be called inside source generation or fitting.
+    """
+    if task not in TASKS:raise ValueError("Unregistered final TEST task")
+    root=Path(data)
+    # Official identifiers only used for runtime group leakage check.
+    with np.load(root/"private_train.npz",allow_pickle=False) as z:
+        dev_people=set(z["subject"].tolist())
+    raw_test=_section(root/"private_test.npz",TASKS[task])
+    held_people=set(raw_test["patient"].tolist())
+    if (len(held_people)!=9 or dev_people&held_people):
+        raise AssertionError("Official UCI HAR TEST people overlap TRAIN")
+    section=_masked_partition(raw_test,held_people)
+    section["x"],section["mask"]=transform_allowed_v61(
+        section["raw"],section["mask"],scaler)
+    return section
 
 
 def rename_bank_as_har_v62(bank:ProgramBankV60):
