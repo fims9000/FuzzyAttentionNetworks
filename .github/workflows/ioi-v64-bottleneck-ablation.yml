@@ -1,0 +1,77 @@
+name: V64 exploratory real dynamic gas information bottleneck ablation
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v64-bottleneck-audit-20261113
+    paths:
+      - 'scripts/experiment_bottleneck_ablation_v64.py'
+      - 'tests/discovery/test_bottleneck_ablation_v64.py'
+      - 'docs/medical/CONCEPTFAN_V64_FROZEN_BOTTLENECK_ABLATION_20261113.md'
+      - '.github/workflows/ioi-v64-bottleneck-ablation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '1'
+  PYTHONHASHSEED: '0'
+jobs:
+  same-data-posthoc-stage-diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install source regression dependencies and native import requirements
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e .
+      - name: Validate exact staged source and negative examples
+        run: |
+          python -m compileall -q scripts/experiment_bottleneck_ablation_v64.py
+          python -m pytest -q tests/discovery/test_bottleneck_ablation_v64.py tests/discovery/test_real_dynamic_gas_ica_v63.py
+      - name: Restore same officially pinned UCI322 archive
+        uses: actions/cache@v4
+        with:
+          path: /tmp/conceptfan_v63/uci322.zip
+          key: original-uci322-archive-20261113
+      - name: Verify original raw UCI322 archive
+        run: |
+          test -s /tmp/conceptfan_v63/uci322.zip
+          unzip -tq /tmp/conceptfan_v63/uci322.zip
+          sha256sum /tmp/conceptfan_v63/uci322.zip
+      - name: Reproduce explicit posthoc causal stage-information controls
+        run: |
+          set -o pipefail
+          python scripts/experiment_bottleneck_ablation_v64.py \
+            --uci-zip /tmp/conceptfan_v63/uci322.zip \
+            --out-dir V64_BOTTLENECK_EVIDENCE | tee v64_diagnostic_log.jsonl
+          python - <<'PY'
+          import json
+          x=json.load(open('V64_BOTTLENECK_EVIDENCE/STATUS.json'))
+          assert x['status']=='V64_POSTHOC_REAL_GAS_INFORMATION_BOTTLENECK_EXECUTED'
+          assert x['declared_post_V63_TEST_inspection']
+          assert not x['new_independent_confirmatory_data']
+          assert x['source_rank_K']>0
+          assert len(x['all_stage_results'])==88
+          assert x['source_ICA_PCA_still_fit_without_setpoints']
+          assert x['normalization_and_pca_fit_only_train']
+          assert not x['real_physical_source_semantics_identified']
+          PY
+          git rev-parse HEAD > V64_BOTTLENECK_EVIDENCE/SOURCE_COMMIT_SHA.txt
+      - name: Preserve aggregate comparisons only, never raw sensor records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v64-real-dynamic-bottleneck-ablation
+          path: |
+            V64_BOTTLENECK_EVIDENCE/
+            v64_diagnostic_log.jsonl
+          if-no-files-found: warn
+          retention-days: 90
