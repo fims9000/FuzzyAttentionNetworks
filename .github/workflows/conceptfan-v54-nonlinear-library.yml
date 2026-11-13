@@ -7,6 +7,7 @@ on:
     paths:
       - 'src/conceptfan_discovery/operator_library_concepts_v54.py'
       - 'scripts/experiment_conceptfan_operator_library_v54.py'
+      - 'scripts/verify_conceptfan_v54_case_audit.py'
       - 'tests/discovery/test_operator_library_concepts_v54.py'
       - 'tests/discovery/test_conceptfan_operator_library_v54.py'
       - 'docs/medical/CONCEPTFAN_V54_NONLINEAR_OPERATOR_FROZEN_PROTOCOL_20261113.md'
@@ -59,6 +60,17 @@ jobs:
           assert report['no_direct_risk_bypass']
           assert not report['no_physical_or_causal_identification'] is False
           assert all(row['exact_unavailable_fallback'] for row in report['rows'])
+          PY
+      - name: Independently verify individual TEST scores and paired patient uncertainty
+        run: |
+          python scripts/verify_conceptfan_v54_case_audit.py --dir results/conceptfan_v54_nonlinear
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('results/conceptfan_v54_nonlinear/verify_v54_audit.json').read_text())
+          assert a['status']=='V54_CASE_LEVEL_INDEPENDENT_RECOMPUTATION_PASS'
+          assert a['verified_saved_arrays']==30
+          assert len(a['scenarios'])==15
           PY
       - name: Save source revision and complete negative/positive evidence
         if: always()
