@@ -87,10 +87,11 @@ def build_disjoint_blocks(frame:pd.DataFrame,*,history:int=INPUT_STEPS):
     data=frame.reset_index(drop=True)
     times=pd.DatetimeIndex(data["timestamp"])
     sensor=[];history_ref=[];future_ref=[];days=[];discarded=0
-    one_hour=int(pd.Timedelta(hours=1).value)
     for start in range(0,len(data)-BLOCK_STEPS+1,BLOCK_STEPS):
         idx=np.arange(start,start+BLOCK_STEPS)
-        if not np.all(np.diff(times[idx].asi8)==one_hour):
+        # Pandas 3 may store DatetimeIndex at microsecond rather than
+        # nanosecond precision; compare timedeltas, never raw asi8 units.
+        if not np.all((times[idx[1:]]-times[idx[:-1]])==pd.Timedelta(hours=1)):
             discarded+=1
             continue
         sensor.append(data.loc[idx[:-1],list(SOURCE_COLUMNS)].to_numpy(dtype=float))
