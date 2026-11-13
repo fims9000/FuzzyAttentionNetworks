@@ -74,6 +74,21 @@ def test_missing_sensor_hidden_payload_neutral_states():
     np.testing.assert_array_equal(fuzzy[:,50:80],.5+np.zeros_like(fuzzy[:,50:80]))
 
 
+
+def test_missing_initial_baseline_neutralizes_only_delta_stream():
+    x,m,ica,dual=bank()
+    masked=m[:4].copy()
+    masked[:,0,:]=False
+    hidden=x[:4].copy()
+    hidden[:,0,:]=np.nan
+    c=dual.static_concepts(hidden,masked)
+    K=ica.k
+    np.testing.assert_array_equal(
+        c[:,:,3*K:],np.full(c[:,:,3*K:].shape,.5))
+    assert np.isfinite(c[:,:,:3*K]).all()
+
+
+
 def test_native_fuzzy_training_has_no_target_argument_or_task_gradient():
     x,m,ica,dual=bank()
     model=NativeSelfSupervisedConceptFAN(
