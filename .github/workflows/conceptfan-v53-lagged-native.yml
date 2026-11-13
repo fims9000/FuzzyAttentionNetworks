@@ -1,0 +1,89 @@
+name: ConceptFAN V53 lagged automatic concepts and native admission
+
+on:
+  push:
+    branches:
+      - experiment/conceptfan-v53-lagged-discovery-20261113
+    paths:
+      - 'src/conceptfan_discovery/lagged_operator_concepts_v53.py'
+      - 'scripts/experiment_conceptfan_lagged_native_v53.py'
+      - 'scripts/verify_conceptfan_v53_case_audit.py'
+      - 'tests/discovery/test_lagged_operator_concepts_v53.py'
+      - 'tests/discovery/test_conceptfan_lagged_native_v53.py'
+      - 'docs/medical/CONCEPTFAN_V53_LAGGED_NATIVE_FROZEN_PROTOCOL_20261113.md'
+      - '.github/workflows/conceptfan-v53-lagged-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src:.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '2'
+  PYTHONHASHSEED: '0'
+
+jobs:
+  synthetic-concept-discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install CPU PyTorch and ConceptFAN
+        run: |
+          python -m pip install --disable-pip-version-check 'torch==2.5.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -e .
+      - name: Verify discovered lag and native model contracts
+        run: |
+          python -m compileall -q src/conceptfan_discovery/lagged_operator_concepts_v53.py scripts/experiment_conceptfan_lagged_native_v53.py
+          python -m pytest -q tests/discovery/test_lagged_operator_concepts_v53.py tests/discovery/test_conceptfan_lagged_native_v53.py tests/discovery/test_auto_measured_concept_pipeline.py
+      - name: Execute preregistered two-seed synthetic native source-admission study
+        run: |
+          python scripts/experiment_conceptfan_lagged_native_v53.py \
+            --out results/conceptfan_v53_lagged_native \
+            --seeds 11 23
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('results/conceptfan_v53_lagged_native/report_v53.json')
+          r=json.loads(p.read_text())
+          assert r['status']=='EXECUTED_EXPLORATORY'
+          assert r['n_native_trained_models']==6
+          assert len(r['results'])==24
+          assert all(item['exact_fallback_checked'] for item in r['results'])
+          assert all(not item['physical_source_identified'] for item in r['results'])
+          assert all(not item['unsupervised_definition']['trained_on_outcome_labels']
+                     for item in r['receipts'])
+          assert r['original_K2_exact_fallback']
+          PY
+      - name: Independently verify all 24 per-patient arrays, signed logits, and paired confidence bands
+        run: |
+          python scripts/verify_conceptfan_v53_case_audit.py \
+            --dir results/conceptfan_v53_lagged_native
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('results/conceptfan_v53_lagged_native/verify_v53_audit.json')
+          r=json.loads(p.read_text())
+          assert r['status']=='CASE_LEVEL_INDEPENDENT_RECOMPUTATION_PASS'
+          assert r['n_verified_test_prediction_arrays']==24
+          assert len(r['scenarios'])==12
+          PY
+      - name: Record exact source commit and preserve full negative results
+        if: always()
+        run: |
+          mkdir -p results/conceptfan_v53_lagged_native
+          git rev-parse HEAD > results/conceptfan_v53_lagged_native/COMMIT_SHA.txt
+      - name: Upload full cases, candidates and validated source gates
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conceptfan-v53-lagged-native-research
+          path: results/conceptfan_v53_lagged_native/
+          if-no-files-found: warn
+          retention-days: 90
