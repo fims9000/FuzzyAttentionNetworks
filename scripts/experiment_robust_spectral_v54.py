@@ -171,7 +171,7 @@ def run(out:Path,smoke=False):
             "event":"V54_GROUP_DRAW","seed":d,
             "estimated_K":receipt["estimated_K"],
             "primary":[z for z in cases if z["world"]=="physical_extra"
-                       and z["scenario"]=="single_sensor_flip"]},flush=True)
+                       and z["scenario"]=="single_sensor_flip"]}),flush=True)
     mixed=run_mixed_family(smoke=smoke)
     final={
         "status":"SMOKE_ONLY" if smoke else "V54_EXPLORATORY_EXECUTED_NEW_DRAWS",
@@ -192,7 +192,7 @@ def run(out:Path,smoke=False):
         w=csv.DictWriter(f,fieldnames=list(mixed[0]))
         w.writeheader();w.writerows(mixed)
     print(json.dumps({"event":"V54_DONE","status":final["status"],
-                      "n_group_rows":len(rows),"n_mixed_rows":len(mixed)},flush=True))
+                      "n_group_rows":len(rows),"n_mixed_rows":len(mixed)}),flush=True)
     return final
 
 def main():
